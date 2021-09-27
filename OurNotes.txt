@@ -1,0 +1,29 @@
+# Command to run:
+# 1. Start a terminal in your repo folder 
+# 2. Then write:
+  # sbt "run modelardb.conf"
+
+# 3. Then start another terminal and send your queries in a manner simlar to:
+  # curl -d "select * from datapoint limit 10" localhost:9999
+  # curl -d "select AVG_S(#) from Segment" localhost:9999
+  #curl -d "select START_TIME, AVG_S(#) from Segment group by TID, START_TIME" localhost:9999
+  
+  
+# Until furhter notice don't test it on spark just use h2. 
+
+#TODOs:
+# Setup some input data i.e. modelardb.source should be set to some CSV file
+	# Examples are in the bottom under CSV Format Settings
+	# TIMESTAMP ; VALUE (would be a simple CSV.example maybe just create our own or see if we can find something)
+	# TIME-SERIES GENERATION
+# Also remeber to setup amount of ingestors, after having set some input:
+	# modelardb.ingestors 1
+# IMPORTANT: remeber to set sampling_interval to the correct value
+	# modelardb.sampling_interval 100
+# Then after the data has been loaded we can do some queries on localhost:9999 if we enable:
+	# modelardb.interface http
+	# Here we can send and SQL-query to the HTTP-endpoint
+
+
+
+# Everytime you write "sbt run" then it appends the data to the h2 output-file

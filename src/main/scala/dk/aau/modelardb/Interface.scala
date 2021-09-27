@@ -113,8 +113,13 @@ object Interface {
     Static.info("ModelarDB: HTTP end-point is ready (Port: 9999)")
     scala.io.StdIn.readLine() //Prevents the method from returning to keep the server running
 
+    while (true) {
+      val a = 0
+    }
+
     //Cleanup
     server.stop(0)
+    Static.info("Closing the HTTP-endpoint ")
   }
 
   private def repl(storage: String): Unit = {
