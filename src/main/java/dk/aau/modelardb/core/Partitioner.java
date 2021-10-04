@@ -38,6 +38,7 @@ public class Partitioner {
         int valueColumnIndex = configuration.getInteger("modelardb.value_column");
         String locale = configuration.getString("modelardb.csv.locale");
 
+        // TODO: FIX ME
         //HACK: Sampling interval is one argument as all time series used for evaluation used the same sampling interval
         int samplingInterval = configuration.getSamplingInterval();
 

@@ -1,12 +1,12 @@
 # Command to run:
 # 1. Start a terminal in your repo folder 
 # 2. Then write:
-  # sbt "run modelardb.conf"
+  sbt "run modelardb.conf"
 
 # 3. Then start another terminal and send your queries in a manner simlar to:
-  # curl -d "select * from datapoint limit 10" localhost:9999
-  # curl -d "select AVG_S(#) from Segment" localhost:9999
-  #curl -d "select START_TIME, AVG_S(#) from Segment group by TID, START_TIME" localhost:9999
+  curl -d "select * from datapoint limit 10" localhost:9999
+  curl -d "select AVG_S(#) from Segment" localhost:9999
+  curl -d "select START_TIME, AVG_S(#) from Segment group by TID, START_TIME" localhost:9999
   
   
 # Until furhter notice don't test it on spark just use h2. 
