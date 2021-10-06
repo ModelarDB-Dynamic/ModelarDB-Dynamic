@@ -71,6 +71,7 @@ class H2(configuration: Configuration, h2storage: H2Storage) {
   private def startIngestion(dimensions: Dimensions): Unit = {
     //Initialize Storage
     h2storage.open(dimensions)
+
     if (configuration.getIngestors == 0) {
       if (!configuration.getDerivedTimeSeries.isEmpty) { //Initializes derived time series
         Partitioner.initializeTimeSeries(configuration, h2storage.getMaxTid)
@@ -247,14 +248,15 @@ class H2(configuration: Configuration, h2storage: H2Storage) {
     //Numbers should not be quoted
     if (value.isInstanceOf[Int] || value.isInstanceOf[Float]) {
       output.append(value)
-    } else if (value.isInstanceOf[Array[Byte]]) {
-      output.append('"')
-      output.append(this.base64Encoder.encodeToString(value.asInstanceOf[Array[Byte]]))
-      output.append('"')
-    } else {
-      output.append('"')
-      output.append(value)
-      output.append('"')
+    } else value match {
+      case bytes: Array[Byte] =>
+        output.append('"')
+        output.append(this.base64Encoder.encodeToString(bytes))
+        output.append('"')
+      case _ =>
+        output.append('"')
+        output.append(value)
+        output.append('"')
     }
     output.append(end)
   }

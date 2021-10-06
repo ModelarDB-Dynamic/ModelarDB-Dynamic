@@ -54,10 +54,10 @@ public abstract class ModelType implements Serializable {
 
     abstract public float size(long startTime, long endTime, int samplingInterval, List<DataPoint[]> dps);
 
-    public boolean withinErrorBound(float errorBound, Iterator<DataPoint> tsA, Iterator<DataPoint> tsB) {
+    public boolean withinErrorBound(float errorBound, Iterator<DataPoint> approximatedTs, Iterator<DataPoint> actualTs) {
         boolean allWithinErrorBound = true;
-        while (allWithinErrorBound && tsA.hasNext() && tsB.hasNext()) {
-            allWithinErrorBound = Static.percentageError(tsA.next().value, tsB.next().value) < errorBound;
+        while (allWithinErrorBound && approximatedTs.hasNext() && actualTs.hasNext()){
+            allWithinErrorBound = Static.percentageError(approximatedTs.next().value, actualTs.next().value) < errorBound;
         }
         return allWithinErrorBound;
     }

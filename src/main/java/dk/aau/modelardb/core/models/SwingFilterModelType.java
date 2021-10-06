@@ -51,7 +51,7 @@ class SwingFilterModelType extends ModelType {
             return false;
         }
 
-        //Allows the size to be be updated after adding the second data point without the need of branches
+        //Allows the size to be updated after adding the second data point without the need of branches
         int currentSize = this.currentSize;
         int nextSize = this.currentSize + 1;
 
