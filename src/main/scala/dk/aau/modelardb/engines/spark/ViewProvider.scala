@@ -21,7 +21,7 @@ import org.apache.spark.sql.types._
 
 class ViewProvider extends RelationProvider {
 
-  /** Public Methods **/
+  /** Public Methods * */
   override def createRelation(sqlContext: SQLContext, parameters: Map[String, String]): BaseRelation = {
     //Retrieves the names and types of the denormalized dimensions columns
     val columns = Spark.getSparkStorage.dimensions.getColumns

@@ -16,20 +16,25 @@ package dk.aau.modelardb.core;
 
 public class DataPoint {
 
-    /** Constructors **/
+    /**
+     * Instance Variables
+     **/
+    public final int tid;
+    public final long timestamp;
+    public final float value;
+    /**
+     * Constructors
+     **/
     public DataPoint(int tid, long timestamp, float value) {
         this.tid = tid;
         this.timestamp = timestamp;
         this.value = value;
     }
 
-    /** Public Methods **/
+    /**
+     * Public Methods
+     **/
     public String toString() {
         return "DataPoint: [" + this.tid + " | " + new java.sql.Timestamp(this.timestamp) + " | " + this.value + "]";
     }
-
-    /** Instance Variables **/
-    public final int tid;
-    public final long timestamp;
-    public final float value;
 }

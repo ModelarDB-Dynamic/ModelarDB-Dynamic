@@ -33,7 +33,26 @@ import java.util.zip.GZIPInputStream;
 
 public class TimeSeriesCSV extends TimeSeries {
 
-    /** Public Methods **/
+    private final boolean hasHeader;
+    private final float scalingFactor;
+    private final int bufferSize;
+    private final StringBuffer decodeBuffer;
+    private final String splitString;
+    private final int timestampColumnIndex;
+    private final int dateParserType;
+    private final int valueColumnIndex;
+    private final NumberFormat valueParser;
+    /**
+     * Instance Variables
+     **/
+    private String stringPath;
+    private ByteBuffer byteBuffer;
+    private StringBuffer nextBuffer;
+    private ReadableByteChannel channel;
+    private SimpleDateFormat dateParser;
+    /**
+     * Public Methods
+     **/
     public TimeSeriesCSV(String stringPath, int tid, int samplingInterval,
                          String splitString, boolean hasHeader,
                          int timestampColumnIndex, String dateFormat, String timeZone,
@@ -93,8 +112,8 @@ public class TimeSeriesCSV extends TimeSeries {
             this.byteBuffer = ByteBuffer.allocate(this.bufferSize);
             if (this.hasHeader) {
                 readLines();
-		this.nextBuffer.delete(0, this.nextBuffer.indexOf("\n") + 1);
-	    }
+                this.nextBuffer.delete(0, this.nextBuffer.indexOf("\n") + 1);
+            }
         } catch (IOException ioe) {
             //An unchecked exception is used so the function can be called in a lambda function
             throw new RuntimeException(ioe);
@@ -146,7 +165,9 @@ public class TimeSeriesCSV extends TimeSeries {
         }
     }
 
-    /** Private Methods **/
+    /**
+     * Private Methods
+     **/
     private void readLines() throws IOException {
         //Reads until the channel no longer provides any bytes or at least one full data point have been read
         int bytesRead;
@@ -199,20 +220,4 @@ public class TimeSeriesCSV extends TimeSeries {
             throw new java.lang.RuntimeException(pe);
         }
     }
-
-    /** Instance Variables **/
-    private String stringPath;
-    private final boolean hasHeader;
-    private final float scalingFactor;
-    private final int bufferSize;
-    private ByteBuffer byteBuffer;
-    private final StringBuffer decodeBuffer;
-    private StringBuffer nextBuffer;
-    private ReadableByteChannel channel;
-    private final String splitString;
-    private final int timestampColumnIndex;
-    private SimpleDateFormat dateParser;
-    private final int dateParserType;
-    private final int valueColumnIndex;
-    private final NumberFormat valueParser;
 }

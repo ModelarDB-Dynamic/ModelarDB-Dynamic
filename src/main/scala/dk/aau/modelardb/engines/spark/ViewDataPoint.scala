@@ -22,10 +22,10 @@ import org.apache.spark.sql.{Row, SQLContext, sources}
 
 import java.sql.Timestamp
 
-class ViewDataPoint(dimensions: Array[StructField]) (@transient override val sqlContext: SQLContext)
+class ViewDataPoint(dimensions: Array[StructField])(@transient override val sqlContext: SQLContext)
   extends BaseRelation with PrunedFilteredScan {
 
-  /** Public Methods **/
+  /** Public Methods * */
   override def schema: StructType = StructType(Seq(
     StructField("tid", IntegerType, nullable = false),
     StructField("timestamp", TimestampType, nullable = false),
@@ -43,7 +43,7 @@ class ViewDataPoint(dimensions: Array[StructField]) (@transient override val sql
     SparkProjector.dataPointProjection(rows, requiredColumns)
   }
 
-  /** Private Methods **/
+  /** Private Methods * */
   private def getDataPointRDD(filters: Array[Filter]): RDD[Row] = {
     var df = Spark.getViewProvider.option("type", "Segment").load()
     for (filter: Filter <- filters) {

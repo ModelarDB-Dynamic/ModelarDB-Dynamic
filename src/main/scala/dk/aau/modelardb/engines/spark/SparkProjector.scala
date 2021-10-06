@@ -26,7 +26,7 @@ import scala.collection.JavaConverters._
 
 object SparkProjector {
 
-  /** Public Methods **/
+  /** Public Methods * */
   def segmentProjection(rows: RDD[Row], requiredColumns: Array[String]): RDD[Row] = {
     //NOTE: optimized projection methods are not generated for all combinations
     // of columns in the segment view due to technical limitations, the Scala
@@ -58,6 +58,22 @@ object SparkProjector {
           })
         }
     }
+  }
+
+  /** Private Methods * */
+  private def getSegmentGridFunctionFallback(requiredColumns: Array[String]): Row => Row = {
+    val tsmc = Spark.getSparkStorage.timeSeriesMembersCache
+    val columns = requiredColumns.map(EngineUtilities.segmentViewNameToIndex)
+    row =>
+      Row.fromSeq(columns.map({
+        case 1 => row.getInt(0)
+        case 2 => row.getTimestamp(1)
+        case 3 => row.getTimestamp(2)
+        case 4 => row.getInt(3)
+        case 5 => row.getAs[Array[Byte]](4)
+        case 6 => row.getAs[Array[Long]](5)
+        case index => tsmc(row.getInt(0))(index - 7)
+      }))
   }
 
   def dataPointProjection(rows: RDD[Row], requiredColumns: Array[String]): RDD[Row] = {
@@ -102,21 +118,6 @@ object SparkProjector {
     }
   }
 
-  /** Private Methods **/
-  private def getSegmentGridFunctionFallback(requiredColumns: Array[String]): Row => Row = {
-    val tsmc = Spark.getSparkStorage.timeSeriesMembersCache
-    val columns = requiredColumns.map(EngineUtilities.segmentViewNameToIndex)
-    row => Row.fromSeq(columns.map({
-      case 1 => row.getInt(0)
-      case 2 => row.getTimestamp(1)
-      case 3 => row.getTimestamp(2)
-      case 4 => row.getInt(3)
-      case 5 => row.getAs[Array[Byte]](4)
-      case 6 => row.getAs[Array[Long]](5)
-      case index => tsmc(row.getInt(0))(index - 7)
-    }))
-  }
-
   def getDataPointGridFunction(requiredColumns: Array[String]): DataPoint => Row = {
     val tssfc = Spark.getSparkStorage.timeSeriesScalingFactorCache
     val btstc = Spark.getBroadcastedTimeSeriesTransformationCache
@@ -149,19 +150,6 @@ object SparkProjector {
     }
   }
 
-  def getDataPointGridFunctionFallback(requiredColumns: Array[String]): DataPoint => Row = {
-    val tsmc = Spark.getSparkStorage.timeSeriesMembersCache
-    val tssfc = Spark.getSparkStorage.timeSeriesScalingFactorCache
-    val btstc = Spark.getBroadcastedTimeSeriesTransformationCache
-    val columns = requiredColumns.map(EngineUtilities.dataPointViewNameToIndex)
-    dp => Row.fromSeq(columns.map({
-      case 1 => dp.tid
-      case 2 => new Timestamp(dp.timestamp)
-      case 3 => btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid))
-      case index => tsmc(dp.tid)(index - 4)
-    }))
-  }
-
   private def computeJumpTarget(requiredColumns: Array[String], map: Map[String, Int], staticColumns: Int): Int = {
     var factor: Int = 1
     var target: Int = 0
@@ -175,5 +163,19 @@ object SparkProjector {
       factor = factor * 10
     }
     target
+  }
+
+  def getDataPointGridFunctionFallback(requiredColumns: Array[String]): DataPoint => Row = {
+    val tsmc = Spark.getSparkStorage.timeSeriesMembersCache
+    val tssfc = Spark.getSparkStorage.timeSeriesScalingFactorCache
+    val btstc = Spark.getBroadcastedTimeSeriesTransformationCache
+    val columns = requiredColumns.map(EngineUtilities.dataPointViewNameToIndex)
+    dp =>
+      Row.fromSeq(columns.map({
+        case 1 => dp.tid
+        case 2 => new Timestamp(dp.timestamp)
+        case 3 => btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid))
+        case index => tsmc(dp.tid)(index - 4)
+      }))
   }
 }

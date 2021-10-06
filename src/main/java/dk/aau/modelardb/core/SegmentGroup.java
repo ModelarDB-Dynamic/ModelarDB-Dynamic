@@ -18,23 +18,40 @@ import dk.aau.modelardb.core.models.ModelType;
 import dk.aau.modelardb.core.models.Segment;
 import dk.aau.modelardb.core.utility.Static;
 import dk.aau.modelardb.storage.Storage;
+import scala.collection.mutable.HashMap;
 
 import java.nio.ByteBuffer;
-import scala.collection.mutable.HashMap;
 
 public class SegmentGroup {
 
-    /** Constructors **/
-    public SegmentGroup(int gid, long startTime, long endTime, int mtid, byte[] model, byte[] offsets) {
+    private final static int[] defaultDerivedTimeSeries = new int[0];
+    /**
+     * Instance Variables
+     **/
+    public final int gid;
+    public final long startTime;
+    public final long endTime;
+//    public final int samplingInterval;
+    public final int mtid;
+    public final byte[] model;
+    public final byte[] offsets;
+
+    /**
+     * Constructors
+     **/
+    public SegmentGroup(int gid, long startTime, long endTime,/* int samplingInterval,*/ int mtid, byte[] model, byte[] offsets) {
         this.gid = gid;
         this.startTime = startTime;
         this.endTime = endTime;
+//        this.samplingInterval = samplingInterval;
         this.mtid = mtid;
         this.model = model;
         this.offsets = offsets;
     }
 
-    /** Public Methods **/
+    /**
+     * Public Methods
+     **/
     public String toString() {
         //The segments might not represent all time series in the time series group
         int[] os = Static.bytesToInts(this.offsets);
@@ -79,7 +96,7 @@ public class SegmentGroup {
             int storedAndDerivedGroupSize = storedGroupSize;
             for (int index = 1; index < gmc.length; index++) {
                 int tid = gmc[index];
-                if (( ! Static.contains(tid, timeSeriesInAGap)) && Static.contains(tid, derivedTimeSeries)) {
+                if ((!Static.contains(tid, timeSeriesInAGap)) && Static.contains(tid, derivedTimeSeries)) {
                     storedAndDerivedGroupSize += 1;
                 }
             }
@@ -87,7 +104,7 @@ public class SegmentGroup {
             segments = new SegmentGroup[storedAndDerivedGroupSize];
             for (int index = 1; index < gmc.length; index++) {
                 int tid = gmc[index];
-                if ( ! Static.contains(tid, timeSeriesInAGap)) {
+                if (!Static.contains(tid, timeSeriesInAGap)) {
                     //Offsets store the following: [0] Group Offset, [1] Group Size, [2] Temporal Offset
                     byte[] offset = ByteBuffer.allocate(12).putInt(nextSegment + 1).putInt(storedGroupSize).putInt(temporalOffset).array();
                     segments[nextSegment] = new SegmentGroup(tid, this.startTime, this.endTime, this.mtid, this.model, offset);
@@ -97,7 +114,7 @@ public class SegmentGroup {
         }
 
         //The segment for a derived time series are the same as the segment of their source time series, only the tid is changed
-        for (int i = 0, j = 0; i < derivedTimeSeries.length && j < segments.length;) {
+        for (int i = 0, j = 0; i < derivedTimeSeries.length && j < segments.length; ) {
             if (derivedTimeSeries[i] == segments[j].gid) {
                 segments[nextSegment] = new SegmentGroup(derivedTimeSeries[i + 1], this.startTime, this.endTime,
                         this.mtid, this.model, segments[j].offsets);
@@ -122,13 +139,4 @@ public class SegmentGroup {
         }
         return segments;
     }
-
-    /** Instance Variables **/
-    public final int gid;
-    public final long startTime;
-    public final long endTime;
-    public final int mtid;
-    public final byte[] model;
-    public final byte[] offsets;
-    private final static int[] defaultDerivedTimeSeries = new int[0];
 }

@@ -32,7 +32,20 @@ import org.apache.parquet.schema.MessageType;
 import java.io.IOException;
 
 public class TimeSeriesParquet extends TimeSeries {
-    /** Public Methods **/
+    /**
+     * Instance Variables
+     **/
+    private final String stringPath;
+    private final int timestampColumnIndex;
+    private final int valueColumnIndex;
+    private int rowIndex;
+    private long rowCount;
+    private ParquetFileReader fileReader;
+    private MessageType schema;
+    private RecordReader<Group> recordReader;
+    /**
+     * Public Methods
+     **/
     public TimeSeriesParquet(String stringPath, int tid, int samplingInterval, int timestampColumnIndex, int valueColumnIndex) {
         super(stringPath.substring(stringPath.lastIndexOf('/') + 1), tid, samplingInterval);
         this.stringPath = stringPath;
@@ -54,8 +67,8 @@ public class TimeSeriesParquet extends TimeSeries {
 
             //next() assumes timestamps are stored as int64 with the TIMESTAMP_MICROS logical type annotation
             String[] typeComponents = schema.getColumns().get(this.timestampColumnIndex).getPrimitiveType().toString().split(" ");
-            if ( ! typeComponents[1].equals("int64") || ! typeComponents[3].equals("(TIMESTAMP_MICROS)")) {
-              throw new UnsupportedOperationException("CORE: Parquet files must store timestamps as int64 (TIMESTAMP_MICROS)");
+            if (!typeComponents[1].equals("int64") || !typeComponents[3].equals("(TIMESTAMP_MICROS)")) {
+                throw new UnsupportedOperationException("CORE: Parquet files must store timestamps as int64 (TIMESTAMP_MICROS)");
             }
         } catch (IOException ioe) {
             close();
@@ -105,15 +118,4 @@ public class TimeSeriesParquet extends TimeSeries {
             throw new RuntimeException(ioe);
         }
     }
-
-    /** Instance Variables **/
-    private final String stringPath;
-    private final int timestampColumnIndex;
-    private final int valueColumnIndex;
-
-    private int rowIndex;
-    private long rowCount;
-    private ParquetFileReader fileReader;
-    private MessageType schema;
-    private RecordReader<Group> recordReader;
 }

@@ -26,10 +26,10 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 
 class SparkCache(sparkSession: SparkSession, maxSegmentsCached: Int, newGids: Range) {
 
-  /** Instance Variables **/
-  private var checkpointCounter = 10
   private val emptyRDD = sparkSession.sparkContext.emptyRDD[Row]
   private val cacheLock = new ReentrantReadWriteLock()
+  /** Instance Variables * */
+  private var checkpointCounter = 10
   private var lastFlush = 0
 
   private var storageCacheKey: Array[Filter] = Array(null)
@@ -39,7 +39,7 @@ class SparkCache(sparkSession: SparkSession, maxSegmentsCached: Int, newGids: Ra
   private var finalizedRDD = this.emptyRDD
   private var ingestedRDD = this.emptyRDD
 
-  /** Public Methods **/
+  /** Public Methods * */
   def update(microBatch: RDD[Row]): Unit = {
     this.cacheLock.writeLock().lock()
 
@@ -84,6 +84,37 @@ class SparkCache(sparkSession: SparkSession, maxSegmentsCached: Int, newGids: Ra
     this.cacheLock.writeLock().unlock()
   }
 
+  /** Private[spark] Methods * */
+  private[spark] def write(microBatch: RDD[Row]): Unit = {
+    //This method is not completely private so Spark can write RDDs directly to storage when bulk-loading
+    Spark.getSparkStorage.storeSegmentGroups(sparkSession,
+      sparkSession.createDataFrame(microBatch, Spark.getStorageSegmentGroupsSchema))
+  }
+
+  private def checkpointOrPersist(indexedRDD: IndexedRDD[Int, Array[Row]]): IndexedRDD[Int, Array[Row]] = {
+    if (checkpointCounter == 0) {
+      //HACK: allows IndexedRDDs to be checkpointed so its linage can be cleared
+      val checkpointableRDD = indexedRDD.mapPartitions(x => x)
+      checkpointableRDD.localCheckpoint()
+      checkpointCounter = 10
+      getIndexedRDD.multiputRDD(checkpointableRDD)
+    } else {
+      checkpointCounter = checkpointCounter - 1
+      indexedRDD.persist()
+    }
+  }
+
+  private def getIndexedRDD: IndexedRDD[Int, Array[Row]] = {
+    //The IndexedRDD is populated with empty arrays for each new gid so that the merge function is always executed
+    val initialData: Array[(Int, Array[Row])] = if (newGids.isEmpty) {
+      Array()
+    } else {
+      newGids.map(gid => (gid, Array[Row]())).toArray
+    }
+    val rdd = sparkSession.sparkContext.parallelize(initialData)
+    IndexedRDD(rdd)
+  }
+
   def getSegmentGroupRDD(filters: Array[Filter]): RDD[Row] = {
     //Multiple readers must be allowed to support execution of multiple queries in parallel
     this.cacheLock.readLock().lock()
@@ -120,53 +151,22 @@ class SparkCache(sparkSession: SparkSession, maxSegmentsCached: Int, newGids: Ra
     segmentRDD
   }
 
-  /** Private[spark] Methods **/
-  private[spark] def write(microBatch: RDD[Row]): Unit = {
-    //This method is not completely private so Spark can write RDDs directly to storage when bulk-loading
-    Spark.getSparkStorage.storeSegmentGroups(sparkSession,
-      sparkSession.createDataFrame(microBatch, Spark.getStorageSegmentGroupsSchema))
-  }
-
-  /** Private Methods **/
+  /** Private Methods * */
   private def getStorageRDDFromDisk(filters: Array[Filter]): RDD[Row] = {
     Spark.getSparkStorage.getSegmentGroups(sparkSession, filters).rdd
-  }
-
-  private def getIndexedRDD: IndexedRDD[Int, Array[Row]] = {
-    //The IndexedRDD is populated with empty arrays for each new gid so that the merge function is always executed
-    val initialData: Array[(Int, Array[Row])] = if (newGids.isEmpty) {
-      Array()
-    } else {
-      newGids.map(gid => (gid, Array[Row]())).toArray
-    }
-    val rdd = sparkSession.sparkContext.parallelize(initialData)
-    IndexedRDD(rdd)
-  }
-
-  private def checkpointOrPersist(indexedRDD: IndexedRDD[Int, Array[Row]]): IndexedRDD[Int, Array[Row]] = {
-    if (checkpointCounter == 0) {
-      //HACK: allows IndexedRDDs to be checkpointed so its linage can be cleared
-      val checkpointableRDD = indexedRDD.mapPartitions(x => x)
-      checkpointableRDD.localCheckpoint()
-      checkpointCounter = 10
-      getIndexedRDD.multiputRDD(checkpointableRDD)
-    } else {
-      checkpointCounter = checkpointCounter - 1
-      indexedRDD.persist()
-    }
   }
 }
 
 object SparkCache {
 
-  /** Instance Variables **/
+  /** Instance Variables * */
   private val groupMetadataCache = Spark.getSparkStorage.groupMetadataCache
 
-  /** Private Methods **/
+  /** Private Methods * */
   private def updateTemporarySegment(buffer: Array[Row], input: Array[Row]): Array[Row] = {
     //The gaps are extracted from the new finalized or temporary segment
     val inputRow = input(0)
-    val isTemporary = ! inputRow.getBoolean(6)
+    val isTemporary = !inputRow.getBoolean(6)
     val inputGaps = Static.bytesToInts(inputRow.getAs[Array[Byte]](5))
 
     //Extracts the metadata for the group of time series being updated
@@ -201,7 +201,7 @@ object SparkCache {
       }
     }
 
-    if (isTemporary && ! updatedExistingSegment) {
+    if (isTemporary && !updatedExistingSegment) {
       //A split has occurred and multiple segments now represent what one did before, so the new ones are appended
       buffer.filter(_ != null) ++ input
     } else {

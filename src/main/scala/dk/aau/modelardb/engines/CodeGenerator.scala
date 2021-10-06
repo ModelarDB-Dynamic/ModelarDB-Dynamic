@@ -41,7 +41,19 @@ abstract class H2DataPointProjector {
 //CodeGenerator
 object CodeGenerator {
 
-  /** Public Methods **/
+  /** Instance Variables * */
+  private val sparkDataPointProjectionFragments = Array("dp.tid", "new Timestamp(dp.timestamp)",
+    "btc.value(dp.tid).transform(dp.value, sc(dp.tid))")
+  private val h2ValueConstructor = Map(
+    TypeInfo.TYPE_INT.getValueType -> "ValueInt.get(%s.asInstanceOf[Int])",
+    TypeInfo.TYPE_LONG.getValueType -> "ValueLong.get(%s.asInstanceOf[Long])",
+    TypeInfo.TYPE_FLOAT.getValueType -> "ValueFloat.get(%s.asInstanceOf[Float])",
+    TypeInfo.TYPE_DOUBLE.getValueType -> "ValueDouble.get(%s.asInstanceOf[Double])",
+    TypeInfo.TYPE_TIMESTAMP.getValueType -> "ValueTimestamp.fromMillis(%s, 0)",
+    TypeInfo.TYPE_STRING.getValueType -> "ValueString.get(%s.asInstanceOf[String])",
+    TypeInfo.TYPE_BYTES.getValueType -> "ValueBytes.get(%s.asInstanceOf[Array[Byte]])")
+
+  /** Public Methods * */
   //Apache Spark
   def getSparkSegmentProjection(requiredColumns: Array[String], segmentViewNameToIndex: Map[String, Int]): String = {
     val columns = requiredColumns.map(column => {
@@ -49,7 +61,8 @@ object CodeGenerator {
       if (index <= 6) "segmentRow.get(" + (index - 1) + ")" else "tsmc(tid)(" + (index - 7) + ")"
     })
 
-    val code = s"""
+    val code =
+      s"""
         import dk.aau.modelardb.engines.SparkSegmentProjector
         import java.sql.Timestamp
         import org.apache.spark.sql.Row
@@ -74,7 +87,8 @@ object CodeGenerator {
       if (index <= 3) sparkDataPointProjectionFragments(index - 1) else "tsmc(dp.tid)(" + (index - 4) + ")"
     })
 
-    val code = s"""
+    val code =
+      s"""
         import dk.aau.modelardb.engines.SparkDataPointProjector
         import dk.aau.modelardb.core.DataPoint
         import java.sql.Timestamp
@@ -95,6 +109,19 @@ object CodeGenerator {
     compileCode(code).asInstanceOf[SparkDataPointProjector]
   }
 
+  /** Private Methods * */
+  private def compileCode(code: String): Any = {
+    //Imports the packages required to construct the toolbox
+    import scala.reflect.runtime.currentMirror
+    import scala.tools.reflect.ToolBox
+    val toolBox = currentMirror.mkToolBox()
+
+    //Parses and compiles the code before constructing an object
+    val ast = toolBox.parse(code)
+    val compiled = toolBox.compile(ast)
+    compiled()
+  }
+
   //H2
   def getH2SegmentProjection(columns: Array[Column]): H2SegmentProjector = {
     val codeToConstructColumns: Array[String] = columns.map(column => {
@@ -111,7 +138,8 @@ object CodeGenerator {
       "currentValues(%d)".format(column.getColumnId) + " = " + constructor.format(variableName)
     })
 
-    val code = s"""
+    val code =
+      s"""
         import dk.aau.modelardb.engines.H2SegmentProjector
         import dk.aau.modelardb.core.SegmentGroup
         import org.h2.value._
@@ -138,7 +166,8 @@ object CodeGenerator {
       "currentValues(%d)".format(column.getColumnId) + " = " + constructor.format(variableName)
     })
 
-    val code = s"""
+    val code =
+      s"""
         import dk.aau.modelardb.engines.H2DataPointProjector
         import dk.aau.modelardb.core.DataPoint
         import dk.aau.modelardb.core.utility.ValueFunction
@@ -155,7 +184,8 @@ object CodeGenerator {
   }
 
   def getValueFunction(transformation: String): ValueFunction = {
-    val code = s"""
+    val code =
+      s"""
     import dk.aau.modelardb.core.utility.ValueFunction
     import scala.math._
     new ValueFunction() {
@@ -165,29 +195,4 @@ object CodeGenerator {
     }"""
     compileCode(code).asInstanceOf[ValueFunction]
   }
-
-  /** Private Methods **/
-  private def compileCode(code: String): Any = {
-    //Imports the packages required to construct the toolbox
-    import scala.reflect.runtime.currentMirror
-    import scala.tools.reflect.ToolBox
-    val toolBox = currentMirror.mkToolBox()
-
-    //Parses and compiles the code before constructing an object
-    val ast = toolBox.parse(code)
-    val compiled = toolBox.compile(ast)
-    compiled()
-  }
-
-  /** Instance Variables **/
-  private val sparkDataPointProjectionFragments = Array("dp.tid", "new Timestamp(dp.timestamp)",
-    "btc.value(dp.tid).transform(dp.value, sc(dp.tid))")
-  private val h2ValueConstructor = Map(
-    TypeInfo.TYPE_INT.getValueType -> "ValueInt.get(%s.asInstanceOf[Int])",
-    TypeInfo.TYPE_LONG.getValueType -> "ValueLong.get(%s.asInstanceOf[Long])",
-    TypeInfo.TYPE_FLOAT.getValueType -> "ValueFloat.get(%s.asInstanceOf[Float])",
-    TypeInfo.TYPE_DOUBLE.getValueType -> "ValueDouble.get(%s.asInstanceOf[Double])",
-    TypeInfo.TYPE_TIMESTAMP.getValueType -> "ValueTimestamp.fromMillis(%s, 0)",
-    TypeInfo.TYPE_STRING.getValueType -> "ValueString.get(%s.asInstanceOf[String])",
-    TypeInfo.TYPE_BYTES.getValueType -> "ValueBytes.get(%s.asInstanceOf[Array[Byte]])")
 }

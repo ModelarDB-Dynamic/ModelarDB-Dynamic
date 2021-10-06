@@ -25,7 +25,18 @@ import java.util.stream.Stream;
 
 public abstract class Segment {
 
-    /** Constructors **/
+    /**
+     * Instance Variables
+     **/
+    public final int tid;
+    public final int samplingInterval;
+    private final int[] offsets;
+    private long startTime;
+    private long endTime;
+
+    /**
+     * Constructors
+     **/
     public Segment(int tid, long startTime, long endTime, int samplingInterval, int[] offsets) {
         this.tid = tid;
         this.startTime = startTime;
@@ -42,7 +53,33 @@ public abstract class Segment {
         this.offsets = Static.bytesToInts(offsets);
     }
 
-    /** Public Methods **/
+    public static long start(long newStartTime, long startTime, long endTime, int samplingInterval, int[] offsets) {
+        //The new start time is before the current start time, so no changes are performed
+        if (newStartTime <= startTime || endTime < newStartTime) {
+            return startTime;
+        }
+
+        //The new start time is rounded up to match the sampling interval
+        long diff = (newStartTime - startTime) % samplingInterval;
+        newStartTime = newStartTime + (samplingInterval - diff) - samplingInterval;
+        offsets[2] = offsets[2] + (int) ((newStartTime - startTime) / samplingInterval);
+        return newStartTime;
+    }
+
+    public static long end(long newEndTime, long startTime, long endTime, int samplingInterval) {
+        //The new end time is later than the current end time, so no changes are performed
+        if (newEndTime < startTime || endTime <= newEndTime) {
+            return endTime;
+        }
+
+        //The new end time is rounded down to match the sampling interval
+        long diff = (endTime - newEndTime) % samplingInterval;
+        return newEndTime - (samplingInterval - diff) + samplingInterval;
+    }
+
+    /**
+     * Public Methods
+     **/
     public long getStartTime() {
         return this.startTime;
     }
@@ -68,30 +105,6 @@ public abstract class Segment {
             currentLength = this.offsets[2] + currentLength;
         }
         return currentLength;
-    }
-
-    public static long start(long newStartTime, long startTime, long endTime, int samplingInterval, int[] offsets) {
-        //The new start time is before the current start time, so no changes are performed
-        if (newStartTime <= startTime || endTime < newStartTime) {
-            return startTime;
-        }
-
-        //The new start time is rounded up to match the sampling interval
-        long diff = (newStartTime - startTime) % samplingInterval;
-        newStartTime = newStartTime + (samplingInterval - diff) - samplingInterval;
-        offsets[2] = offsets[2] + (int) ((newStartTime - startTime) / samplingInterval);
-        return newStartTime;
-    }
-
-    public static long end(long newEndTime, long startTime, long endTime, int samplingInterval) {
-        //The new end time is later than the current end time, so no changes are performed
-        if (newEndTime < startTime || endTime <= newEndTime) {
-            return endTime;
-        }
-
-        //The new end time is rounded down to match the sampling interval
-        long diff = (endTime - newEndTime) % samplingInterval;
-        return newEndTime - (samplingInterval - diff) + samplingInterval;
     }
 
     public Stream<DataPoint> grid() {
@@ -154,7 +167,9 @@ public abstract class Segment {
         return result;
     }
 
-    /** Protected Methods **/
+    /**
+     * Protected Methods
+     **/
     protected abstract float get(long timestamp, int index);
 
     protected int getGroupOffset() {
@@ -168,11 +183,4 @@ public abstract class Segment {
     protected int getTemporalOffset() {
         return this.offsets[2];
     }
-
-    /** Instance Variables **/
-    public final int tid;
-    public final int samplingInterval;
-    private long startTime;
-    private long endTime;
-    private final int[] offsets;
 }

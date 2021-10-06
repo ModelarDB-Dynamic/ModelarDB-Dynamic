@@ -25,9 +25,12 @@ import scala.io.StdIn.readLine
 
 object Interface {
 
-  /** Public Methods **/
+  /** Instance Variables * */
+  var sql: String => Array[String] = _
+
+  /** Public Methods * */
   def start(configuration: Configuration, sql: String => Array[String]): Unit = {
-    if ( ! configuration.contains("modelardb.interface")) {
+    if (!configuration.contains("modelardb.interface")) {
       return
     }
 
@@ -41,7 +44,7 @@ object Interface {
     }
   }
 
-  /** Private Methods **/
+  /** Private Methods * */
   private def socket(executor: Executor): Unit = {
     //Setup
     val serverSocket = new java.net.ServerSocket(9999)
@@ -60,7 +63,7 @@ object Interface {
           var stop = true
           while (stop) {
             val query = in.readLine().trim()
-            if ( ! query.startsWith("--") && query.contains("SELECT")) {
+            if (!query.startsWith("--") && query.contains("SELECT")) {
               execute(query, out.write)
               out.flush()
             } else if (query.nonEmpty) {
@@ -76,7 +79,7 @@ object Interface {
           }
         } catch {
           case _: NullPointerException =>
-            //Thrown if the client closes in while ModelarDB waits for input
+          //Thrown if the client closes in while ModelarDB waits for input
         }
       })
     }
@@ -127,24 +130,7 @@ object Interface {
     do {
       print(prompt)
       execute(readLine, print)
-    } while(true)
-  }
-
-  private def file(path: String): Unit = {
-    //This method is only called if the file exist
-    val st = System.currentTimeMillis()
-    Static.info("ModelarDB: executing queries from " + path)
-    val source = Source.fromFile(path)
-    for (line: String <- source.getLines()) {
-      val q = line.trim()
-      if ( ! (q.isEmpty || q.startsWith("--"))) {
-        execute(q.stripMargin, print)
-      }
-    }
-    source.close()
-    val et = System.currentTimeMillis() - st
-    val jst = java.time.Duration.ofMillis(et)
-    Static.info("ModelarDB: finished all queries after " + jst)
+    } while (true)
   }
 
   private def execute(query: String, out: String => Unit): Unit = {
@@ -180,6 +166,20 @@ object Interface {
     }
   }
 
-  /** Instance Variables **/
-  var sql: String => Array[String] = _
+  private def file(path: String): Unit = {
+    //This method is only called if the file exist
+    val st = System.currentTimeMillis()
+    Static.info("ModelarDB: executing queries from " + path)
+    val source = Source.fromFile(path)
+    for (line: String <- source.getLines()) {
+      val q = line.trim()
+      if (!(q.isEmpty || q.startsWith("--"))) {
+        execute(q.stripMargin, print)
+      }
+    }
+    source.close()
+    val et = System.currentTimeMillis() - st
+    val jst = java.time.Duration.ofMillis(et)
+    Static.info("ModelarDB: finished all queries after " + jst)
+  }
 }

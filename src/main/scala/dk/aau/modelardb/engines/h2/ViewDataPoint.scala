@@ -94,7 +94,7 @@ class ViewDataPointIndex(table: Table) extends Index {
 
   override def find(filter: TableFilter, first: SearchRow, last: SearchRow): Cursor = new ViewDataPointCursor(filter)
 
-  override def getCost(session: Session, masks: Array[Int], filters: Array[TableFilter], filter: Int,  sortOrder: SortOrder, allColumnsSet: AllColumnsForPlan): Double = 1.0  //HACK: unclear what we have to return...
+  override def getCost(session: Session, masks: Array[Int], filters: Array[TableFilter], filter: Int, sortOrder: SortOrder, allColumnsSet: AllColumnsForPlan): Double = 1.0 //HACK: unclear what we have to return...
 
   override def remove(session: Session): Unit = ???
 
@@ -174,20 +174,20 @@ class ViewDataPointIndex(table: Table) extends Index {
 
   override def setTemporary(temporary: Boolean): Unit = ???
 
-  override def setComment(comment: String): Unit = ???
-
   override def getComment: String = ???
+
+  override def setComment(comment: String): Unit = ???
 }
 
 class ViewDataPointCursor(filter: TableFilter) extends Cursor {
 
-  /** Instance Variables **/
+  /** Instance Variables * */
   private val dataPoints: Iterator[DataPoint] = H2.h2.getSegmentGroups(filter)
     .flatMap(_.toSegments(H2.h2storage)).flatMap(segment => segment.grid().iterator().asScala)
   private val values = H2Projector.dataPointProjection(dataPoints, filter)
   private val currentViewRow = new ViewRow()
 
-  /** Public Methods **/
+  /** Public Methods * */
   override def get(): Row = ???
 
   override def getSearchRow: SearchRow = {

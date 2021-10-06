@@ -14,21 +14,44 @@
  */
 package dk.aau.modelardb.storage
 
+import dk.aau.modelardb.core.models.{ModelType, ModelTypeFactory}
+import dk.aau.modelardb.core.utility.{Pair, Static, ValueFunction}
 import dk.aau.modelardb.core.{Configuration, Dimensions, TimeSeriesGroup}
-import dk.aau.modelardb.core.models.ModelType
-import dk.aau.modelardb.core.models.ModelTypeFactory
-import dk.aau.modelardb.core.utility.Pair
-import dk.aau.modelardb.core.utility.Static
-import dk.aau.modelardb.core.utility.ValueFunction
 
 import scala.collection.mutable
 import scala.math.Ordering.Implicits.infixOrderingOps
 
 abstract class Storage {
+  /** Instance Variables * */
+  var dimensions: Dimensions = _
+  //Write Cache: Maps the name of a model type to the corresponding mtid used by the storage layer
+  var mtidCache: mutable.HashMap[String, Integer] = _
+  //Read Cache: Maps the mtid of a model type to an instance of the model type so segments can be constructed from it
+  var modelTypeCache: Array[ModelType] = _
+  //Read Cache: Maps the tid of a time series to the gid of the group that the time series is a member of
+  var timeSeriesGroupCache: Array[Int] = _
+  //Read Cache: Maps the tid of a time series to the sampling interval specified for that time series
+  var timeSeriesSamplingIntervalCache: Array[Int] = _
+  //Read Cache: Maps the tid of a time series to the scaling factor specified for for that time series
+  var timeSeriesScalingFactorCache: Array[Float] = _
+  //Read Cache: Maps the tid of a time series to the transformation specified for that time series
+  var timeSeriesTransformationCache: Array[ValueFunction] = _
+  //Read Cache: Maps the tid of a time series to the members specified for that time series
+  var timeSeriesMembersCache: Array[Array[AnyRef]] = _
+  //Read Cache: Maps the value of a column for a dimension to the tids with that member
+  var memberTimeSeriesCache: mutable.HashMap[String, mutable.HashMap[AnyRef, Array[Integer]]] = _
+  //Read Cache: Maps the gid of a group to the groups sampling interval and the tids that are part of that group
+  var groupMetadataCache: Array[Array[Int]] = _
+  //Read Cache: Maps the gid of a group to pairs of tids for time series with derived time series
+  var groupDerivedCache: mutable.HashMap[Integer, Array[Int]] = _
+
   /** Public Methods * */
   def open(dimensions: Dimensions): Unit
+
   def getMaxTid: Int
+
   def getMaxGid: Int
+
   def close(): Unit
 
   def storeMetadataAndInitializeCaches(configuration: Configuration, timeSeriesGroups: Array[TimeSeriesGroup]): Unit = {
@@ -49,7 +72,7 @@ abstract class Storage {
     var mtid: Integer = modelTypesInStorage.values.reduceOption(_ max _).getOrElse(0)
 
     for (model <- modelsWithFallback) {
-      if ( ! modelTypesInStorage.contains(model)) {
+      if (!modelTypesInStorage.contains(model)) {
         mtid += 1
         modelTypesInStorage.put(model, mtid)
         modelTypesToBeInserted.put(model, mtid)
@@ -86,7 +109,7 @@ abstract class Storage {
       this.timeSeriesGroupCache(tid) = gid
       this.timeSeriesSamplingIntervalCache(tid) = metadata(1).asInstanceOf[Int]
       this.timeSeriesScalingFactorCache(tid) = metadata(0).asInstanceOf[Float]
-      if ( ! gsc.contains(gid)) {
+      if (!gsc.contains(gid)) {
         //A group consist of time series with equivalent SI
         val metadataArray = mutable.ArrayBuffer[Integer]()
         metadataArray.append(metadata(1).asInstanceOf[Int])
@@ -109,7 +132,9 @@ abstract class Storage {
         val sourcesAndTransformations = derivedTimeSeries.get(tid)
         val gdcb: mutable.ArrayBuffer[Integer] = groupDerivedCacheBuilder.getOrElse(gid, mutable.ArrayBuffer[Integer]())
         for (sat <- sourcesAndTransformations) {
-          val dtid = { nextTid += 1; nextTid - 1 }  //nextTid++
+          val dtid = {
+            nextTid += 1; nextTid - 1
+          } //nextTid++
           this.timeSeriesGroupCache(dtid) = gid
           this.timeSeriesSamplingIntervalCache(dtid) = metadata(1).asInstanceOf[Int]
           this.timeSeriesScalingFactorCache(dtid) = 1.0F //HACK: scaling is assumed to be part of the transformation
@@ -162,8 +187,11 @@ abstract class Storage {
 
   /** Protected Methods * */
   protected def storeTimeSeries(timeSeriesGroups: Array[TimeSeriesGroup]): Unit
+
   protected def getTimeSeries: mutable.HashMap[Integer, Array[AnyRef]]
+
   protected def storeModelTypes(modelsToInsert: mutable.HashMap[String, Integer]): Unit
+
   protected def getModelTypes: mutable.HashMap[String, Integer]
 
   protected def getDimensionsSQL(dimensions: Dimensions, textType: String): String = {
@@ -190,41 +218,4 @@ abstract class Storage {
     else sb.append(types(withPunctuation).toString)
     sb.toString
   }
-
-  /** Instance Variables * */
-  var dimensions: Dimensions = _
-
-
-  //Write Cache: Maps the name of a model type to the corresponding mtid used by the storage layer
-  var mtidCache: mutable.HashMap[String, Integer] = _
-
-  //Read Cache: Maps the mtid of a model type to an instance of the model type so segments can be constructed from it
-  var modelTypeCache: Array[ModelType] = _
-
-
-  //Read Cache: Maps the tid of a time series to the gid of the group that the time series is a member of
-  var timeSeriesGroupCache: Array[Int] = _
-
-  //Read Cache: Maps the tid of a time series to the sampling interval specified for that time series
-  var timeSeriesSamplingIntervalCache: Array[Int] = _
-
-  //Read Cache: Maps the tid of a time series to the scaling factor specified for for that time series
-  var timeSeriesScalingFactorCache: Array[Float] = _
-
-  //Read Cache: Maps the tid of a time series to the transformation specified for that time series
-  var timeSeriesTransformationCache: Array[ValueFunction] = _
-
-  //Read Cache: Maps the tid of a time series to the members specified for that time series
-  var timeSeriesMembersCache: Array[Array[AnyRef]] = _
-
-
-  //Read Cache: Maps the value of a column for a dimension to the tids with that member
-  var memberTimeSeriesCache: mutable.HashMap[String, mutable.HashMap[AnyRef, Array[Integer]]] = _
-
-
-  //Read Cache: Maps the gid of a group to the groups sampling interval and the tids that are part of that group
-  var groupMetadataCache: Array[Array[Int]] = _
-
-  //Read Cache: Maps the gid of a group to pairs of tids for time series with derived time series
-  var groupDerivedCache: mutable.HashMap[Integer, Array[Int]] = _
 }

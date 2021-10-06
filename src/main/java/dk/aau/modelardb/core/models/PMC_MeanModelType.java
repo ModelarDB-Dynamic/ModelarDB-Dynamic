@@ -22,7 +22,18 @@ import java.util.List;
 
 class PMC_MeanModelType extends ModelType {
 
-    /** Constructors **/
+    /**
+     * Instance Variables
+     **/
+    private int currentSize;
+    private float min;
+    private float max;
+    private double sum;
+    private boolean withinErrorBound;
+
+    /**
+     * Constructors
+     **/
     PMC_MeanModelType(int mtid, float errorBound, int lengthBound) {
         super(mtid, errorBound, lengthBound);
         if (errorBound < 0.0 || 100.0 < errorBound) {
@@ -30,10 +41,12 @@ class PMC_MeanModelType extends ModelType {
         }
     }
 
-    /** Public Methods **/
+    /**
+     * Public Methods
+     **/
     @Override
     public boolean append(DataPoint[] currentDataPoints) {
-        if ( ! this.withinErrorBound) {
+        if (!this.withinErrorBound) {
             return false;
         }
 
@@ -70,7 +83,7 @@ class PMC_MeanModelType extends ModelType {
         this.withinErrorBound = true;
 
         for (DataPoint[] dataPoints : currentSegment) {
-            if ( ! append(dataPoints)) {
+            if (!append(dataPoints)) {
                 return;
             }
         }
@@ -100,25 +113,27 @@ class PMC_MeanModelType extends ModelType {
             return 4.0F;
         }
     }
-
-    /** Instance Variables **/
-    private int currentSize;
-    private float min;
-    private float max;
-    private double sum;
-    private boolean withinErrorBound;
 }
 
 
 class PMC_MeanSegment extends Segment {
 
-    /** Constructors **/
+    /**
+     * Instance Variables
+     **/
+    private final float value;
+
+    /**
+     * Constructors
+     **/
     PMC_MeanSegment(int tid, long startTime, long endTime, int samplingInterval, byte[] model, byte[] offsets) {
         super(tid, startTime, endTime, samplingInterval, offsets);
         this.value = ByteBuffer.wrap(model).getFloat();
     }
 
-    /** Public Methods **/
+    /**
+     * Public Methods
+     **/
     @Override
     public float min() {
         return this.value;
@@ -134,11 +149,10 @@ class PMC_MeanSegment extends Segment {
         return this.length() * this.value;
     }
 
-    /** Protected Methods **/
+    /**
+     * Protected Methods
+     **/
     protected float get(long timestamp, int index) {
         return this.value;
     }
-
-    /** Instance Variables **/
-    private final float value;
 }

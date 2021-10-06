@@ -40,16 +40,16 @@ import java.util
 import scala.collection.mutable
 
 class ParquetStorage(rootFolder: String) extends FileStorage(rootFolder) {
-  /** Instance Variables **/
+  /** Instance Variables * */
   private val segmentGroupSchema = new MessageType("segment",
-    new PrimitiveType(Type.Repetition.REQUIRED, PrimitiveType.PrimitiveTypeName.INT32, "gid" ),
+    new PrimitiveType(Type.Repetition.REQUIRED, PrimitiveType.PrimitiveTypeName.INT32, "gid"),
     new PrimitiveType(Type.Repetition.REQUIRED, PrimitiveType.PrimitiveTypeName.INT64, "start_time"),
     new PrimitiveType(Type.Repetition.REQUIRED, PrimitiveType.PrimitiveTypeName.INT64, "end_time"),
-    new PrimitiveType(Type.Repetition.REQUIRED, PrimitiveType.PrimitiveTypeName.INT32, "mtid" ),
+    new PrimitiveType(Type.Repetition.REQUIRED, PrimitiveType.PrimitiveTypeName.INT32, "mtid"),
     new PrimitiveType(Type.Repetition.REQUIRED, PrimitiveType.PrimitiveTypeName.BINARY, "model"),
     new PrimitiveType(Type.Repetition.REQUIRED, PrimitiveType.PrimitiveTypeName.BINARY, "gaps"))
 
-  /** Protected Methods **/
+  /** Protected Methods * */
   //FileStorage
   override protected def getFileSuffix: String = ".parquet"
 
@@ -78,6 +78,11 @@ class ParquetStorage(rootFolder: String) extends FileStorage(rootFolder) {
     }
     reader.close()
     id
+  }
+
+  /** Private Methods * */
+  private def getReader(parquetFilePath: Path) = {
+    ParquetFileReader.open(HadoopInputFile.fromPath(parquetFilePath, new Configuration()))
   }
 
   override protected def mergeFiles(outputFilePath: Path, inputFilesPaths: mutable.ArrayBuffer[Path]): Unit = {
@@ -110,7 +115,7 @@ class ParquetStorage(rootFolder: String) extends FileStorage(rootFolder) {
     val columns = new util.ArrayList[Type]()
     columns.add(new PrimitiveType(Type.Repetition.REQUIRED, PrimitiveType.PrimitiveTypeName.INT32, "tid"))
     columns.add(new PrimitiveType(Type.Repetition.REQUIRED, PrimitiveType.PrimitiveTypeName.FLOAT, "scaling_factor"))
-    columns.add(new PrimitiveType(Type.Repetition.REQUIRED, PrimitiveType.PrimitiveTypeName.INT32, "sampling_interval"))
+    columns.add(new PrimitiveType(Type.Repetition.REQUIRED, PrimitiveType.PrimitiveTypeName.INT32, "current_sampling_interval"))
     columns.add(new PrimitiveType(Type.Repetition.REQUIRED, PrimitiveType.PrimitiveTypeName.INT32, "gid"))
 
     val dimensionTypes = dimensions.getTypes
@@ -185,7 +190,7 @@ class ParquetStorage(rootFolder: String) extends FileStorage(rootFolder) {
     timeSeriesInStorage
   }
 
-  override protected def writeModelTypeFile(modelsToInsert: mutable.HashMap[String,Integer],
+  override protected def writeModelTypeFile(modelsToInsert: mutable.HashMap[String, Integer],
                                             modelTypeFilePath: Path): Unit = {
     val schema = new MessageType("model_type",
       new PrimitiveType(Type.Repetition.REQUIRED, PrimitiveType.PrimitiveTypeName.INT32, "mid"),
@@ -199,6 +204,11 @@ class ParquetStorage(rootFolder: String) extends FileStorage(rootFolder) {
       writer.write(group)
     }
     writer.close()
+  }
+
+  private def getWriter(parquetFilePath: Path, schema: MessageType): ParquetWriter[Group] = {
+    new ParquetWriterBuilder(parquetFilePath)
+      .withType(schema).withCompressionCodec(CompressionCodecName.SNAPPY).build()
   }
 
   override protected def readModelTypeFile(modelTypeFilePath: Path): mutable.HashMap[String, Integer] = {
@@ -241,7 +251,7 @@ class ParquetStorage(rootFolder: String) extends FileStorage(rootFolder) {
                                                 segmentGroupFiles: mutable.ArrayBuffer[Path]): Iterator[SegmentGroup] = {
     Static.warn("ModelarDB: projection and predicate push-down is not yet implemented")
     new Iterator[SegmentGroup] {
-      /** Instance Variables **/
+      /** Instance Variables * */
       private val segmentFiles = segmentGroupFiles.iterator
       private var segmentFile: ParquetFileReader = _
       private var columnIO: MessageColumnIO = _
@@ -251,7 +261,7 @@ class ParquetStorage(rootFolder: String) extends FileStorage(rootFolder) {
       private var rowIndex: Long = _
       nextFile()
 
-      /** Public Methods **/
+      /** Public Methods * */
       override def hasNext: Boolean = {
         //The current batch contain additional rows
         if (this.rowIndex < this.rowCount) {
@@ -290,7 +300,7 @@ class ParquetStorage(rootFolder: String) extends FileStorage(rootFolder) {
         new SegmentGroup(gid, startTime, endTime, mtid, model, gaps)
       }
 
-      /** Private Methods **/
+      /** Private Methods * */
       private def nextFile(): Unit = {
         this.segmentFile = getReader(segmentFiles.next())
         this.columnIO = new ColumnIOFactory().getColumnIO(segmentGroupSchema)
@@ -316,28 +326,20 @@ class ParquetStorage(rootFolder: String) extends FileStorage(rootFolder) {
     }
     Spark.applyFiltersToDataFrame(df, filters)
   }
-
-  /** Private Methods **/
-  private def getReader(parquetFilePath: Path) = {
-    ParquetFileReader.open(HadoopInputFile.fromPath(parquetFilePath, new Configuration()))
-  }
-
-  private def getWriter(parquetFilePath: Path, schema: MessageType): ParquetWriter[Group] = {
-    new ParquetWriterBuilder(parquetFilePath)
-      .withType(schema).withCompressionCodec(CompressionCodecName.SNAPPY).build()
-  }
 }
 
 private class ParquetWriterBuilder(parquetFilePath: Path) extends ParquetWriter.Builder[Group, ParquetWriterBuilder](parquetFilePath) {
   /** Instance Variables * */
   private var messageType: MessageType = _
 
-  /** Public Methods **/
+  /** Public Methods * */
   def withType(messageType: MessageType): ParquetWriterBuilder = {
     this.messageType = messageType
     this
   }
+
   override protected def self: ParquetWriterBuilder = this
+
   override protected def getWriteSupport(conf: Configuration): WriteSupport[Group] = {
     GroupWriteSupport.setSchema(this.messageType, conf)
     new GroupWriteSupport()

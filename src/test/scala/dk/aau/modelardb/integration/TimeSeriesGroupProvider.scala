@@ -25,19 +25,19 @@ import org.scalatest.Assertions
 import java.io.File
 import scala.collection.mutable
 
-trait TimeSeriesGroupProvider  extends Assertions {
-  /** Instance Variables **/
+trait TimeSeriesGroupProvider extends Assertions {
+  /** Instance Variables * */
   private val orcTestDataKey: String = "MODELARDB_TEST_DATA_ORC"
   private val isOrcTestDataFolderSet = sys.env.contains(orcTestDataKey)
   assume(isOrcTestDataFolderSet, ", so skipped test as MODELARDB_TEST_DATA_ORC is not set")
   var samplingInterval: Int = -1
 
-  /** Public Methods  **/
+  /** Public Methods  * */
   def newTimeSeriesGroups: Array[TimeSeriesGroup] = {
     newTimeSeriesGroups(sys.env(orcTestDataKey))
   }
 
-  /** Private Methods **/
+  /** Private Methods * */
   private def newTimeSeriesGroups(folderPath: String): Array[TimeSeriesGroup] = {
     val testDataFolder = new File(folderPath)
     val testDataFiles = testDataFolder.listFiles().filter(f => f.isFile && f.getName.endsWith(".orc"))
@@ -72,7 +72,7 @@ trait TimeSeriesGroupProvider  extends Assertions {
     rowBatch.cols(timestampColumnIndex).asInstanceOf[TimestampColumnVector]
       .time.sliding(size = 2, step = 1).foreach(pair => {
       val elapsedTime = pair(1) - pair(0)
-      counter.put(elapsedTime , counter.getOrElse(elapsedTime, 0) + 1)
+      counter.put(elapsedTime, counter.getOrElse(elapsedTime, 0) + 1)
     })
     this.samplingInterval = counter.maxBy(_._2)._1.toInt
     recordReader.close()

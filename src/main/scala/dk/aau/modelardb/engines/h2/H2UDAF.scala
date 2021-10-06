@@ -26,7 +26,11 @@ import scala.collection.mutable
 //Count
 class CountS extends AggregateFunction {
 
-  /** Public Methods **/
+  /** Instance Variables * */
+  private var count: Long = 0
+  private var tssic: Array[Int] = _
+
+  /** Public Methods * */
   override def init(conn: Connection): Unit = {
     this.tssic = H2.h2storage.timeSeriesSamplingIntervalCache
   }
@@ -46,16 +50,18 @@ class CountS extends AggregateFunction {
   override def getResult: AnyRef = {
     this.count.asInstanceOf[AnyRef]
   }
-
-  /** Instance Variables **/
-  private var count: Long = 0
-  private var tssic: Array[Int] = _
 }
 
 //Min
 class MinS extends AggregateFunction {
 
-  /** Public Methods **/
+  /** Instance Variables * */
+  private var min: Float = Float.PositiveInfinity
+  private var mtc: Array[ModelType] = _
+  private var tssfc: Array[Float] = _
+  private var tssic: Array[Int] = _
+
+  /** Public Methods * */
   override def init(conn: Connection): Unit = {
     this.mtc = H2.h2storage.modelTypeCache
     this.tssfc = H2.h2storage.timeSeriesScalingFactorCache
@@ -71,14 +77,6 @@ class MinS extends AggregateFunction {
     this.min = Math.min(this.min, segment.min() / this.tssfc(segment.tid))
   }
 
-  override def getResult: AnyRef = {
-    if (this.min == Float.PositiveInfinity) {
-      null
-    } else {
-      this.min.asInstanceOf[AnyRef]
-    }
-  }
-
   def rowToSegment(row: Any): Segment = {
     val values = row.asInstanceOf[Array[Object]]
     this.mtc(values(3).asInstanceOf[Int]).get(
@@ -86,17 +84,25 @@ class MinS extends AggregateFunction {
       this.tssic(values(0).asInstanceOf[Int]), values(4).asInstanceOf[Array[Byte]], values(5).asInstanceOf[Array[Byte]])
   }
 
-  /** Instance Variables **/
-  private var min: Float = Float.PositiveInfinity
-  private var mtc: Array[ModelType] = _
-  private var tssfc: Array[Float] = _
-  private var tssic: Array[Int] = _
+  override def getResult: AnyRef = {
+    if (this.min == Float.PositiveInfinity) {
+      null
+    } else {
+      this.min.asInstanceOf[AnyRef]
+    }
+  }
 }
 
 //Max
 class MaxS extends AggregateFunction {
 
-  /** Public Methods **/
+  /** Instance Variables * */
+  private var max: Float = Float.NegativeInfinity
+  private var mtc: Array[ModelType] = _
+  private var tssfc: Array[Float] = _
+  private var tssic: Array[Int] = _
+
+  /** Public Methods * */
   override def init(conn: Connection): Unit = {
     this.mtc = H2.h2storage.modelTypeCache
     this.tssfc = H2.h2storage.timeSeriesScalingFactorCache
@@ -112,14 +118,6 @@ class MaxS extends AggregateFunction {
     this.max = Math.max(this.max, segment.max() / this.tssfc(segment.tid))
   }
 
-  override def getResult: AnyRef = {
-    if (this.max == Float.NegativeInfinity) {
-      null
-    } else {
-      this.max.asInstanceOf[AnyRef]
-    }
-  }
-
   def rowToSegment(row: Any): Segment = {
     val values = row.asInstanceOf[Array[Object]]
     this.mtc(values(3).asInstanceOf[Int]).get(
@@ -127,17 +125,26 @@ class MaxS extends AggregateFunction {
       this.tssic(values(0).asInstanceOf[Int]), values(4).asInstanceOf[Array[Byte]], values(5).asInstanceOf[Array[Byte]])
   }
 
-  /** Instance Variables **/
-  private var max: Float = Float.NegativeInfinity
-  private var mtc: Array[ModelType] = _
-  private var tssfc: Array[Float] = _
-  private var tssic: Array[Int] = _
+  override def getResult: AnyRef = {
+    if (this.max == Float.NegativeInfinity) {
+      null
+    } else {
+      this.max.asInstanceOf[AnyRef]
+    }
+  }
 }
 
 //Sum
 class SumS extends AggregateFunction {
 
-  /** Public Methods **/
+  /** Instance Variables * */
+  private var sum: Double = 0.0
+  private var added = false
+  private var mtc: Array[ModelType] = _
+  private var tssfc: Array[Float] = _
+  private var tssic: Array[Int] = _
+
+  /** Public Methods * */
   override def init(conn: Connection): Unit = {
     this.mtc = H2.h2storage.modelTypeCache
     this.tssfc = H2.h2storage.timeSeriesScalingFactorCache
@@ -154,14 +161,6 @@ class SumS extends AggregateFunction {
     this.added = true
   }
 
-  override def getResult: AnyRef = {
-    if (this.added) {
-      this.sum.toFloat.asInstanceOf[AnyRef]
-    } else {
-      null
-    }
-  }
-
   def rowToSegment(row: Any): Segment = {
     val values = row.asInstanceOf[Array[Object]]
     this.mtc(values(3).asInstanceOf[Int]).get(
@@ -169,18 +168,26 @@ class SumS extends AggregateFunction {
       this.tssic(values(0).asInstanceOf[Int]), values(4).asInstanceOf[Array[Byte]], values(5).asInstanceOf[Array[Byte]])
   }
 
-  /** Instance Variables **/
-  private var sum: Double = 0.0
-  private var added = false
-  private var mtc: Array[ModelType] = _
-  private var tssfc: Array[Float] = _
-  private var tssic: Array[Int] = _
+  override def getResult: AnyRef = {
+    if (this.added) {
+      this.sum.toFloat.asInstanceOf[AnyRef]
+    } else {
+      null
+    }
+  }
 }
 
 //Avg
 class AvgS extends AggregateFunction {
 
-  /** Public Methods **/
+  /** Instance Variables * */
+  private var sum: Double = 0.0
+  private var count: Long = 0
+  private var mtc: Array[ModelType] = _
+  private var tssfc: Array[Float] = _
+  private var tssic: Array[Int] = _
+
+  /** Public Methods * */
   override def init(conn: Connection): Unit = {
     this.mtc = H2.h2storage.modelTypeCache
     this.tssfc = H2.h2storage.timeSeriesScalingFactorCache
@@ -197,14 +204,6 @@ class AvgS extends AggregateFunction {
     this.count += segment.length()
   }
 
-  override def getResult: AnyRef = {
-    if (this.count == 0) {
-      null
-    } else {
-      (this.sum / this.count).toFloat.asInstanceOf[AnyRef]
-    }
-  }
-
   def rowToSegment(row: Any): Segment = {
     val values = row.asInstanceOf[Array[Object]]
     this.mtc(values(3).asInstanceOf[Int]).get(
@@ -212,18 +211,29 @@ class AvgS extends AggregateFunction {
       this.tssic(values(0).asInstanceOf[Int]), values(4).asInstanceOf[Array[Byte]], values(5).asInstanceOf[Array[Byte]])
   }
 
-  /** Instance Variables **/
-  private var sum: Double = 0.0
-  private var count: Long = 0
-  private var mtc: Array[ModelType] = _
-  private var tssfc: Array[Float] = _
-  private var tssic: Array[Int] = _
+  override def getResult: AnyRef = {
+    if (this.count == 0) {
+      null
+    } else {
+      (this.sum / this.count).toFloat.asInstanceOf[AnyRef]
+    }
+  }
 }
 
 //UDAFs for Time-based Aggregates
 abstract class TimeAggregate(level: Int, bufferSize: Int, initialValue: Double) extends AggregateFunction {
 
-  /** Public Methods **/
+  protected val current: Array[Double] = Array.fill(bufferSize) {
+    initialValue
+  }
+  protected val aggregate: CubeFunction
+  /** Instance Variables * */
+  private val calendar = Calendar.getInstance()
+  protected var tssfc: Array[Float] = _
+  protected var tssic: Array[Int] = _
+  private var mtc: Array[ModelType] = _
+
+  /** Public Methods * */
   override def init(conn: Connection): Unit = {
     this.mtc = H2.h2storage.modelTypeCache
     this.tssfc = H2.h2storage.timeSeriesScalingFactorCache
@@ -238,6 +248,13 @@ abstract class TimeAggregate(level: Int, bufferSize: Int, initialValue: Double) 
     rowToSegment(row).cube(this.calendar, level, this.aggregate, this.current)
   }
 
+  def rowToSegment(row: Any): Segment = {
+    val values = row.asInstanceOf[Array[Object]]
+    this.mtc(values(3).asInstanceOf[Int]).get(
+      values(0).asInstanceOf[Int], values(1).asInstanceOf[Timestamp].getTime, values(2).asInstanceOf[Timestamp].getTime,
+      this.tssic(values(0).asInstanceOf[Int]), values(4).asInstanceOf[Array[Byte]], values(5).asInstanceOf[Array[Byte]])
+  }
+
   override def getResult: AnyRef = {
     val result = mutable.HashMap[Int, Double]()
     this.current.zipWithIndex.filter(_._1 != initialValue).foreach(t => {
@@ -250,27 +267,17 @@ abstract class TimeAggregate(level: Int, bufferSize: Int, initialValue: Double) 
       scala.collection.immutable.SortedMap[Int, Double]() ++ result
     }
   }
-
-  def rowToSegment(row: Any): Segment = {
-    val values = row.asInstanceOf[Array[Object]]
-    this.mtc(values(3).asInstanceOf[Int]).get(
-      values(0).asInstanceOf[Int], values(1).asInstanceOf[Timestamp].getTime, values(2).asInstanceOf[Timestamp].getTime,
-      this.tssic(values(0).asInstanceOf[Int]), values(4).asInstanceOf[Array[Byte]], values(5).asInstanceOf[Array[Byte]])
-  }
-
-  /** Instance Variables **/
-  private val calendar = Calendar.getInstance()
-  private var mtc: Array[ModelType] = _
-  protected var tssfc: Array[Float] = _
-  protected var tssic: Array[Int] = _
-  protected val current: Array[Double] = Array.fill(bufferSize){initialValue}
-  protected val aggregate: CubeFunction
 }
 
 //CountTime
 class CountTime(level: Int, bufferSize: Int) extends TimeAggregate(level, bufferSize, 0.0) {
 
-  /** Public Methods **/
+  /** Instance Variables * */
+  override protected val aggregate: CubeFunction = (segment: Segment, _: Int, field: Int, total: Array[Double]) => {
+    total(field) = total(field) + segment.length.toDouble
+  }
+
+  /** Public Methods * */
   override def getResult: AnyRef = {
     val result = mutable.HashMap[Int, Long]()
     this.current.zipWithIndex.filter(_._1 != 0).foreach(t => {
@@ -283,21 +290,24 @@ class CountTime(level: Int, bufferSize: Int) extends TimeAggregate(level, buffer
       scala.collection.immutable.SortedMap[Int, Long]() ++ result
     }
   }
-
-  /** Instance Variables **/
-  override protected val aggregate: CubeFunction = (segment: Segment, _: Int, field: Int, total: Array[Double]) => {
-    total(field) = total(field) + segment.length.toDouble
-  }
 }
+
 //Some useful aggregates cannot be performed as DateUtils3 cannot round some fields
 //A somewhat realistic upper bound of the year 2500 is set for *_YEAR to preserve memory
 class CountYear extends CountTime(2, 2501)
+
 class CountMonth extends CountTime(2, 13)
+
 class CountDayOfMonth extends CountTime(2, 32)
+
 class CountAmPm extends CountTime(2, 3)
+
 class CountHour extends CountTime(2, 25)
+
 class CountHourOfDay extends CountTime(2, 25)
+
 class CountMinute extends CountTime(2, 61)
+
 class CountSecond extends CountTime(2, 61)
 
 //MinTime
@@ -306,13 +316,21 @@ class MinTime(level: Int, bufferSize: Int) extends TimeAggregate(level, bufferSi
     total(field) = Math.min(total(field), segment.min() / this.tssfc(segment.tid))
   }
 }
+
 class MinYear extends MinTime(2, 2501)
+
 class MinMonth extends MinTime(2, 13)
+
 class MinDayOfMonth extends MinTime(2, 32)
+
 class MinAmPm extends MinTime(2, 3)
+
 class MinHour extends MinTime(2, 25)
+
 class MinHourOfDay extends MinTime(2, 25)
+
 class MinMinute extends MinTime(2, 61)
+
 class MinSecond extends MinTime(2, 61)
 
 //MaxTime
@@ -321,13 +339,21 @@ class MaxTime(level: Int, bufferSize: Int) extends TimeAggregate(level, bufferSi
     total(field) = Math.max(total(field), segment.max() / this.tssfc(segment.tid))
   }
 }
+
 class MaxYear extends MaxTime(2, 2501)
+
 class MaxMonth extends MaxTime(2, 13)
+
 class MaxDayOfMonth extends MaxTime(2, 32)
+
 class MaxAmPm extends MaxTime(2, 3)
+
 class MaxHour extends MaxTime(2, 25)
+
 class MaxHourOfDay extends MaxTime(2, 25)
+
 class MaxMinute extends MaxTime(2, 61)
+
 class MaxSecond extends MaxTime(2, 61)
 
 //SumTime
@@ -336,19 +362,35 @@ class SumTime(level: Int, bufferSize: Int) extends TimeAggregate(level, bufferSi
     total(field) = total(field) + (segment.sum() / this.tssfc(segment.tid))
   }
 }
+
 class SumYear extends SumTime(2, 2501)
+
 class SumMonth extends SumTime(2, 13)
+
 class SumDayOfMonth extends SumTime(2, 32)
+
 class SumAmPm extends SumTime(2, 3)
+
 class SumHour extends SumTime(2, 25)
+
 class SumHourOfDay extends SumTime(2, 25)
+
 class SumMinute extends SumTime(2, 61)
+
 class SumSecond extends SumTime(2, 61)
 
 //AvgTime
 class AvgTime(level: Int, bufferSize: Int) extends TimeAggregate(level, 2 * bufferSize, 0.0) {
 
-  /** Public Methods **/
+  /** Instance Variables * */
+  override protected val aggregate: CubeFunction = (segment: Segment, _: Int, field: Int, total: Array[Double]) => {
+    //HACK: as field is continuous all of the counts are stored after the sum
+    val count = bufferSize + field - 1
+    total(field) = total(field) + (segment.sum / this.tssfc(segment.tid))
+    total(count) = total(count) + segment.length
+  }
+
+  /** Public Methods * */
   override def getResult: AnyRef = {
     val sums = this.current.length / 2
     val result = mutable.HashMap[Int, Double]()
@@ -365,28 +407,28 @@ class AvgTime(level: Int, bufferSize: Int) extends TimeAggregate(level, 2 * buff
       scala.collection.immutable.SortedMap[Int, Double]() ++ result
     }
   }
-
-  /** Instance Variables **/
-  override protected val aggregate: CubeFunction = (segment: Segment, _: Int, field: Int, total: Array[Double]) => {
-    //HACK: as field is continuous all of the counts are stored after the sum
-    val count = bufferSize + field - 1
-    total(field) = total(field) + (segment.sum / this.tssfc(segment.tid))
-    total(count) = total(count) + segment.length
-  }
 }
+
 class AvgYear extends AvgTime(2, 2501)
+
 class AvgMonth extends AvgTime(2, 13)
+
 class AvgDayOfMonth extends AvgTime(2, 32)
+
 class AvgAmPm extends AvgTime(2, 3)
+
 class AvgHour extends AvgTime(2, 25)
+
 class AvgHourOfDay extends AvgTime(2, 25)
+
 class AvgMinute extends AvgTime(2, 61)
+
 class AvgSecond extends AvgTime(2, 61)
 
 //Connecting UDFs and UDAFs to H2
 object H2UDAF {
 
-  /** Public Methods **/
+  /** Public Methods * */
   def initialize(stmt: Statement): Unit = {
     stmt.execute(getCreateUDAFSQL("COUNT_S"))
     stmt.execute(getCreateUDAFSQL("MIN_S"))
@@ -460,7 +502,7 @@ object H2UDAF {
   }
 
   def end(tid: Int, startTime: Timestamp, endTime: Timestamp, mtid: Int,
-          model: Array[Byte], gaps: Array[Byte], newEndTime: Timestamp):  Array[Object] = {
+          model: Array[Byte], gaps: Array[Byte], newEndTime: Timestamp): Array[Object] = {
     val samplingInterval = H2.h2storage.timeSeriesSamplingIntervalCache(tid)
     val toTime = Segment.end(newEndTime.getTime, startTime.getTime, endTime.getTime, samplingInterval)
     Array(tid.asInstanceOf[Object], startTime, new Timestamp(toTime),

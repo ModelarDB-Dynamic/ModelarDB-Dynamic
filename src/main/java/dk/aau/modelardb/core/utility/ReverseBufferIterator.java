@@ -21,7 +21,16 @@ import java.util.Iterator;
 
 public class ReverseBufferIterator implements Iterator<DataPoint> {
 
-    /** Constructors **/
+    /**
+     * Instance Variables
+     **/
+    private final int source;
+    private final ArrayList<DataPoint[]> list;
+    private int index;
+
+    /**
+     * Constructors
+     **/
     public ReverseBufferIterator(ArrayList<DataPoint[]> list, int source) {
         this.index = list.size();
         this.list = list;
@@ -38,9 +47,4 @@ public class ReverseBufferIterator implements Iterator<DataPoint> {
         this.index -= 1;
         return this.list.get(this.index)[source];
     }
-
-    /** Instance Variables **/
-    private final int source;
-    private int index;
-    private final ArrayList<DataPoint[]> list;
 }

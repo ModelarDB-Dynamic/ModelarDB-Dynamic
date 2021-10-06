@@ -20,11 +20,11 @@ import java.sql.{SQLException, Timestamp}
 import scala.collection.mutable
 
 object EngineUtilities {
-  /** Instance Variables **/
+  /** Instance Variables * */
   var segmentViewNameToIndex: Map[String, Int] = _
   var dataPointViewNameToIndex: Map[String, Int] = _
 
-  /** Public Methods **/
+  /** Public Methods * */
   //Projection
   def initialize(dimensions: Dimensions): Unit = {
     //Segment View

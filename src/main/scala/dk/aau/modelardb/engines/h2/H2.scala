@@ -29,20 +29,20 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import java.util.function.BooleanSupplier
 import java.util.{Base64, TimeZone}
+import scala.collection.JavaConverters._
 import scala.collection.mutable
-import collection.JavaConverters._
 
 class H2(configuration: Configuration, h2storage: H2Storage) {
-  /** Instance Variables **/
-  private var finalizedSegmentsIndex = 0
   private val finalizedSegments: Array[SegmentGroup] = new Array[SegmentGroup](configuration.getBatchSize)
-  private var workingSets: Array[WorkingSet] = _
-  private var numberOfRunningIngestors: CountDownLatch = _
   private val cacheLock = new ReentrantReadWriteLock()
   private val temporarySegments = mutable.HashMap[Int, Array[SegmentGroup]]()
   private val base64Encoder = Base64.getEncoder
+  /** Instance Variables * */
+  private var finalizedSegmentsIndex = 0
+  private var workingSets: Array[WorkingSet] = _
+  private var numberOfRunningIngestors: CountDownLatch = _
 
-  /** Public Methods **/
+  /** Public Methods * */
   def start(): Unit = {
     //Initialize
     val connection = DriverManager.getConnection(H2.h2ConnectionString)
@@ -66,22 +66,13 @@ class H2(configuration: Configuration, h2storage: H2Storage) {
     waitUntilIngestionIsDone()
   }
 
-  def getSegmentGroups(filter: TableFilter): Iterator[SegmentGroup] = {
-    this.cacheLock.readLock().lock()
-    val cachedTemporarySegments = this.temporarySegments.values.flatten.toArray
-    val cachedFinalizedSegments = this.finalizedSegments.take(this.finalizedSegmentsIndex)
-    val persistedFinalizedSegments = this.h2storage.getSegmentGroups(filter)
-    this.cacheLock.readLock().unlock()
-    cachedTemporarySegments.iterator ++ cachedFinalizedSegments.iterator ++ persistedFinalizedSegments
-  }
-
-  /** Private Methods **/
+  /** Private Methods * */
   //Ingestion
   private def startIngestion(dimensions: Dimensions): Unit = {
     //Initialize Storage
     h2storage.open(dimensions)
     if (configuration.getIngestors == 0) {
-      if ( ! configuration.getDerivedTimeSeries.isEmpty) { //Initializes derived time series
+      if (!configuration.getDerivedTimeSeries.isEmpty) { //Initializes derived time series
         Partitioner.initializeTimeSeries(configuration, h2storage.getMaxTid)
       }
       h2storage.storeMetadataAndInitializeCaches(configuration, Array())
@@ -163,7 +154,7 @@ class H2(configuration: Configuration, h2storage: H2Storage) {
   }
 
   private def updateTemporarySegment(cache: Array[SegmentGroup], inputSegmentGroup: SegmentGroup,
-                                     isTemporary: Boolean): Array[SegmentGroup]= {
+                                     isTemporary: Boolean): Array[SegmentGroup] = {
     //The gaps are extracted from the new finalized or temporary segment
     val inputGaps = Static.bytesToInts(inputSegmentGroup.offsets)
 
@@ -200,7 +191,7 @@ class H2(configuration: Configuration, h2storage: H2Storage) {
       }
     }
 
-    if (isTemporary && ! updatedExistingSegment) {
+    if (isTemporary && !updatedExistingSegment) {
       //A split has occurred and multiple segments now represent what one did before, so the new ones are appended
       cache.filter(_ != null) :+ inputSegmentGroup
     } else {
@@ -267,21 +258,30 @@ class H2(configuration: Configuration, h2storage: H2Storage) {
     }
     output.append(end)
   }
+
+  def getSegmentGroups(filter: TableFilter): Iterator[SegmentGroup] = {
+    this.cacheLock.readLock().lock()
+    val cachedTemporarySegments = this.temporarySegments.values.flatten.toArray
+    val cachedFinalizedSegments = this.finalizedSegments.take(this.finalizedSegmentsIndex)
+    val persistedFinalizedSegments = this.h2storage.getSegmentGroups(filter)
+    this.cacheLock.readLock().unlock()
+    cachedTemporarySegments.iterator ++ cachedFinalizedSegments.iterator ++ persistedFinalizedSegments
+  }
 }
 
 object H2 {
-  /** Instance Variables * */
-  var h2: H2 = _ //Provides access to the h2 and h2storage instances from the views
-  var h2storage: H2Storage =  _
   private val h2ConnectionString: String = "jdbc:h2:mem:modelardb"
   private val compareTypeField = classOf[Comparison].getDeclaredField("compareType")
-  this.compareTypeField.setAccessible(true)
   private val compareTypeMethod = classOf[Comparison].getDeclaredMethod("getCompareOperator", classOf[Int])
-  this.compareTypeMethod.setAccessible(true)
   private val andOrTypeField = classOf[ConditionAndOr].getDeclaredField("andOrType")
+  this.compareTypeField.setAccessible(true)
+  /** Instance Variables * */
+  var h2: H2 = _ //Provides access to the h2 and h2storage instances from the views
+  this.compareTypeMethod.setAccessible(true)
+  var h2storage: H2Storage = _
   this.andOrTypeField.setAccessible(true)
 
-  /** Public Methods **/
+  /** Public Methods * */
   def initialize(h2: H2, h2Storage: H2Storage): Unit = {
     this.h2 = h2
     this.h2storage = h2Storage
@@ -292,6 +292,21 @@ object H2 {
     s"""CREATE TABLE DataPoint(tid INT, timestamp TIMESTAMP, value REAL${H2.getDimensionColumns(dimensions)})
        |ENGINE "dk.aau.modelardb.engines.h2.ViewDataPoint";
        |""".stripMargin
+  }
+
+  /** Private Methods * */
+  private def getDimensionColumns(dimensions: Dimensions): String = {
+    if (dimensions.getColumns.isEmpty) {
+      ""
+    } else {
+      dimensions.getColumns.zip(dimensions.getTypes).map {
+        case (name, Types.INT) => name + " INT"
+        case (name, Types.LONG) => name + " BIGINT"
+        case (name, Types.FLOAT) => name + " REAL"
+        case (name, Types.DOUBLE) => name + " DOUBLE"
+        case (name, Types.TEXT) => name + " VARCHAR"
+      }.mkString(", ", ", ", "")
+    }
   }
 
   //Segment View
@@ -353,21 +368,6 @@ object H2 {
         val right = expressionToSQLPredicates(cao.getSubexpression(1), tsgc, idc, supportsOr)
         if (left == "" || right == "") "" else "(" + left + " OR " + right + ")"
       case p => Static.warn("ModelarDB: unsupported predicate " + p, 120); ""
-    }
-  }
-
-  /** Private Methods **/
-  private def getDimensionColumns(dimensions: Dimensions): String = {
-    if (dimensions.getColumns.isEmpty) {
-      ""
-    } else {
-      dimensions.getColumns.zip(dimensions.getTypes).map {
-        case (name, Types.INT) => name + " INT"
-        case (name, Types.LONG) => name + " BIGINT"
-        case (name, Types.FLOAT) => name + " REAL"
-        case (name, Types.DOUBLE) => name + " DOUBLE"
-        case (name, Types.TEXT) => name + " VARCHAR"
-      }.mkString(", ", ", ", "")
     }
   }
 }

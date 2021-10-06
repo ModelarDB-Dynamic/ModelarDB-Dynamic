@@ -19,20 +19,25 @@ import dk.aau.modelardb.core.DataPoint;
 import java.io.Serializable;
 import java.util.Iterator;
 
-public abstract class TimeSeries implements  Serializable, Iterator<DataPoint> {
-    /** Public Methods **/
+public abstract class TimeSeries implements Serializable, Iterator<DataPoint> {
+    /**
+     * Instance Variables
+     **/
+    public final String source;
+    public final int tid;
+    public final int samplingInterval;
+    public float scalingFactor;
+    /**
+     * Public Methods
+     **/
     public TimeSeries(String source, int tid, int samplingInterval) {
         this.source = source;
         this.tid = tid;
         this.samplingInterval = samplingInterval;
         this.scalingFactor = 1.0F;
     }
-    abstract public void open();
-    abstract public void close();
 
-    /** Instance Variables **/
-    public final String source;
-    public final int tid;
-    public final int samplingInterval;
-    public float scalingFactor;
+    abstract public void open();
+
+    abstract public void close();
 }

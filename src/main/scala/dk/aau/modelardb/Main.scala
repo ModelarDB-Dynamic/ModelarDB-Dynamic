@@ -31,7 +31,7 @@ import scala.io.Source
 
 object Main {
 
-  /** Public Methods **/
+  /** Public Methods * */
   def main(args: Array[String]): Unit = {
 
     //ModelarDB checks args(0) for a config and uses $HOME/.modelardb.conf as a fallback
@@ -61,7 +61,7 @@ object Main {
     storage.close()
   }
 
-  /** Private Methods **/
+  /** Private Methods * */
   private def readConfigurationFile(configPath: String): Configuration = {
     Static.info(s"ModelarDB: $configPath")
     val configuration = new Configuration()
@@ -95,7 +95,7 @@ object Main {
           //Store a mapping from the original source to the derived source and the function to map over its values
           val derived = lineSplit(1).split(' ').map(_.trim)
           val transformation = CodeGenerator.getValueFunction(derived(2))
-          if ( ! derivedSources.containsKey(derived(0))) {
+          if (!derivedSources.containsKey(derived(0))) {
             derivedSources.put(derived(0), ArrayBuffer[Pair[String, ValueFunction]]())
           }
           derivedSources.get(derived(0)).append(new Pair(derived(1), transformation))
@@ -115,7 +115,7 @@ object Main {
         case "modelardb.engine" | "modelardb.storage" | "modelardb.interface" | "modelardb.time_zone" |
              "modelardb.ingestors" | "modelardb.timestamp_column" | "modelardb.value_column" |
              "modelardb.error_bound" | "modelardb.length_bound" | "modelardb.maximum_latency" |
-             "modelardb.sampling_interval" | "modelardb.batch_size" | "modelardb.dynamic_split_fraction"  |
+             "modelardb.sampling_interval" | "modelardb.batch_size" | "modelardb.dynamic_split_fraction" |
              "modelardb.csv.separator" | "modelardb.csv.header" | "modelardb.csv.date_format" | "modelardb.csv.locale" |
              "modelardb.spark.streaming" =>
           configuration.add(lineSplit(0), lineSplit(1).stripPrefix("'").stripSuffix("'"))
@@ -143,7 +143,7 @@ object Main {
 
   private def appendSources(pathName: String, sources: ArrayBuffer[String]): Unit = {
     val file = new File(pathName)
-    if ((pathName.contains("*") && ! file.getParentFile.exists()) && ! file.exists()) {
+    if ((pathName.contains("*") && !file.getParentFile.exists()) && !file.exists()) {
       throw new IllegalArgumentException("ModelarDB: file/folder \"" + pathName + "\" do no exist")
     }
 
@@ -168,7 +168,7 @@ object Main {
   private def readDimensionsFile(dimensionPath: String): Dimensions = {
     Static.info(s"ModelarDB: $dimensionPath")
     //Checks if the user has specified a schema inline, and if not, ensures that the dimensions file exists
-    if ( ! new File(dimensionPath).exists()) {
+    if (!new File(dimensionPath).exists()) {
       val dimensions = dimensionPath.split(';').map(_.trim)
       if (dimensions(0).split(',').length < 2) {
         //A schema with a dimension that has no levels is invalid, so this must be a missing file
@@ -254,7 +254,7 @@ object Main {
   private def validate(configuration: Configuration): Configuration = {
     //Settings used outside core are validated to ensure their values are within the expected range
     if (configuration.getInteger("modelardb.spark.streaming", 0) <= 0) {
-      throw new UnsupportedOperationException ("ModelarDB: modelardb.spark.streaming must be a positive number of seconds between micro-batches")
+      throw new UnsupportedOperationException("ModelarDB: modelardb.spark.streaming must be a positive number of seconds between micro-batches")
     }
 
     //Ensure both included and user-defined model types all can be constructed without errors

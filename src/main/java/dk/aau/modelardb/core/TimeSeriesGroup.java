@@ -26,7 +26,22 @@ import java.util.StringJoiner;
 
 public class TimeSeriesGroup implements Serializable {
 
-    /** Constructors **/
+    /**
+     * Instance Variables
+     **/
+    public final int gid;
+    public final boolean isAsync;
+    public final int samplingInterval;
+    private final TimeSeries[] timeSeries;
+    private final DataPoint[] currentDataPoints;
+    private final DataPoint[] nextDataPoints;
+    private int timeSeriesActive;
+    private int timeSeriesHasNext;
+    private long next;
+
+    /**
+     * Constructors
+     **/
     public TimeSeriesGroup(int gid, TimeSeries[] timeSeries) {
         if (timeSeries.length == 0) {
             throw new UnsupportedOperationException("CORE: a group must consist of at least one time series");
@@ -62,7 +77,7 @@ public class TimeSeriesGroup implements Serializable {
         this.next = tsg.next;
 
         int j = 0;
-        for(int i : splitIndex) {
+        for (int i : splitIndex) {
             this.timeSeriesHasNext += tsg.getTimeSeries()[i].hasNext() ? 1 : 0;
             this.nextDataPoints[j] = tsg.nextDataPoints[i];
             this.timeSeries[j] = tsg.timeSeries[i];
@@ -97,7 +112,9 @@ public class TimeSeriesGroup implements Serializable {
         this.samplingInterval = this.timeSeries[0].samplingInterval;
     }
 
-    /** Public Methods **/
+    /**
+     * Public Methods
+     **/
     public void initialize() {
         for (int i = 0; i < this.timeSeries.length; i++) {
             TimeSeries ts = this.timeSeries[i];
@@ -115,7 +132,7 @@ public class TimeSeriesGroup implements Serializable {
     }
 
     public void attachToSelector(Selector s, SegmentGenerator mg) throws IOException {
-        for(TimeSeries ts : this.timeSeries) {
+        for (TimeSeries ts : this.timeSeries) {
             if (ts instanceof AsyncTimeSeries) {
                 ((AsyncTimeSeries) ts).attachToSelector(s, mg);
             }
@@ -184,17 +201,4 @@ public class TimeSeriesGroup implements Serializable {
             ts.close();
         }
     }
-
-    /** Instance Variables **/
-    public final int gid;
-    public final boolean isAsync;
-    public final int samplingInterval;
-
-    private int timeSeriesActive;
-    private int timeSeriesHasNext;
-    private final TimeSeries[] timeSeries;
-
-    private long next;
-    private final DataPoint[] currentDataPoints;
-    private final DataPoint[] nextDataPoints;
 }

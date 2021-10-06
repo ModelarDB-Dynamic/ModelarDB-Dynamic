@@ -16,7 +16,7 @@ package dk.aau.modelardb.storage
 
 object StorageFactory {
 
-  /** Public Methods **/
+  /** Public Methods * */
   def getStorage(connectionString: String): Storage = {
     //Selects the correct storage backend based on the connection string provided
     try {

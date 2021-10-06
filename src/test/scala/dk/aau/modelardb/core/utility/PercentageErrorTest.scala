@@ -22,7 +22,7 @@ class PercentageErrorTest extends AnyWordSpec {
   }
 
   "outside error must handle 0, 0 as false" in {
-    assert( ! Static.outsidePercentageErrorBound(10, 0, 0))
+    assert(!Static.outsidePercentageErrorBound(10, 0, 0))
   }
 
   "percentage error must handle A == R as 0.0" in {
@@ -30,7 +30,7 @@ class PercentageErrorTest extends AnyWordSpec {
   }
 
   "Outside error must handle A == R as false" in {
-    assert( ! Static.outsidePercentageErrorBound(10, 37, 37))
+    assert(!Static.outsidePercentageErrorBound(10, 37, 37))
   }
 
   "percentage error must handle +, 0 as positive infinity" in {

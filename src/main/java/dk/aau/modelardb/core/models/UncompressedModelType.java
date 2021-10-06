@@ -22,12 +22,21 @@ import java.util.List;
 
 class UncompressedModelType extends ModelType {
 
-    /** Constructors **/
+    /**
+     * Instance Variables
+     **/
+    private int currentSize;
+
+    /**
+     * Constructors
+     **/
     UncompressedModelType(int mtid, float errorBound, int lengthBound) {
         super(mtid, errorBound, lengthBound);
     }
 
-    /** Public Methods **/
+    /**
+     * Public Methods
+     **/
     @Override
     public boolean append(DataPoint[] currentDataPoints) {
         //UncompressedModelType is a last resort fallback so it simply stores the current buffer in an array
@@ -43,7 +52,7 @@ class UncompressedModelType extends ModelType {
     @Override
     public byte[] getModel(long startTime, long endTime, int samplingInterval, List<DataPoint[]> dps) {
         ByteBuffer values = ByteBuffer.allocate(4 * dps.get(0).length * dps.size());
-        for(DataPoint[] dpss : dps) {
+        for (DataPoint[] dpss : dps) {
             for (DataPoint dp : dpss) {
                 values.putFloat(dp.value);
             }
@@ -70,15 +79,19 @@ class UncompressedModelType extends ModelType {
             return 4.0F * this.currentSize;
         }
     }
-
-    /** Instance Variables **/
-    private int currentSize;
 }
 
 
 class UncompressedSegment extends Segment {
 
-    /** Constructors **/
+    /**
+     * Instance Variables
+     **/
+    private final float[] values;
+
+    /**
+     * Constructors
+     **/
     UncompressedSegment(int tid, long startTime, long endTime, int samplingInterval, byte[] model, byte[] offsets) {
         super(tid, startTime, endTime, samplingInterval, offsets);
 
@@ -88,12 +101,11 @@ class UncompressedSegment extends Segment {
         this.values = values;
     }
 
-    /** Protected Methods **/
+    /**
+     * Protected Methods
+     **/
     @Override
     protected float get(long timestamp, int index) {
         return this.values[index];
     }
-
-    /** Instance Variables **/
-    private final float[] values;
 }

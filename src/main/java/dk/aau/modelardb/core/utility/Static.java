@@ -23,14 +23,13 @@ import java.net.NetworkInterface;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
 import java.util.Enumeration;
 
 public class Static {
 
-    /** Public Methods **/
+    /**
+     * Public Methods
+     **/
     public static int[] bytesToInts(byte[] bytes) {
         int intsLength = bytes.length / 4;
         int[] ints = new int[intsLength];
@@ -122,7 +121,7 @@ public class Static {
         try {
             Integer.parseInt(s);
             return true;
-        } catch (NumberFormatException nfe){
+        } catch (NumberFormatException nfe) {
             return false;
         }
     }
@@ -131,7 +130,7 @@ public class Static {
         try {
             Float.parseFloat(s);
             return true;
-        } catch (NumberFormatException nfe){
+        } catch (NumberFormatException nfe) {
             return false;
         }
     }

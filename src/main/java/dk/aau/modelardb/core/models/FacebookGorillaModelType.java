@@ -23,12 +23,25 @@ import java.util.List;
 // under the Apache2 license. LINK: https://github.com/burmanm/gorilla-tsc
 class FacebookGorillaModelType extends ModelType {
 
-    /** Constructors **/
+    /**
+     * Instance Variables
+     **/
+    private BitBuffer compressed;
+    private int lastVal;
+    private int currentSize;
+    private int storedLeadingZeros;
+    private int storedTrailingZeros;
+
+    /**
+     * Constructors
+     **/
     FacebookGorillaModelType(int mtid, float errorBound, int lengthBound) {
         super(mtid, errorBound, lengthBound);
     }
 
-    /** Public Methods **/
+    /**
+     * Public Methods
+     **/
     @Override
     public boolean append(DataPoint[] currentDataPoints) {
         if (this.currentSize == this.lengthBound) {
@@ -57,7 +70,7 @@ class FacebookGorillaModelType extends ModelType {
         this.storedLeadingZeros = Integer.MAX_VALUE;
         this.storedTrailingZeros = 0;
 
-        for(DataPoint[] dataPoints : currentSegment) {
+        for (DataPoint[] dataPoints : currentSegment) {
             this.append(dataPoints);
         }
     }
@@ -86,7 +99,9 @@ class FacebookGorillaModelType extends ModelType {
         }
     }
 
-    /** Private Methods **/
+    /**
+     * Private Methods
+     **/
     private void compress(float value) {
         int curVal = Float.floatToIntBits(value);
         int xor = curVal ^ this.lastVal;
@@ -98,7 +113,7 @@ class FacebookGorillaModelType extends ModelType {
             int leadingZeros = Integer.numberOfLeadingZeros(xor);
             int trailingZeros = Integer.numberOfTrailingZeros(xor);
 
-            if(leadingZeros >= 32) {
+            if (leadingZeros >= 32) {
                 leadingZeros = 31;
             }
             this.compressed.writeBit(true);
@@ -123,26 +138,28 @@ class FacebookGorillaModelType extends ModelType {
         }
         this.lastVal = curVal;
     }
-
-    /** Instance Variables **/
-    private BitBuffer compressed;
-    private int lastVal;
-    private int currentSize;
-    private int storedLeadingZeros;
-    private int storedTrailingZeros;
 }
 
 
 class FacebookGorillaSegment extends Segment {
 
-    /** Constructors **/
+    /**
+     * Instance Variables
+     **/
+    private final float[] values;
+
+    /**
+     * Constructors
+     **/
     FacebookGorillaSegment(int tid, long startTime, long endTime, int samplingInterval, byte[] model, byte[] offsets) {
         //Unlike length(), capacity() is not impacted by changes to the segment's start time
         super(tid, startTime, endTime, samplingInterval, offsets);
         this.values = decompress(model, super.capacity());
     }
 
-    /** Public Methods **/
+    /**
+     * Public Methods
+     **/
     @Override
     public float min() {
         float min = Float.MAX_VALUE;
@@ -179,13 +196,17 @@ class FacebookGorillaSegment extends Segment {
         return acc;
     }
 
-    /** Protected Methods **/
+    /**
+     * Protected Methods
+     **/
     @Override
     protected float get(long timestamp, int index) {
         return this.values[index];
     }
 
-    /** Private Methods **/
+    /**
+     * Private Methods
+     **/
     private float[] decompress(byte[] values, int length) {
         float[] result = new float[length];
         BitBuffer bitBuffer = new BitBuffer(values);
@@ -218,7 +239,4 @@ class FacebookGorillaSegment extends Segment {
         }
         return result;
     }
-
-    /** Instance Variables **/
-    private final float[] values;
 }

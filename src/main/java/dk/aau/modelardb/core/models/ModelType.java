@@ -23,24 +23,40 @@ import java.util.List;
 
 public abstract class ModelType implements Serializable {
 
-    /** Constructors **/
+    /**
+     * Instance Variables
+     **/
+    public final int mtid;
+    public final float errorBound;
+    public final int lengthBound;
+
+    /**
+     * Constructors
+     **/
     public ModelType(int mtid, float errorBound, int lengthBound) {
         this.mtid = mtid;
         this.errorBound = errorBound;
         this.lengthBound = lengthBound;
     }
 
-    /** Public Methods **/
+    /**
+     * Public Methods
+     **/
     abstract public boolean append(DataPoint[] currentDataPoints);
+
     abstract public void initialize(List<DataPoint[]> currentSegment);
+
     abstract public byte[] getModel(long startTime, long endTime, int samplingInterval, List<DataPoint[]> dps);
+
     abstract public Segment get(int tid, long startTime, long endTime, int samplingInterval, byte[] model, byte[] offsets);
+
     abstract public int length();
+
     abstract public float size(long startTime, long endTime, int samplingInterval, List<DataPoint[]> dps);
 
     public boolean withinErrorBound(float errorBound, Iterator<DataPoint> tsA, Iterator<DataPoint> tsB) {
         boolean allWithinErrorBound = true;
-        while (allWithinErrorBound && tsA.hasNext() && tsB.hasNext()){
+        while (allWithinErrorBound && tsA.hasNext() && tsB.hasNext()) {
             allWithinErrorBound = Static.percentageError(tsA.next().value, tsB.next().value) < errorBound;
         }
         return allWithinErrorBound;
@@ -57,9 +73,4 @@ public abstract class ModelType implements Serializable {
         //Computes the size without providing the model type with the information for it to verify the precision of its model
         return this.size(0L, 0L, 0, new java.util.ArrayList<>());
     }
-
-    /** Instance Variables **/
-    public final int mtid;
-    public final float errorBound;
-    public final int lengthBound;
 }

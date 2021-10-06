@@ -23,7 +23,19 @@ import java.util.HashSet;
 
 public class Correlation {
 
-    /** Constructors **/
+    /**
+     * Instance Variables
+     **/
+    private final HashSet<String> correlatedSources;
+    private final HashMap<Integer, HashSet<Object>> correlatedMembers;
+    private final HashMap<Integer, Integer> correlatedDimensions;
+    private final HashMap<String, Float> scalingFactorForSource;
+    private final HashMap<Integer, HashMap<Object, Float>> scalingFactorForMember;
+    private float distance;
+
+    /**
+     * Constructors
+     **/
     public Correlation() {
         this.distance = -1.0F;
 
@@ -35,7 +47,9 @@ public class Correlation {
         this.scalingFactorForSource = new HashMap<>();
     }
 
-    /** Public Methods **/
+    /**
+     * Public Methods
+     **/
     public boolean test(TimeSeries[] groupOne, TimeSeries[] groupTwo, Dimensions dimensions) {
         return isCorrelatedBySources(groupOne, groupTwo) &&
                 isCorrelatedByMembers(groupOne, groupTwo, dimensions) &&
@@ -70,14 +84,14 @@ public class Correlation {
 
     public void addSources(String[] sources) {
         //Elements inside a clause are combined with an AND operator, so multiple sets of sources are an error
-        if ( ! this.correlatedSources.isEmpty()) {
+        if (!this.correlatedSources.isEmpty()) {
             throw new IllegalArgumentException("CORE: correlated sources have already been declared in this clause");
         }
         this.correlatedSources.addAll(Arrays.asList(sources));
     }
 
     public boolean hasOnlyCorrelatedSources() {
-        return this.distance == -1.0F && ! this.correlatedSources.isEmpty() &&
+        return this.distance == -1.0F && !this.correlatedSources.isEmpty() &&
                 this.correlatedMembers.isEmpty() && this.correlatedDimensions.isEmpty() &&
                 this.scalingFactorForMember.isEmpty() && this.scalingFactorForSource.isEmpty();
     }
@@ -88,7 +102,7 @@ public class Correlation {
 
     public void addDimensionAndMembers(String dim, Integer level, String[] members, Dimensions dimensions) {
         int column = getColumn(dim, level, dimensions);
-        if ( ! this.correlatedMembers.containsKey(column)) {
+        if (!this.correlatedMembers.containsKey(column)) {
             this.correlatedMembers.put(column, new HashSet<>());
         } else {
             //Elements inside a clause are combined with an AND operator, so multiple sets of members are an error
@@ -117,14 +131,16 @@ public class Correlation {
 
     public void addScalingFactorForMember(String dim, Integer level, String member, float scaling, Dimensions dimensions) {
         int column = getColumn(dim, level, dimensions);
-        if ( ! this.scalingFactorForMember.containsKey(column)) {
+        if (!this.scalingFactorForMember.containsKey(column)) {
             this.scalingFactorForMember.put(column, new HashMap<>());
         }
         HashMap<Object, Float> members = this.scalingFactorForMember.get(column);
         members.put(member, scaling);
     }
 
-    /** Private Methods **/
+    /**
+     * Private Methods
+     **/
     private int getColumn(String dim, Integer level, Dimensions dimensions) {
         Pair<Integer, Integer> startEnd = getDimension(dim, dimensions);
 
@@ -193,13 +209,4 @@ public class Correlation {
     private boolean isCorrelatedByDistance(TimeSeries[] groupOne, TimeSeries[] groupTwo, Dimensions dimensions) {
         return (this.distance == -1) || dimensions.correlatedByDistance(groupOne, groupTwo, this.distance);
     }
-
-    /** Instance Variables **/
-    private final HashSet<String> correlatedSources;
-    private final HashMap<Integer, HashSet<Object>> correlatedMembers;
-    private final HashMap<Integer, Integer> correlatedDimensions;
-    private float distance;
-
-    private final HashMap<String, Float> scalingFactorForSource;
-    private final HashMap<Integer, HashMap<Object, Float>> scalingFactorForMember;
 }

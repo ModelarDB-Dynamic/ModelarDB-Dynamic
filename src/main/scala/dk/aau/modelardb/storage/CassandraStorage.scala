@@ -33,12 +33,12 @@ import java.util
 import scala.collection.mutable
 
 class CassandraStorage(connectionString: String) extends Storage with H2Storage with SparkStorage {
-  /** Instance Variables **/
+  /** Instance Variables * */
   private var keyspace: String = _
   private var connector: CassandraConnector = _
   private var insertStmt: PreparedStatement = _
 
-  /** Public Methods **/
+  /** Public Methods * */
   //Storage
   override def open(dimensions: Dimensions): Unit = {
     val (host, user, pass) = parseConnectionString(connectionString)
@@ -49,10 +49,50 @@ class CassandraStorage(connectionString: String) extends Storage with H2Storage 
     createTables(dimensions)
   }
 
+  /** Private Methods * */
+  private def parseConnectionString(connectionString: String): (String, String, String) = {
+    val elems: Array[String] = connectionString.split('?')
+    if (elems.length != 1 && elems.length != 2) {
+      throw new IllegalArgumentException("ModelarDB: unable to parse connection string \"" + connectionString + "\"")
+    }
+
+    //Parses the parameters defined by as key-value pairs after a ? char
+    val parsed = new util.HashMap[String, String]()
+    if (elems.length == 2) {
+      val parameters = elems(1).split('&')
+      for (parameter <- parameters) {
+        val na = parameter.split('=')
+        parsed.put(na(0), na(1))
+      }
+    }
+    this.keyspace = parsed.getOrDefault("keyspace", "modelardb")
+    (elems(0), parsed.getOrDefault("username", "cassandra"), parsed.getOrDefault("password", "cassandra"))
+  }
+
+  private def createTables(dimensions: Dimensions): Unit = {
+    val session = this.connector.openSession()
+    var createTable: SimpleStatement = null
+    createTable = SimpleStatement.newInstance(s"CREATE KEYSPACE IF NOT EXISTS ${this.keyspace} WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 };")
+    session.execute(createTable)
+
+    createTable = SimpleStatement.newInstance(s"CREATE TABLE IF NOT EXISTS ${this.keyspace}.segment(gid INT, start_time TIMESTAMP, end_time TIMESTAMP, mtid INT, model BLOB, gaps BLOB, PRIMARY KEY (gid, start_time, gaps));")
+    session.execute(createTable)
+
+    createTable = SimpleStatement.newInstance(s"CREATE TABLE IF NOT EXISTS ${this.keyspace}.model_type(mtid INT, name TEXT, PRIMARY KEY (mtid));")
+    session.execute(createTable)
+
+    createTable = SimpleStatement.newInstance(s"CREATE TABLE IF NOT EXISTS ${this.keyspace}.time_series(tid INT, scaling_factor FLOAT, sampling_interval INT, gid INT${getDimensionsSQL(dimensions, "TEXT")}, PRIMARY KEY (tid));")
+    session.execute(createTable)
+
+    //The insert statement will be used for every batch of segment groups
+    this.insertStmt = session.prepare(s"INSERT INTO ${this.keyspace}.segment(gid, start_time, end_time, mtid, model, gaps) VALUES(?, ?, ?, ?, ?, ?)")
+    session.close()
+  }
+
   def storeTimeSeries(timeSeriesGroups: Array[TimeSeriesGroup]): Unit = {
     val session = this.connector.openSession()
     val columnsInNormalizedDimensions = dimensions.getColumns.length
-    val columns = if (columnsInNormalizedDimensions  == 0) "" else dimensions.getColumns.mkString(", ", ", ", "")
+    val columns = if (columnsInNormalizedDimensions == 0) "" else dimensions.getColumns.mkString(", ", ", ", "")
     val placeholders = "?, " * (columnsInNormalizedDimensions + 3) + "?"
     val insertString = s"INSERT INTO ${this.keyspace}.time_series(tid, scaling_factor, sampling_interval, gid $columns) VALUES($placeholders)"
     for (tsg <- timeSeriesGroups) {
@@ -132,6 +172,21 @@ class CassandraStorage(connectionString: String) extends Storage with H2Storage 
     getMaxID(s"SELECT gid FROM ${this.keyspace}.time_series")
   }
 
+  private def getMaxID(query: String): Int = {
+    val rows = this.connector.openSession().execute(query)
+
+    //Extracts the maximum id manually as Cassandra does not like aggregate queries
+    var maxID = 0
+    val it = rows.iterator()
+    while (it.hasNext) {
+      val currentID = it.next.getInt(0)
+      if (currentID > maxID) {
+        maxID = currentID
+      }
+    }
+    maxID
+  }
+
   override def close(): Unit = {
     //CassandraConnector will close the underlying Cluster object automatically whenever it is not used i.e.
     // no Session or Cluster is open for longer than spark.cassandra.connection.keepAliveMS property value.
@@ -159,6 +214,13 @@ class CassandraStorage(connectionString: String) extends Storage with H2Storage 
     session.close()
   }
 
+  private def storeSegmentGroups(session: CqlSession, batch: util.ArrayList[BoundStatement]): Unit = {
+    val batchStatement = BatchStatement.newInstance(BatchType.LOGGED)
+    batchStatement.setIdempotent(true)
+    session.execute(batchStatement.addAll(batch))
+    batch.clear()
+  }
+
   def getSegmentGroups(filter: TableFilter): Iterator[SegmentGroup] = {
     val predicates = H2.expressionToSQLPredicates(filter.getSelect.getCondition,
       this.timeSeriesGroupCache, this.memberTimeSeriesCache, supportsOr = false)
@@ -177,7 +239,7 @@ class CassandraStorage(connectionString: String) extends Storage with H2Storage 
       override def next(): SegmentGroup = {
         val row = results.next()
         val gid = row.getInt(0).intValue()
-        val startTime= row.getInstant(1).toEpochMilli
+        val startTime = row.getInstant(1).toEpochMilli
         val endTime = row.getInstant(2).toEpochMilli
         val mtid = row.getInt(3)
         val model = row.getByteBuffer(4)
@@ -211,67 +273,5 @@ class CassandraStorage(connectionString: String) extends Storage with H2Storage 
   override def getSegmentGroups(sparkSession: SparkSession, filters: Array[Filter]): DataFrame = {
     Spark.applyFiltersToDataFrame(sparkSession.read.table(s"cassandra.${this.keyspace}.segment")
       .select("gid", "start_time", "end_time", "mtid", "model", "gaps"), filters)
-  }
-
-  /** Private Methods **/
-  private def parseConnectionString(connectionString: String): (String, String, String) = {
-    val elems: Array[String] = connectionString.split('?')
-    if (elems.length != 1 && elems.length != 2) {
-      throw new IllegalArgumentException("ModelarDB: unable to parse connection string \"" + connectionString + "\"")
-    }
-
-    //Parses the parameters defined by as key-value pairs after a ? char
-    val parsed = new util.HashMap[String, String]()
-    if (elems.length == 2) {
-      val parameters = elems(1).split('&')
-      for (parameter <- parameters) {
-        val na = parameter.split('=')
-        parsed.put(na(0), na(1))
-      }
-    }
-    this.keyspace = parsed.getOrDefault("keyspace", "modelardb")
-    (elems(0), parsed.getOrDefault("username", "cassandra"), parsed.getOrDefault("password", "cassandra"))
-  }
-
-  private def createTables(dimensions: Dimensions): Unit = {
-    val session = this.connector.openSession()
-    var createTable: SimpleStatement = null
-    createTable = SimpleStatement.newInstance(s"CREATE KEYSPACE IF NOT EXISTS ${this.keyspace} WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 };")
-    session.execute(createTable)
-
-    createTable = SimpleStatement.newInstance(s"CREATE TABLE IF NOT EXISTS ${this.keyspace}.segment(gid INT, start_time TIMESTAMP, end_time TIMESTAMP, mtid INT, model BLOB, gaps BLOB, PRIMARY KEY (gid, start_time, gaps));")
-    session.execute(createTable)
-
-    createTable = SimpleStatement.newInstance(s"CREATE TABLE IF NOT EXISTS ${this.keyspace}.model_type(mtid INT, name TEXT, PRIMARY KEY (mtid));")
-    session.execute(createTable)
-
-    createTable = SimpleStatement.newInstance(s"CREATE TABLE IF NOT EXISTS ${this.keyspace}.time_series(tid INT, scaling_factor FLOAT, sampling_interval INT, gid INT${getDimensionsSQL(dimensions, "TEXT")}, PRIMARY KEY (tid));")
-    session.execute(createTable)
-
-    //The insert statement will be used for every batch of segment groups
-    this.insertStmt = session.prepare(s"INSERT INTO ${this.keyspace}.segment(gid, start_time, end_time, mtid, model, gaps) VALUES(?, ?, ?, ?, ?, ?)")
-    session.close()
-  }
-
-  private def getMaxID(query: String): Int = {
-    val rows = this.connector.openSession().execute(query)
-
-    //Extracts the maximum id manually as Cassandra does not like aggregate queries
-    var maxID = 0
-    val it = rows.iterator()
-    while (it.hasNext) {
-      val currentID = it.next.getInt(0)
-      if (currentID > maxID) {
-        maxID = currentID
-      }
-    }
-    maxID
-  }
-
-  private def storeSegmentGroups(session: CqlSession, batch: util.ArrayList[BoundStatement]): Unit = {
-    val batchStatement = BatchStatement.newInstance(BatchType.LOGGED)
-    batchStatement.setIdempotent(true)
-    session.execute(batchStatement.addAll(batch))
-    batch.clear()
   }
 }

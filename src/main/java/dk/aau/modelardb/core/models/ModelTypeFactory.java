@@ -19,7 +19,9 @@ import java.util.stream.IntStream;
 
 public class ModelTypeFactory {
 
-    /** Public Methods **/
+    /**
+     * Public Methods
+     **/
     public static ModelType getFallbackModelType(float errorBound, int lengthBound) {
         //Per definition the mtid of the fallback model is one
         return getModel("dk.aau.modelardb.core.models.UncompressedModelType", 1, errorBound, lengthBound);

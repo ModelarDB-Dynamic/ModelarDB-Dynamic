@@ -91,7 +91,7 @@ class ViewSegmentIndex(table: Table) extends Index {
 
   override def find(filter: TableFilter, first: SearchRow, last: SearchRow): Cursor = new ViewSegmentCursor(filter)
 
-  override def getCost(session: Session, masks: Array[Int], filters: Array[TableFilter], filter: Int, sortOrder: SortOrder, allColumnsSet: AllColumnsForPlan): Double = 1.0  //HACK: unclear what we have to return...
+  override def getCost(session: Session, masks: Array[Int], filters: Array[TableFilter], filter: Int, sortOrder: SortOrder, allColumnsSet: AllColumnsForPlan): Double = 1.0 //HACK: unclear what we have to return...
 
   override def remove(session: Session): Unit = ???
 
@@ -171,21 +171,21 @@ class ViewSegmentIndex(table: Table) extends Index {
 
   override def setTemporary(temporary: Boolean): Unit = ???
 
-  override def setComment(comment: String): Unit = ???
-
   override def getComment: String = ???
+
+  override def setComment(comment: String): Unit = ???
 }
 
 class ViewSegmentCursor(filter: TableFilter) extends Cursor {
 
-  /** Instance Variables **/
+  /** Instance Variables * */
   private val gdcj = H2.h2storage.groupDerivedCache
   private val segments: Iterator[SegmentGroup] = H2.h2.getSegmentGroups(filter)
     .flatMap(_.explode(H2.h2storage.groupMetadataCache, gdcj))
   private val values = H2Projector.segmentProjection(segments, filter)
   private val currentViewRow = new ViewRow()
 
-  /** Public Methods **/
+  /** Public Methods * */
   override def get(): Row = ???
 
   override def getSearchRow: SearchRow = {

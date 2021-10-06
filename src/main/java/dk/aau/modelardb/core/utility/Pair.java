@@ -16,13 +16,16 @@ package dk.aau.modelardb.core.utility;
 
 public class Pair<T, U> {
 
-    /** Constructors **/
+    /**
+     * Instance Variables
+     **/
+    public T _1;
+    public U _2;
+    /**
+     * Constructors
+     **/
     public Pair(T _1, U _2) {
         this._1 = _1;
         this._2 = _2;
     }
-
-    /** Instance Variables **/
-    public T _1;
-    public U _2;
 }

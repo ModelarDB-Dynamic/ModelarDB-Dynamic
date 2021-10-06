@@ -30,7 +30,26 @@ import java.util.Locale;
 
 public class AsyncTimeSeriesSocket extends TimeSeries implements AsyncTimeSeries {
 
-    /** Constructors **/
+    private final int port;
+    private final float scalingFactor;
+    private final int bufferSize;
+    private final StringBuffer decodeBuffer;
+    private final String splitString;
+    private final int timestampColumn;
+    private final int dateParserType;
+    private final int valueColumn;
+    private final NumberFormat valueParser;
+    /**
+     * Instance Variables
+     **/
+    private String host;
+    private ByteBuffer byteBuffer;
+    private StringBuffer nextBuffer;
+    private ReadableByteChannel channel;
+    private SimpleDateFormat dateParser;
+    /**
+     * Constructors
+     **/
     public AsyncTimeSeriesSocket(String source, int tid, int samplingInterval, String splitString, int timestampColumnIndex,
                                  String dateFormat, String timeZone, int valueColumnIndex, String localeString) {
         super(source, tid, samplingInterval);
@@ -66,7 +85,9 @@ public class AsyncTimeSeriesSocket extends TimeSeries implements AsyncTimeSeries
         this.nextBuffer = new StringBuffer();
     }
 
-    /** Public Methods **/
+    /**
+     * Public Methods
+     **/
     public void open() throws RuntimeException {
         try {
             this.channel = SocketChannel.open(new InetSocketAddress(this.host, this.port));
@@ -129,7 +150,9 @@ public class AsyncTimeSeriesSocket extends TimeSeries implements AsyncTimeSeries
         }
     }
 
-    /** Private Methods **/
+    /**
+     * Private Methods
+     **/
     private void readLines() throws IOException {
         //Reads until at least one full data point have been read as read() does not always add bytes
         // to this.byteBuffer for some time after the Selector in WorkingSet have returned rom Select()
@@ -183,20 +206,4 @@ public class AsyncTimeSeriesSocket extends TimeSeries implements AsyncTimeSeries
             throw new RuntimeException(pe);
         }
     }
-
-    /** Instance Variables **/
-    private String host;
-    private final int port;
-    private final float scalingFactor;
-    private final int bufferSize;
-    private ByteBuffer byteBuffer;
-    private final StringBuffer decodeBuffer;
-    private StringBuffer nextBuffer;
-    private ReadableByteChannel channel;
-    private final String splitString;
-    private final int timestampColumn;
-    private SimpleDateFormat dateParser;
-    private final int dateParserType;
-    private final int valueColumn;
-    private final NumberFormat valueParser;
 }

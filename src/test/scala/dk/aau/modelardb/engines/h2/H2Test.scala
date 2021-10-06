@@ -88,19 +88,19 @@ class H2Test extends AnyFlatSpec with Matchers with MockFactory {
       var count = 0
       while (rs.next()) {
         count += 1
-        rs.getInt(1) should equal (tid)
-        rs.getInt("tid") should equal (tid)
+        rs.getInt(1) should equal(tid)
+        rs.getInt("tid") should equal(tid)
         rs.getTimestamp(2).toInstant should equal(startTime)
         rs.getTimestamp("start_time").toInstant should equal(startTime)
         rs.getTimestamp(3).toInstant should equal(endTime)
         rs.getTimestamp("end_time").toInstant should equal(endTime)
-        rs.getInt(1) should equal (mtid)
-        rs.getInt("mtid") should equal (mtid)
+        rs.getInt(1) should equal(mtid)
+        rs.getInt("mtid") should equal(mtid)
 
-        an [JdbcSQLDataException] should be thrownBy rs.getInt(2)
-        an [JdbcSQLDataException] should be thrownBy rs.getInt(3)
-        an [JdbcSQLDataException] should be thrownBy rs.getTimestamp(1)
-        an [JdbcSQLDataException] should be thrownBy rs.getTimestamp(4)
+        an[JdbcSQLDataException] should be thrownBy rs.getInt(2)
+        an[JdbcSQLDataException] should be thrownBy rs.getInt(3)
+        an[JdbcSQLDataException] should be thrownBy rs.getTimestamp(1)
+        an[JdbcSQLDataException] should be thrownBy rs.getTimestamp(4)
       }
       count should equal(2)
     }

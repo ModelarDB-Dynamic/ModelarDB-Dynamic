@@ -24,7 +24,16 @@ import java.util.Arrays;
 
 public class BitBuffer {
 
-    /** Constructors **/
+    /**
+     * Instance Variables
+     **/
+    private int bitsLeft;
+    private byte currentByte;
+    private ByteBuffer byteBuffer;
+
+    /**
+     * Constructors
+     **/
     public BitBuffer(int size) {
         this.byteBuffer = ByteBuffer.allocate(size);
         this.currentByte = this.byteBuffer.get(this.byteBuffer.position());
@@ -36,7 +45,9 @@ public class BitBuffer {
         readNextByte();
     }
 
-    /** Public Methods **/
+    /**
+     * Public Methods
+     **/
     public void writeBit(boolean bit) {
         if (bit) {
             this.currentByte |= (1 << (this.bitsLeft - 1));
@@ -128,10 +139,12 @@ public class BitBuffer {
         }
     }
 
-    /** Private Methods **/
+    /**
+     * Private Methods
+     **/
     private void allocateNewByte() {
         this.byteBuffer.put(this.currentByte);
-        if ( ! this.byteBuffer.hasRemaining()) {
+        if (!this.byteBuffer.hasRemaining()) {
             expandAllocation();
         }
         this.currentByte = this.byteBuffer.get(this.byteBuffer.position());
@@ -152,9 +165,4 @@ public class BitBuffer {
         expandedByteBuffer.position(this.byteBuffer.capacity());
         this.byteBuffer = expandedByteBuffer;
     }
-
-    /** Instance Variables **/
-    private int bitsLeft;
-    private byte currentByte;
-    private ByteBuffer byteBuffer;
 }

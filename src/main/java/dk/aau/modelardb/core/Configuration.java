@@ -25,12 +25,21 @@ import java.util.concurrent.ExecutorService;
 
 public class Configuration {
 
-    /** Constructors **/
+    /**
+     * Instance Variables
+     **/
+    private final HashMap<String, Object[]> values;
+
+    /**
+     * Constructors
+     **/
     public Configuration() {
         this.values = new HashMap<>();
     }
 
-    /** Public Methods **/
+    /**
+     * Public Methods
+     **/
     public Object add(String name, Object value) {
 
         Object[] values;
@@ -38,7 +47,7 @@ public class Configuration {
             value = this.infer((String) value);
             this.validate(name, value);
             values = new Object[]{value};
-        }  else if (value.getClass().isArray()) {
+        } else if (value.getClass().isArray()) {
             values = (Object[]) value;
         } else {
             values = new Object[]{value};
@@ -53,7 +62,7 @@ public class Configuration {
 
     public boolean contains(String... values) {
         for (String value : values) {
-            if ( ! this.values.containsKey(value)) {
+            if (!this.values.containsKey(value)) {
                 return false;
             }
         }
@@ -64,13 +73,13 @@ public class Configuration {
         //All of the missing values should shown as one error
         ArrayList<String> missingValues = new ArrayList<>();
         for (String value : values) {
-            if ( ! this.values.containsKey(value)) {
+            if (!this.values.containsKey(value)) {
                 missingValues.add(value);
             }
         }
 
         //If any of the values are missing execution cannot continue
-        if ( ! missingValues.isEmpty()) {
+        if (!missingValues.isEmpty()) {
             throw new IllegalArgumentException("ModelarDB: the following required options are not in the configuration file " +
                     String.join(" ", missingValues));
         }
@@ -94,7 +103,7 @@ public class Configuration {
     }
 
     public int getInteger(String name, int defaultValue) {
-        if ( ! this.values.containsKey(name)) {
+        if (!this.values.containsKey(name)) {
             return defaultValue;
         }
         return getInteger(name);
@@ -109,7 +118,7 @@ public class Configuration {
     }
 
     public float getFloat(String name, int defaultValue) {
-        if ( ! this.values.containsKey(name)) {
+        if (!this.values.containsKey(name)) {
             return defaultValue;
         }
         return getFloat(name);
@@ -180,7 +189,9 @@ public class Configuration {
         }
     }
 
-    /** Private Methods **/
+    /**
+     * Private Methods
+     **/
     private Object infer(String value) {
         //Attempts to infer a more concrete type for the string
         if (value.equalsIgnoreCase("true")) {
@@ -206,37 +217,37 @@ public class Configuration {
         //Settings used by the core are checked to ensure their values are within the expected range
         switch (key) {
             case "modelardb.batch_size":
-                if ( ! (value instanceof Integer) || (int) value <= 0) {
+                if (!(value instanceof Integer) || (int) value <= 0) {
                     throw new IllegalArgumentException("CORE: modelardb.batch_size must be a positive number");
                 }
                 break;
             case "modelardb.error_bound":
-                if ( ! (value instanceof Float) && ! (value instanceof Integer)) {
+                if (!(value instanceof Float) && !(value instanceof Integer)) {
                     throw new IllegalArgumentException("CORE: modelardb.error_bound must be an integer or a float");
                 }
                 break;
             case "modelardb.maximum_latency":
-                if ( ! (value instanceof Integer) || (int) value < 0) {
+                if (!(value instanceof Integer) || (int) value < 0) {
                     throw new IllegalArgumentException("CORE: modelardb.maximum_latency must be zero or more data point groups");
                 }
                 break;
             case "modelardb.length_bound":
-                if ( ! (value instanceof Integer) || (int) value <= 0) {
+                if (!(value instanceof Integer) || (int) value <= 0) {
                     throw new IllegalArgumentException("CORE: modelardb.length_bound must be a positive number of data point groups");
                 }
                 break;
             case "modelardb.sampling_interval":
-                if ( ! (value instanceof Integer) || (int) value < 0) {
+                if (!(value instanceof Integer) || (int) value < 0) {
                     throw new IllegalArgumentException("CORE: modelardb.sampling_interval must be zero or a positive number of seconds");
                 }
                 break;
             case "modelardb.ingestors":
-                if ( ! (value instanceof Integer) || (int) value < 0) {
+                if (!(value instanceof Integer) || (int) value < 0) {
                     throw new UnsupportedOperationException("ModelarDB: modelardb.ingestors must be zero or a positive number of ingestors");
                 }
                 break;
             case "modelardb.time_zone":
-                if ( ! (value instanceof String) || ! TimeZone.getTimeZone((String) value).getID().equals(value)) {
+                if (!(value instanceof String) || !TimeZone.getTimeZone((String) value).getID().equals(value)) {
                     throw new UnsupportedOperationException("ModelarDB: modelardb.time_zone must be a valid time zone id");
                 }
         }
@@ -269,7 +280,4 @@ public class Configuration {
         }
         return values[0];
     }
-
-    /** Instance Variables **/
-    private final HashMap<String, Object[]> values;
 }

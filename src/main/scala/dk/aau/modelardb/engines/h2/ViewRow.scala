@@ -20,21 +20,21 @@ import org.h2.value.Value
 
 class ViewRow extends Row {
 
-  /** Instance Variable **/
+  /** Instance Variable * */
   private var values: Array[Value] = _
 
-  /** Public Methods **/
+  /** Public Methods * */
   override def getByteCount(dummy: Data): Int = ???
 
   override def isEmpty: Boolean = ???
 
-  override def setDeleted(deleted: Boolean): Unit = ???
-
   override def isDeleted: Boolean = ???
 
-  def setValueList(values: Array[Value]): Unit = this.values = values
+  override def setDeleted(deleted: Boolean): Unit = ???
 
   override def getValueList: Array[Value] = ???
+
+  def setValueList(values: Array[Value]): Unit = this.values = values
 
   override def hasSharedData(other: Row): Boolean = ???
 
@@ -46,9 +46,9 @@ class ViewRow extends Row {
 
   override def setKey(old: SearchRow): Unit = ???
 
-  override def setKey(key: Long): Unit = ???
-
   override def getKey: Long = ???
+
+  override def setKey(key: Long): Unit = ???
 
   override def getMemory: Int = ???
 }

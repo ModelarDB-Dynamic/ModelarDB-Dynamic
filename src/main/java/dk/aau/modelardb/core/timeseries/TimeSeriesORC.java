@@ -27,7 +27,22 @@ import org.apache.orc.RecordReader;
 import java.io.IOException;
 
 public class TimeSeriesORC extends TimeSeries {
-    /** Public Methods **/
+    /**
+     * Instance Variables
+     **/
+    private final String stringPath;
+    private final int timestampColumnIndex;
+    private final int valueColumnIndex;
+    private int rowIndex;
+    private Reader reader;
+    private RecordReader recordReader;
+    private VectorizedRowBatch rowBatch;
+    private TimestampColumnVector timestampColumn;
+    private DoubleColumnVector valueColumn;
+
+    /**
+     * Public Methods
+     **/
     public TimeSeriesORC(String stringPath, int tid, int samplingInterval, int timestampColumnIndex, int valueColumnIndex) {
         super(stringPath.substring(stringPath.lastIndexOf('/') + 1), tid, samplingInterval);
         this.stringPath = stringPath;
@@ -94,16 +109,4 @@ public class TimeSeriesORC extends TimeSeries {
             throw new java.lang.RuntimeException(ioe);
         }
     }
-
-    /** Instance Variables **/
-    private final String stringPath;
-    private final int timestampColumnIndex;
-    private final int valueColumnIndex;
-
-    private int rowIndex;
-    private Reader reader;
-    private RecordReader recordReader;
-    private VectorizedRowBatch rowBatch;
-    private TimestampColumnVector timestampColumn;
-    private DoubleColumnVector valueColumn;
 }

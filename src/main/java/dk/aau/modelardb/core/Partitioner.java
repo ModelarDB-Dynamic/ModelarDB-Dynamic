@@ -24,7 +24,9 @@ import java.util.stream.IntStream;
 
 public class Partitioner {
 
-    /** Public Methods **/
+    /**
+     * Public Methods
+     **/
     public static TimeSeries[] initializeTimeSeries(Configuration configuration, int currentMaximumTid) {
         int cms = currentMaximumTid;
         String[] sources = configuration.getSources();
@@ -55,9 +57,9 @@ public class Partitioner {
             if (source.contains(":")) {
                 ts = new AsyncTimeSeriesSocket(source, cms, samplingInterval, separator,
                         timestampColumnIndex, dateFormat, timeZone, valueColumnIndex, locale);
-            }  else if (source.endsWith(".orc")) {
+            } else if (source.endsWith(".orc")) {
                 ts = new TimeSeriesORC(source, cms, samplingInterval, timestampColumnIndex, valueColumnIndex);
-            }  else if (source.endsWith(".parquet")) {
+            } else if (source.endsWith(".parquet")) {
                 ts = new TimeSeriesParquet(source, cms, samplingInterval, timestampColumnIndex, valueColumnIndex);
             } else {
                 ts = new TimeSeriesCSV(source, cms, samplingInterval, separator, header,
@@ -84,7 +86,7 @@ public class Partitioner {
             });
         } catch (NumberFormatException nfe) {
             String valueBeingParsed = nfe.getMessage().substring(18);
-            throw new IllegalArgumentException("CORE: error parsing " + valueBeingParsed  + " specified in " + derivedKey, nfe);
+            throw new IllegalArgumentException("CORE: error parsing " + valueBeingParsed + " specified in " + derivedKey, nfe);
         }
         configuration.add(derivedKey, derivedTimeSeries);
 
@@ -129,18 +131,20 @@ public class Partitioner {
         TimeSeriesGroup[][] pts = Partitioner.partitionTimeSeriesByRate(timeSeriesGroups, partitions);
         int[] mtids = Arrays.stream(configuration.getModelTypeNames()).mapToInt(mtidCache::get).toArray();
         WorkingSet[] workingSets = Arrays.stream(pts).map(tss -> new WorkingSet(tss, configuration.getFloat(
-                "modelardb.dynamic_split_fraction"), configuration.getModelTypeNames(), mtids,
-                configuration.getErrorBound(), configuration.getLengthBound(), configuration.getMaximumLatency()))
+                        "modelardb.dynamic_split_fraction"), configuration.getModelTypeNames(), mtids,
+                        configuration.getErrorBound(), configuration.getLengthBound(), configuration.getMaximumLatency()))
                 .toArray(WorkingSet[]::new);
         Static.info(String.format("CORE: created %d working set(s)", workingSets.length));
         return workingSets;
     }
 
-    /** Private Methods **/
+    /**
+     * Private Methods
+     **/
     public static boolean areAllDisjoint(Correlation[] corr) {
         HashSet<String> all = new HashSet<>();
         for (Correlation clause : corr) {
-            if ( ! clause.hasOnlyCorrelatedSources()) {
+            if (!clause.hasOnlyCorrelatedSources()) {
                 return false;
             }
 
@@ -161,7 +165,7 @@ public class Partitioner {
         //Constructs the initial set of groups
         ArrayList<TimeSeries[]> tsgs = new ArrayList<>();
         for (TimeSeries ts : timeSeries) {
-            tsgs.add(new TimeSeries[]{ ts });
+            tsgs.add(new TimeSeries[]{ts});
         }
 
         //Combines groups until a fixed point is reached

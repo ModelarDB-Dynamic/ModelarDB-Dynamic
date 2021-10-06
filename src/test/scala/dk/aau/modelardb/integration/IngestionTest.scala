@@ -34,7 +34,7 @@ class IngestionTest extends AnyFlatSpec with Matchers {
   behavior of "ModelarDB"
   it should "be able to ingest time series without any error" in new TimeSeriesGroupProvider {
     //newTimeSeriesGroups and samplingInterval are provided by TimeSeriesGroupProvider
-    val (ats, rts) = ingest(() => newTimeSeriesGroups,() => samplingInterval, 0.0F)
+    val (ats, rts) = ingest(() => newTimeSeriesGroups, () => samplingInterval, 0.0F)
     while (ats.hasNext && rts.hasNext) {
       ats.next().value should equal(rts.next().value)
     }
@@ -42,13 +42,13 @@ class IngestionTest extends AnyFlatSpec with Matchers {
 
   it should "be able to ingest time series within an error bound" in new TimeSeriesGroupProvider {
     //newTimeSeriesGroups and samplingInterval are provided by TimeSeriesGroupProvider
-    val (ats, rts) = ingest(() => newTimeSeriesGroups,() => samplingInterval, 10.0F)
+    val (ats, rts) = ingest(() => newTimeSeriesGroups, () => samplingInterval, 10.0F)
     while (ats.hasNext && rts.hasNext) {
       Static.percentageError(ats.next().value, rts.next().value) should be <= 10.0
     }
   }
 
-  /** Private Methods **/
+  /** Private Methods * */
   def ingest(newTimeSeriesGroups: () => Array[TimeSeriesGroup], samplingInterval: () => Int, errorBound: Float):
   (Iterator[DataPoint], Iterator[DataPoint]) = {
     //Initialize
@@ -62,11 +62,11 @@ class IngestionTest extends AnyFlatSpec with Matchers {
     val offset = ByteBuffer.allocate(12).putInt(1).putInt(1).putInt(0).array()
     val workingSet = new WorkingSet(newTimeSeriesGroups(), 1 / 10, mtn,
       Range(1, mtn.length + 1).toArray, errorBound, 50, 0)
-      workingSet.process((_: Int, _: Long, _: Long, _: Int, _: Array[Byte], _: Array[Byte]) => (),
-        (gid: Int, startTime: Long, endTime: Long, mtid: Int, model: Array[Byte], gaps: Array[Byte]) => {
-          segments.append(modelTypes(mtid - 1).get(gid, startTime, endTime, samplingInterval(), model, offset)) //HACK: gid == tid
-        },
-        () => false)
+    workingSet.process((_: Int, _: Long, _: Long, _: Int, _: Array[Byte], _: Array[Byte]) => (),
+      (gid: Int, startTime: Long, endTime: Long, mtid: Int, model: Array[Byte], gaps: Array[Byte]) => {
+        segments.append(modelTypes(mtid - 1).get(gid, startTime, endTime, samplingInterval(), model, offset)) //HACK: gid == tid
+      },
+      () => false)
 
     //Verify
     val realTimeSeriesGroups = newTimeSeriesGroups()

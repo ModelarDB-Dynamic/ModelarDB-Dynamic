@@ -21,7 +21,7 @@ import dk.aau.modelardb.storage.Storage
 
 object EngineFactory {
 
-  /** Public Methods **/
+  /** Public Methods * */
   def startEngine(configuration: Configuration, storage: Storage): Unit = {
     //Extracts the name of the system from the engine connection string
     configuration.getString("modelardb.engine").takeWhile(_ != ':') match {

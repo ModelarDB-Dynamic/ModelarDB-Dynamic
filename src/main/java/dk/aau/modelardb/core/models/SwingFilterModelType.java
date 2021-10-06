@@ -23,7 +23,18 @@ import java.util.List;
 
 class SwingFilterModelType extends ModelType {
 
-    /** Constructors **/
+    /**
+     * Instance Variables
+     **/
+    private int currentSize;
+    private LinearFunction upperBound;
+    private LinearFunction lowerBound;
+    private DataPoint initialDataPoint;
+    private boolean withinErrorBound;
+
+    /**
+     * Constructors
+     **/
     SwingFilterModelType(int mtid, float errorBound, int lengthBound) {
         super(mtid, errorBound, lengthBound);
         if (errorBound < 0.0 || 100.0 < errorBound) {
@@ -31,10 +42,12 @@ class SwingFilterModelType extends ModelType {
         }
     }
 
-    /** Public Methods **/
+    /**
+     * Public Methods
+     **/
     @Override
     public boolean append(DataPoint[] currentDataPoints) {
-        if ( ! this.withinErrorBound) {
+        if (!this.withinErrorBound) {
             return false;
         }
 
@@ -108,7 +121,7 @@ class SwingFilterModelType extends ModelType {
         this.withinErrorBound = true;
 
         for (DataPoint[] dataPoints : currentSegment) {
-            if ( ! append(dataPoints)) {
+            if (!append(dataPoints)) {
                 return;
             }
         }
@@ -128,7 +141,6 @@ class SwingFilterModelType extends ModelType {
             return ByteBuffer.allocate(16).putDouble(a).putDouble(b).array();
         }
     }
-
 
     @Override
     public Segment get(int tid, long startTime, long endTime, int samplingInterval, byte[] model, byte[] offsets) {
@@ -172,18 +184,19 @@ class SwingFilterModelType extends ModelType {
             return 16.0F;
         }
     }
-
-    /** Instance Variables **/
-    private int currentSize;
-    private LinearFunction upperBound;
-    private LinearFunction lowerBound;
-    private DataPoint initialDataPoint;
-    private boolean withinErrorBound;
 }
 
 class SwingFilterSegment extends Segment {
 
-    /** Constructors **/
+    /**
+     * Instance Variables
+     **/
+    private final double a;
+    private final double b;
+
+    /**
+     * Constructors
+     **/
     SwingFilterSegment(int tid, long startTime, long endTime, int samplingInterval, byte[] model, byte[] offsets) {
         super(tid, startTime, endTime, samplingInterval, offsets);
         ByteBuffer arguments = ByteBuffer.wrap(model);
@@ -201,7 +214,9 @@ class SwingFilterSegment extends Segment {
         }
     }
 
-    /** Public Methods **/
+    /**
+     * Public Methods
+     **/
     @Override
     public float min() {
         if (this.a == 0) {
@@ -232,13 +247,11 @@ class SwingFilterSegment extends Segment {
         return average * this.length();
     }
 
-    /** Protected Methods **/
+    /**
+     * Protected Methods
+     **/
     @Override
     protected float get(long timestamp, int index) {
         return (float) (this.a * timestamp + this.b);
     }
-
-    /** Instance Variables **/
-    private final double a;
-    private final double b;
 }

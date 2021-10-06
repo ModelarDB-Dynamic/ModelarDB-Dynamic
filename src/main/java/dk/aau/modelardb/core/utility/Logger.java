@@ -24,7 +24,22 @@ import java.util.Map;
 
 public class Logger implements Serializable {
 
-    /** Constructors **/
+    private final java.util.HashMap<String, Long> finalizedSegmentCounter = new java.util.HashMap<>();
+    private final java.util.HashMap<String, Long> finalizedDataPointCounter = new java.util.HashMap<>();
+    /**
+     * Instance Variables
+     **/
+    private long processingTime = 0L;
+    private int groupSize = 0;
+    private long temporarySegmentCounter = 0L;
+    private long temporaryDataPointCounter = 0L;
+    private float finalizedMetadataSize = 0.0F;
+    private float finalizedModelsSize = 0.0F;
+    private float finalizedGapsSize = 0.0F;
+
+    /**
+     * Constructors
+     **/
     public Logger() {
         //An empty Logger object can be used to aggregate data from multiple Logger objects
     }
@@ -33,7 +48,9 @@ public class Logger implements Serializable {
         this.groupSize = groupSize;
     }
 
-    /** Public Methods **/
+    /**
+     * Public Methods
+     **/
     public void add(Logger logger) {
         this.processingTime = Long.max(this.processingTime, logger.processingTime);
         this.temporarySegmentCounter += logger.temporarySegmentCounter;
@@ -145,7 +162,9 @@ public class Logger implements Serializable {
         System.out.println("---------------------------------------------------------");
     }
 
-    /** Private Methods **/
+    /**
+     * Private Methods
+     **/
     private void printAlignedDebugVariables(String variableName, double sizeInBytes, int cs) {
         System.out.format("%16s: %" + cs + ".0f B | %" + cs + ".3f KB | %" + cs + ".3f MB\n",
                 variableName,
@@ -164,16 +183,4 @@ public class Logger implements Serializable {
     private double getTotalSize() {
         return this.finalizedMetadataSize + this.finalizedModelsSize + this.finalizedGapsSize;
     }
-
-    /** Instance Variables **/
-    private long processingTime = 0L;
-    private int groupSize = 0;
-    private long temporarySegmentCounter = 0L;
-    private long temporaryDataPointCounter = 0L;
-    private float finalizedMetadataSize = 0.0F;
-    private float finalizedModelsSize = 0.0F;
-    private float finalizedGapsSize = 0.0F;
-
-    private final java.util.HashMap<String, Long> finalizedSegmentCounter = new java.util.HashMap<>();
-    private final java.util.HashMap<String, Long> finalizedDataPointCounter = new java.util.HashMap<>();
 }

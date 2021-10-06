@@ -28,7 +28,7 @@ import scala.annotation.switch
 import scala.collection.mutable
 
 object H2Projector {
-  /** Instance Variable **/
+  /** Instance Variable * */
   private val segmentProjectorCache = mutable.HashMap[Integer, H2SegmentProjector]()
   private val dataPointProjectorCache = mutable.HashMap[Integer, H2DataPointProjector]()
   private val argsField = classOf[AbstractAggregate].getDeclaredField("args")
@@ -46,7 +46,7 @@ object H2Projector {
     // despite the limitations of Scalac, while keeping the compile time low
     val currentValues = new Array[Value](EngineUtilities.segmentViewNameToIndex.size)
     val requiredColumns = tableFilterToColumns(filter)
-    val columnNames =  requiredColumns.map(_.getName.toLowerCase)
+    val columnNames = requiredColumns.map(_.getName.toLowerCase)
     val target = EngineUtilities.computeJumpTarget(columnNames, EngineUtilities.segmentViewNameToIndex, 6)
     (target: @switch) match {
       case 0 => //COUNT(*)
@@ -59,7 +59,7 @@ object H2Projector {
           currentValues
         })
       case 123456 => //Data Point View and UDAFs
-        segments.map(segment  => {
+        segments.map(segment => {
           currentValues(0) = ValueInt.get(segment.gid) //Exploded so .gid is the tid
           currentValues(1) = ValueTimestamp.fromMillis(segment.startTime, 0)
           currentValues(2) = ValueTimestamp.fromMillis(segment.endTime, 0)
@@ -84,7 +84,7 @@ object H2Projector {
   def dataPointProjection(dataPoints: Iterator[DataPoint], filter: TableFilter): Iterator[Array[Value]] = {
     val currentValues = new Array[Value](EngineUtilities.dataPointViewNameToIndex.size)
     val requiredColumns = tableFilterToColumns(filter)
-    val columnNames =  requiredColumns.map(_.getName.toLowerCase)
+    val columnNames = requiredColumns.map(_.getName.toLowerCase)
     val target = EngineUtilities.computeJumpTarget(columnNames, EngineUtilities.dataPointViewNameToIndex, 3)
     (target: @switch) match {
       case 0 => dataPoints.map(_ => null)
@@ -139,7 +139,7 @@ object H2Projector {
     }
   }
 
-  /** Private Methods **/
+  /** Private Methods * */
   private def tableFilterToColumns(filter: TableFilter): Array[Column] = {
     try {
       val select = filter.getSelect

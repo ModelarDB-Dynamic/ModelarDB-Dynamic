@@ -25,7 +25,12 @@ import java.sql.Timestamp
 class WorkingSetReceiver(workingSet: WorkingSet)
   extends Receiver[Row](StorageLevel.MEMORY_AND_DISK) {
 
-  /** Public Methods **/
+  /** Instance Variables * */
+  lazy val thread: Thread = new Thread(workingSet.toString) {
+    override def run(): Unit = receive()
+  }
+
+  /** Public Methods * */
   override def onStart(): Unit = {
     thread.start()
   }
@@ -34,7 +39,7 @@ class WorkingSetReceiver(workingSet: WorkingSet)
     thread.interrupt()
   }
 
-  /** Private Methods **/
+  /** Private Methods * */
   private def receive(): Unit = {
     //Creates methods that emit both segment types to Spark Streaming
     val consumeTemporary = new SegmentFunction {
@@ -56,10 +61,5 @@ class WorkingSetReceiver(workingSet: WorkingSet)
     println(workingSet)
     workingSet.process(consumeTemporary, consumeFinalized, isTerminated)
     workingSet.logger.printWorkingSetResult()
-  }
-
-  /** Instance Variables **/
-  lazy val thread: Thread = new Thread(workingSet.toString) {
-    override def run(): Unit = receive()
   }
 }

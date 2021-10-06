@@ -32,7 +32,25 @@ import java.util.stream.Collectors;
 
 public class WorkingSet implements Serializable {
 
-    /** Constructors **/
+    //DEBUG: the logger provides various counters and methods for debugging
+    public final Logger logger = new Logger();
+    private final TimeSeriesGroup[] timeSeriesGroups;
+    private final float dynamicSplitFraction;
+    private final String[] modelTypeNames;
+    private final int[] mtids;
+    private final float errorBound;
+    private final int lengthBound;
+    private final int maximumLatency;
+    /**
+     * Instance Variables
+     **/
+    private int currentTimeSeriesGroup;
+    private SegmentFunction consumeTemporarySegment;
+    private SegmentFunction consumeFinalizedSegment;
+    private BooleanSupplier haveExecutionBeenTerminated;
+    /**
+     * Constructors
+     **/
     public WorkingSet(TimeSeriesGroup[] timeSeriesGroups, float dynamicSplitFraction, String[] models,
                       int[] mtids, float errorBound, int lengthBound, int latency) {
         this.timeSeriesGroups = timeSeriesGroups;
@@ -45,7 +63,27 @@ public class WorkingSet implements Serializable {
         this.lengthBound = lengthBound;
     }
 
-    /** Public Methods **/
+    public static String toString(WorkingSet[] workingSets) {
+        String[] bodies = Arrays.stream(workingSets).map(ws ->
+                "Working Set [Current Gid: " + ws.timeSeriesGroups[ws.currentTimeSeriesGroup].gid +
+                        " | Total TSGs: " + ws.timeSeriesGroups.length +
+                        " | Current TSG: " + (ws.currentTimeSeriesGroup + 1) + //Parentheses makes the + add instead of concat
+                        " | Error Bound: " + ws.errorBound +
+                        " | Length Bound: " + ws.lengthBound +
+                        " | Maximum Latency: " + ws.maximumLatency).toArray(String[]::new);
+        int longestLine = Arrays.stream(bodies).mapToInt(String::length).max().getAsInt(); //workingSets is never empty
+        String headerFooter = "=".repeat(longestLine);
+        StringBuilder body = new StringBuilder();
+        for (String line : bodies) {
+            body.append(line);
+            body.append('\n');
+        }
+        return headerFooter + "\n" + body + headerFooter;
+    }
+
+    /**
+     * Public Methods
+     **/
     public void process(SegmentFunction consumeTemporarySegment, SegmentFunction consumeFinalizedSegment,
                         BooleanSupplier haveExecutionBeenTerminated) throws IOException {
         //DEBUG: initializes the timer stored in the logger
@@ -74,28 +112,12 @@ public class WorkingSet implements Serializable {
         return headerFooter + "\n" + body + "\n" + headerFooter;
     }
 
-    public static String toString(WorkingSet[] workingSets) {
-        String[] bodies = Arrays.stream(workingSets).map(ws ->
-                "Working Set [Current Gid: " + ws.timeSeriesGroups[ws.currentTimeSeriesGroup].gid +
-                        " | Total TSGs: " + ws.timeSeriesGroups.length +
-                        " | Current TSG: " + (ws.currentTimeSeriesGroup + 1) + //Parentheses makes the + add instead of concat
-                        " | Error Bound: " + ws.errorBound +
-                        " | Length Bound: " + ws.lengthBound +
-                        " | Maximum Latency: " + ws.maximumLatency).toArray(String[]::new);
-        int longestLine = Arrays.stream(bodies).mapToInt(String::length).max().getAsInt(); //workingSets is never empty
-        String headerFooter = "=".repeat(longestLine);
-        StringBuilder body = new StringBuilder();
-        for (String line : bodies) {
-            body.append(line);
-            body.append('\n');
-        }
-        return headerFooter + "\n" + body + headerFooter;
-    }
-
-    /** Private Methods **/
+    /**
+     * Private Methods
+     **/
     private void processBounded() {
         while (this.currentTimeSeriesGroup < this.timeSeriesGroups.length &&
-                ! this.timeSeriesGroups[this.currentTimeSeriesGroup].isAsync) {
+                !this.timeSeriesGroups[this.currentTimeSeriesGroup].isAsync) {
             //Checks if the engine currently ingesting from this working set has been terminated
             if (this.haveExecutionBeenTerminated.getAsBoolean()) {
                 return;
@@ -140,13 +162,13 @@ public class WorkingSet implements Serializable {
             Iterator<SelectionKey> keyIterator = selector.selectedKeys().iterator();
             while (keyIterator.hasNext()) {
                 SelectionKey key = keyIterator.next();
-                if ( ! key.isReadable()) {
+                if (!key.isReadable()) {
                     throw new IOException("CORE: non-readable channel selected");
                 }
 
                 //Ingests the data points using the segment generator and closes the channels if it no longer provides data
                 SegmentGenerator sg = (SegmentGenerator) key.attachment();
-                if ( ! sg.consumeAllDataPoints()) {
+                if (!sg.consumeAllDataPoints()) {
                     sg.close();
                     sg.logger.printGeneratorResult(sg.getTimeSeriesGroup());
                     this.logger.add(sg.logger);
@@ -171,7 +193,7 @@ public class WorkingSet implements Serializable {
         TimeSeriesGroup tsg = this.timeSeriesGroups[index];
         tsg.initialize();
         Supplier<ModelType[]> modelTypeInitializer = () -> ModelTypeFactory.getModelTypes(
-                this.modelTypeNames, this.mtids,this.errorBound,this.lengthBound);
+                this.modelTypeNames, this.mtids, this.errorBound, this.lengthBound);
         ModelType fallbackModelType = ModelTypeFactory.getFallbackModelType(this.errorBound, this.lengthBound);
         List<Integer> tids = null;
         if (this.dynamicSplitFraction != 0.0F) {
@@ -180,21 +202,4 @@ public class WorkingSet implements Serializable {
         return new SegmentGenerator(tsg, modelTypeInitializer, fallbackModelType, tids, this.maximumLatency,
                 this.dynamicSplitFraction, this.consumeTemporarySegment, this.consumeFinalizedSegment);
     }
-
-    /** Instance Variables **/
-    private int currentTimeSeriesGroup;
-    private SegmentFunction consumeTemporarySegment;
-    private SegmentFunction consumeFinalizedSegment;
-    private BooleanSupplier haveExecutionBeenTerminated;
-
-    private final TimeSeriesGroup[] timeSeriesGroups;
-    private final float dynamicSplitFraction;
-    private final String[] modelTypeNames;
-    private final int[] mtids;
-    private final float errorBound;
-    private final int lengthBound;
-    private final int maximumLatency;
-
-    //DEBUG: the logger provides various counters and methods for debugging
-    public final Logger logger = new Logger();
 }

@@ -24,10 +24,13 @@ import org.apache.spark.sql.{Row, SQLContext, sources}
 
 import java.sql.Timestamp
 
-class ViewSegment(dimensions: Array[StructField]) (@transient val sqlContext: SQLContext)
+class ViewSegment(dimensions: Array[StructField])(@transient val sqlContext: SQLContext)
   extends BaseRelation with PrunedFilteredScan {
 
-  /** Public Methods **/
+  /** Instance Variables * */
+  private val cache = Spark.getCache
+
+  /** Public Methods * */
   override def schema: StructType = StructType(Seq(
     StructField("tid", IntegerType, nullable = false),
     StructField("start_time", TimestampType, nullable = false),
@@ -51,7 +54,7 @@ class ViewSegment(dimensions: Array[StructField]) (@transient val sqlContext: SQ
     SparkProjector.segmentProjection(segmentRows, requiredColumns)
   }
 
-  /** Private Methods **/
+  /** Private Methods * */
   private def getSegmentGroupRDD(filters: Array[Filter]): RDD[Row] = {
     //Tids and members are mapped to Gids so only segments from the necessary groups are retrieved
     val tsgc = Spark.getSparkStorage.timeSeriesGroupCache
@@ -84,7 +87,4 @@ class ViewSegment(dimensions: Array[StructField]) (@transient val sqlContext: SQ
       sg.explode(gmdc, gdc).map(e =>
         Row(e.gid, new Timestamp(e.startTime), new Timestamp(e.endTime), e.mtid, e.model, e.offsets))
   }
-
-  /** Instance Variables **/
-  private val cache = Spark.getCache
 }

@@ -27,12 +27,12 @@ import org.apache.spark.sql.{DataFrame, DataFrameReader, SparkSession, sources}
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 
 import java.sql.Timestamp
+import scala.collection.JavaConverters._
 import scala.collection.mutable
-import collection.JavaConverters._
 
 class Spark(configuration: Configuration, sparkStorage: SparkStorage) {
 
-  /** Public Methods **/
+  /** Public Methods * */
   def start(): Unit = {
     //Creates the Spark Session, Spark Streaming Context, and initializes the companion object
     val (ss, ssc) = initialize()
@@ -49,7 +49,7 @@ class Spark(configuration: Configuration, sparkStorage: SparkStorage) {
     ss.stop()
   }
 
-  /** Private Methods **/
+  /** Private Methods * */
   private def initialize(): (SparkSession, StreamingContext) = {
 
     //Constructs the necessary Spark Conf and Spark Session Builder
@@ -68,11 +68,11 @@ class Spark(configuration: Configuration, sparkStorage: SparkStorage) {
     //Initializes storage and Spark with any new time series that the system must ingest
     configuration.containsOrThrow("modelardb.batch_size")
     val ssc = if (configuration.getIngestors == 0) {
-      if ( ! configuration.getDerivedTimeSeries.isEmpty) { //Initializes derived time series
+      if (!configuration.getDerivedTimeSeries.isEmpty) { //Initializes derived time series
         Partitioner.initializeTimeSeries(configuration, sparkStorage.getMaxTid)
       }
       sparkStorage.storeMetadataAndInitializeCaches(configuration, Array())
-      Spark.initialize(spark, configuration, sparkStorage, Range(0,0))
+      Spark.initialize(spark, configuration, sparkStorage, Range(0, 0))
       null
     } else {
       configuration.containsOrThrow("modelardb.spark.streaming")
@@ -112,7 +112,7 @@ class Spark(configuration: Configuration, sparkStorage: SparkStorage) {
     val stream = ssc.union(streams.toSeq)
 
     //If querying and temporary segments are disabled, segments can be written directly to disk without being cached
-    if ( ! configuration.contains("modelardb.interface") && ! configuration.contains("modelardb.latency")) {
+    if (!configuration.contains("modelardb.interface") && !configuration.contains("modelardb.latency")) {
       stream.foreachRDD(Spark.getCache.write(_))
       Static.info("ModelarDB: Spark Streaming initialized in bulk-loading mode")
     } else {
@@ -127,12 +127,6 @@ class Spark(configuration: Configuration, sparkStorage: SparkStorage) {
 }
 
 object Spark {
-  /** Instance Variables **/
-  private var parallelism: Int = _
-  private var cache: SparkCache = _
-  private var viewProvider: DataFrameReader = _
-  private var sparkStorage: SparkStorage = _
-  private var broadcastedTimeSeriesTransformationCache: Broadcast[Array[ValueFunction]] = _
   private val storageSegmentGroupsSchema: StructType = StructType(Seq(
     StructField("gid", IntegerType, nullable = false),
     StructField("start_time", TimestampType, nullable = false),
@@ -140,8 +134,14 @@ object Spark {
     StructField("mtid", IntegerType, nullable = false),
     StructField("model", BinaryType, nullable = false),
     StructField("gaps", BinaryType, nullable = false)))
+  /** Instance Variables * */
+  private var parallelism: Int = _
+  private var cache: SparkCache = _
+  private var viewProvider: DataFrameReader = _
+  private var sparkStorage: SparkStorage = _
+  private var broadcastedTimeSeriesTransformationCache: Broadcast[Array[ValueFunction]] = _
 
-  /** Constructors **/
+  /** Constructors * */
   def initialize(spark: SparkSession, configuration: Configuration, sparkStorage: SparkStorage, newGids: Range): Unit = {
     this.parallelism = spark.sparkContext.defaultParallelism
     this.viewProvider = spark.read.format("dk.aau.modelardb.engines.spark.ViewProvider")
@@ -151,12 +151,17 @@ object Spark {
     this.cache = new SparkCache(spark, configuration.getInteger("modelardb.batch_size"), newGids)
   }
 
-  /** Public Methods **/
+  /** Public Methods * */
   def getCache: SparkCache = Spark.cache
+
   def getViewProvider: DataFrameReader = Spark.viewProvider
+
   def getSparkStorage: SparkStorage = Spark.sparkStorage
+
   def getBroadcastedTimeSeriesTransformationCache: Broadcast[Array[ValueFunction]] = Spark.broadcastedTimeSeriesTransformationCache
+
   def getStorageSegmentGroupsSchema: StructType = this.storageSegmentGroupsSchema
+
   def isDataSetSmall(rows: RDD[_]): Boolean = rows.partitions.length <= parallelism
 
   def applyFiltersToDataFrame(df: DataFrame, filters: Array[Filter]): DataFrame = {

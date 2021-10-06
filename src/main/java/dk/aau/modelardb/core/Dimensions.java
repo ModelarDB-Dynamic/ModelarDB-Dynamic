@@ -22,7 +22,20 @@ import java.util.HashMap;
 
 public class Dimensions {
 
-    /** Constructors **/
+    /**
+     * Instance Variables
+     **/
+    private final String[] names;
+    private final HashMap<String, Pair<Integer, Integer>> dims;
+    private final Object[] emptyRow;
+    private final double[] weights;
+    private final String[] columns;
+    private final Dimensions.Types[] types;
+    private final HashMap<String, Object[]> rows;
+
+    /**
+     * Constructors
+     **/
     public Dimensions(String[] dimensions) {
         ArrayList<String> names = new ArrayList<>();
         HashMap<String, Pair<Integer, Integer>> dims = new HashMap<>();
@@ -37,7 +50,7 @@ public class Dimensions {
             //The last element may be a weight but it is not guaranteed, however, as all members
             // must have an associated type only the name and weight consist of a single element
             int numberOfColumns;
-            if ( ! split[split.length - 1].trim().contains(" ")) {
+            if (!split[split.length - 1].trim().contains(" ")) {
                 //The weight is stored as 1/W so a larger weight is better
                 weights.add(1.0 / Double.parseDouble(split[split.length - 1]));
                 numberOfColumns = split.length - 1;
@@ -70,7 +83,9 @@ public class Dimensions {
         this.emptyRow = new Object[0];
     }
 
-    /** Public Methods **/
+    /**
+     * Public Methods
+     **/
     public void add(String line) {
         add(line.split(","));
     }
@@ -173,9 +188,8 @@ public class Dimensions {
                 default:
                     throw new IllegalArgumentException("CORE: \"" + this.types[index] + "\" is not supported");
             }
-        }
-        catch (NumberFormatException nfe){
-            throw new IllegalArgumentException("CORE: \"" + member+ "\" is not a \"" + this.types[index] + "\"", nfe);
+        } catch (NumberFormatException nfe) {
+            throw new IllegalArgumentException("CORE: \"" + member + "\" is not a \"" + this.types[index] + "\"", nfe);
         }
     }
 
@@ -183,7 +197,7 @@ public class Dimensions {
         StringBuilder sb = new StringBuilder();
         //Indents the header to match the first row
         int indent = 0;
-        if  ( ! this.rows.isEmpty()) {
+        if (!this.rows.isEmpty()) {
             indent = this.rows.keySet().iterator().next().length() + 3;
         }
         sb.append(" ".repeat(indent));
@@ -214,7 +228,9 @@ public class Dimensions {
         return sb.toString();
     }
 
-    /** Private Methods **/
+    /**
+     * Private Methods
+     **/
     private Dimensions.Types parseTypes(String type) {
         switch (type.trim().toLowerCase()) {
             case "int":
@@ -259,8 +275,7 @@ public class Dimensions {
                         parsed[i] = line;
                         break;
                 }
-            }
-            catch (NumberFormatException nfe){
+            } catch (NumberFormatException nfe) {
                 throw new IllegalArgumentException("CORE: \"" + line + "\" is not a \"" + this.types[i] + "\"", nfe);
             }
         }
@@ -277,14 +292,14 @@ public class Dimensions {
 
                 for (TimeSeries ts : tsgA) {
                     Object value = this.rows.get(ts.source)[index];
-                    if ( ! match.equals(value)) {
+                    if (!match.equals(value)) {
                         return lca;
                     }
                 }
 
                 for (TimeSeries ts : tsgB) {
                     Object value = this.rows.get(ts.source)[index];
-                    if ( ! match.equals(value)) {
+                    if (!match.equals(value)) {
                         return lca;
                     }
                 }
@@ -299,13 +314,5 @@ public class Dimensions {
         }
     }
 
-    /** Instance Variables **/
-    private final String[] names;
-    private final HashMap<String, Pair<Integer, Integer>> dims;
-    private final Object[] emptyRow;
-    private final double[] weights;
-    private final String[] columns;
-    private final Dimensions.Types[] types;
-    private final HashMap<String, Object[]> rows;
     public enum Types {INT, LONG, FLOAT, DOUBLE, TEXT}
 }

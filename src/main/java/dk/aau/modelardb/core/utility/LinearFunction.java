@@ -16,17 +16,23 @@ package dk.aau.modelardb.core.utility;
 
 public class LinearFunction {
 
-    /** Constructors **/
+    /**
+     * Instance Variables
+     **/
+    public final double a, b;
+
+    /**
+     * Constructors
+     **/
     public LinearFunction(long ts, double vs, long te, double ve) {
         this.a = (ve - vs) / (te - ts);
         this.b = vs - a * ts;
     }
 
-    /** Public Methods **/
+    /**
+     * Public Methods
+     **/
     public double get(long ts) {
         return this.a * ts + this.b;
     }
-
-    /** Instance Variables **/
-    public final double a, b;
 }

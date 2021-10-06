@@ -28,7 +28,41 @@ import java.util.stream.IntStream;
 
 public class SegmentGenerator {
 
-    /** Constructors **/
+    /**
+     * Instance Variables
+     **/
+    //Variables from the constructor
+    private final int gid;
+    private final int maximumLatency;
+    private final int samplingInterval;
+    private final ModelType[] modelTypes;
+    private final ModelType fallbackModelType;
+    private final Supplier<ModelType[]> modelTypeInitializer;
+    private final SegmentFunction finalizedSegmentStream;
+    private final SegmentFunction temporarySegmentStream;
+    //State variables for controlling split generators
+    private final List<Integer> tids;
+    //DEBUG: logger instance, for counting segments, used for this generator
+    Logger logger;
+    private TimeSeriesGroup timeSeriesGroup;
+    //State variables for buffering data points
+    private Set<Integer> gaps;
+    private ArrayList<DataPoint[]> buffer;
+    private long[] previousTimeStamps;
+    private float dynamicSplitFraction;
+    private long emittedFinalizedSegments;
+    private double compressionRatioAverage;
+    private long finalizedSegmentsBeforeNextJoinCheck;
+    private Set<SegmentGenerator> splitsToJoinIfCorrelated;
+    private ArrayList<SegmentGenerator> splitSegmentGenerators;
+    //State variables for fitting the current model
+    private int modelTypeIndex;
+    private int dataPointsYetEmitted;
+    private ModelType currentModelType;
+    private ModelType lastEmittedModelType;
+    /**
+     * Constructors
+     **/
     SegmentGenerator(TimeSeriesGroup timeSeriesGroup, Supplier<ModelType[]> modelTypeInitializer,
                      ModelType fallbackModelType, List<Integer> tids, int maximumLatency, float dynamicSplitFraction,
                      SegmentFunction temporarySegmentStream, SegmentFunction finalizedSegmentStream) {
@@ -69,7 +103,9 @@ public class SegmentGenerator {
         this.logger = new Logger(this.timeSeriesGroup.size());
     }
 
-    /** Package Methods **/
+    /**
+     * Package Methods
+     **/
     boolean consumeAllDataPoints() {
         boolean consumedDataPoints = false;
         while (this.timeSeriesGroup.hasNext()) {
@@ -81,7 +117,7 @@ public class SegmentGenerator {
 
             //Ingests data points for all splits until they are all joined or no more data points are available
             boolean splitSegmentGeneratorHasNext = true;
-            while ( ! this.splitSegmentGenerators.isEmpty() && splitSegmentGeneratorHasNext) {
+            while (!this.splitSegmentGenerators.isEmpty() && splitSegmentGeneratorHasNext) {
                 splitSegmentGeneratorHasNext = false;
                 int splitSegmentGeneratorSize = this.splitSegmentGenerators.size();
                 for (int i = 0; i < splitSegmentGeneratorSize; i++) {
@@ -130,7 +166,7 @@ public class SegmentGenerator {
             DataPoint cdpg = curDataPointsAndGaps[i];
             if (Float.isNaN(cdpg.value)) {
                 //A NaN value indicates the start of a gap, so we flush and store its tid in gaps
-                if ( ! this.gaps.contains(cdpg.tid)) {
+                if (!this.gaps.contains(cdpg.tid)) {
                     flushBuffer();
                     this.gaps.add(cdpg.tid);
                 }
@@ -153,7 +189,7 @@ public class SegmentGenerator {
 
         //The current model type is given the data points and it verifies that the model can represent them and all prior,
         // it is assumed that append will fail if it failed in the past, so append(t,V) must fail if append(t-1,V) failed
-        if ( ! this.currentModelType.append(currentDataPoints)) {
+        if (!this.currentModelType.append(currentDataPoints)) {
             this.modelTypeIndex += 1;
             if (this.modelTypeIndex == this.modelTypes.length) {
                 //If none of the model types can represent all of the buffered data points, the model type that provides
@@ -189,7 +225,7 @@ public class SegmentGenerator {
         // create models with a poor compression ratio despite the time series in the group still being correlated
         float previousDynamicSplitFraction = this.dynamicSplitFraction;
         this.dynamicSplitFraction = 0;
-        while ( ! buffer.isEmpty()) {
+        while (!buffer.isEmpty()) {
             emitFinalSegment();
             for (ModelType m : this.modelTypes) {
                 m.initialize(this.buffer);
@@ -258,9 +294,9 @@ public class SegmentGenerator {
 
         //If the time series have changed it might beneficial to split or join their groups
         boolean compressionRatioIsBelowAverage = checkIfCompressionRatioIsBelowAverageAndUpdateTheAverage(highestCompressionRatio);
-        if ( ! this.buffer.isEmpty() && this.buffer.get(0).length > 1 && compressionRatioIsBelowAverage ) {
+        if (!this.buffer.isEmpty() && this.buffer.get(0).length > 1 && compressionRatioIsBelowAverage) {
             splitGroupIfItsTimeSeriesAreNoLongerCorrelated();
-        } else if ( ! this.splitSegmentGenerators.isEmpty() && this.emittedFinalizedSegments == this.finalizedSegmentsBeforeNextJoinCheck) {
+        } else if (!this.splitSegmentGenerators.isEmpty() && this.emittedFinalizedSegments == this.finalizedSegmentsBeforeNextJoinCheck) {
             this.splitsToJoinIfCorrelated.add(this);
             this.emittedFinalizedSegments = 0;
             this.finalizedSegmentsBeforeNextJoinCheck *= 2;
@@ -301,7 +337,7 @@ public class SegmentGenerator {
         int[] tsTids = Arrays.stream(this.timeSeriesGroup.getTimeSeries()).mapToInt(ts -> ts.tid).toArray();
         Set<Integer> timeSeriesWithoutGaps = IntStream.range(0, lengthOfDataPointsInBuffer).boxed().collect(Collectors.toSet());
 
-        while ( ! timeSeriesWithoutGaps.isEmpty()) {
+        while (!timeSeriesWithoutGaps.isEmpty()) {
             int i = timeSeriesWithoutGaps.iterator().next();
             ArrayList<Integer> bufferSplitIndexes = new ArrayList<>();
             ArrayList<Integer> timeSeriesSplitIndexes = new ArrayList<>();
@@ -405,7 +441,7 @@ public class SegmentGenerator {
         float doubleErrorBound = 2 * this.fallbackModelType.errorBound;
         HashSet<SegmentGenerator> markedForJoining = new HashSet<>();
         ArrayList<SegmentGenerator> joined = new ArrayList<>();
-        while ( ! this.splitsToJoinIfCorrelated.isEmpty()) {
+        while (!this.splitsToJoinIfCorrelated.isEmpty()) {
             SegmentGenerator sgi = this.splitsToJoinIfCorrelated.iterator().next();
             HashSet<SegmentGenerator> toBeJoined = new HashSet<>();
 
@@ -464,7 +500,7 @@ public class SegmentGenerator {
                 totalJoinIndexList.add(ts.tid);
 
                 //Segment generators store the tid for all time series it controls currently in a gap
-                if ( ! sg.gaps.contains(ts.tid)) {
+                if (!sg.gaps.contains(ts.tid)) {
                     activeJoinIndexList.add(ts.tid);
                 }
             }
@@ -537,39 +573,4 @@ public class SegmentGenerator {
             nsg.emitTemporarySegment();
         }
     }
-
-    /** Instance Variables **/
-    //Variables from the constructor
-    private final int gid;
-    private final int maximumLatency;
-    private final int samplingInterval;
-    private final ModelType[] modelTypes;
-    private final ModelType fallbackModelType;
-    private TimeSeriesGroup timeSeriesGroup;
-    private final Supplier<ModelType[]> modelTypeInitializer;
-    private final SegmentFunction finalizedSegmentStream;
-    private final SegmentFunction temporarySegmentStream;
-
-    //State variables for buffering data points
-    private Set<Integer> gaps;
-    private ArrayList<DataPoint[]> buffer;
-    private long[] previousTimeStamps;
-
-    //State variables for controlling split generators
-    private final List<Integer> tids;
-    private float dynamicSplitFraction;
-    private long emittedFinalizedSegments;
-    private double compressionRatioAverage;
-    private long finalizedSegmentsBeforeNextJoinCheck;
-    private Set<SegmentGenerator> splitsToJoinIfCorrelated;
-    private ArrayList<SegmentGenerator> splitSegmentGenerators;
-
-    //State variables for fitting the current model
-    private int modelTypeIndex;
-    private int dataPointsYetEmitted;
-    private ModelType currentModelType;
-    private ModelType lastEmittedModelType;
-
-    //DEBUG: logger instance, for counting segments, used for this generator
-    Logger logger;
 }
