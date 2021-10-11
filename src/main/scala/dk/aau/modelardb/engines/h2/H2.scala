@@ -130,12 +130,8 @@ class H2(configuration: Configuration, h2storage: H2Storage) {
       }
     }
 
-    val isTerminated = new BooleanSupplier {
-      override def getAsBoolean: Boolean = false
-    }
-
     //Start Ingestion
-    workingSet.process(consumeTemporary, consumeFinalized, isTerminated)
+    workingSet.process(consumeTemporary, consumeFinalized,() => false)
 
     //Write remaining finalized segments
     cacheLock.writeLock().lock()
