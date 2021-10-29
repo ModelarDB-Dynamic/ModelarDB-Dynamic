@@ -1,4 +1,4 @@
-package dk.aau.modelardb.core;
+package dk.aau.modelardb.core.Models;
 
 import java.util.regex.Pattern;
 

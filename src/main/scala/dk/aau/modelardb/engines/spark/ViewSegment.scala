@@ -14,7 +14,7 @@
  */
 package dk.aau.modelardb.engines.spark
 
-import dk.aau.modelardb.core.SegmentGroup
+import dk.aau.modelardb.core.GroupBasedCompression.SegmentGroup
 import dk.aau.modelardb.core.utility.Static
 import dk.aau.modelardb.engines.EngineUtilities
 import org.apache.spark.rdd.RDD

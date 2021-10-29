@@ -14,7 +14,7 @@
 // */
 //package dk.aau.modelardb.core.timeseries;
 //
-//import dk.aau.modelardb.core.DataPoint;
+//import dk.aau.modelardb.core.Models.DataPoint;
 //import org.apache.hadoop.conf.Configuration;
 //import org.apache.hadoop.fs.Path;
 //import org.apache.hadoop.hive.ql.exec.vector.DoubleColumnVector;

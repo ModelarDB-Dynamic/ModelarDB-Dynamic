@@ -14,7 +14,7 @@
  */
 package dk.aau.modelardb.core.utility;
 
-import dk.aau.modelardb.core.ValueDataPoint;
+import dk.aau.modelardb.core.Models.ValueDataPoint;
 import dk.aau.modelardb.core.timeseries.TimeSeries;
 
 import java.net.Inet6Address;

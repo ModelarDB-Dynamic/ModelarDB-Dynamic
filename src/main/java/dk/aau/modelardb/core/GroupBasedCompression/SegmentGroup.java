@@ -12,10 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dk.aau.modelardb.core;
+package dk.aau.modelardb.core.GroupBasedCompression;
 
-import dk.aau.modelardb.core.models.ModelType;
-import dk.aau.modelardb.core.models.Segment;
+import dk.aau.modelardb.core.Models.CompressionModels.ModelType;
+import dk.aau.modelardb.core.Models.CompressionModels.Segment;
 import dk.aau.modelardb.core.utility.Static;
 import dk.aau.modelardb.storage.Storage;
 import scala.collection.mutable.HashMap;

@@ -15,7 +15,8 @@
 package dk.aau.modelardb.storage
 
 import dk.aau.modelardb.core.utility.Static
-import dk.aau.modelardb.core.{Dimensions, SegmentGroup, TimeSeriesGroup}
+import dk.aau.modelardb.core.Dimensions
+import dk.aau.modelardb.core.GroupBasedCompression.{SegmentGroup, TimeSeriesGroup}
 import dk.aau.modelardb.engines.h2.H2Storage
 import dk.aau.modelardb.engines.spark.SparkStorage
 import org.apache.hadoop.conf.Configuration

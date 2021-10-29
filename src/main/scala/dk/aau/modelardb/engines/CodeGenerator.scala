@@ -14,8 +14,9 @@
  */
 package dk.aau.modelardb.engines
 
+import dk.aau.modelardb.core.GroupBasedCompression.SegmentGroup
+import dk.aau.modelardb.core.Models.ValueDataPoint
 import dk.aau.modelardb.core.utility.ValueFunction
-import dk.aau.modelardb.core.{ValueDataPoint, SegmentGroup}
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.sql.Row
 import org.h2.table.Column
@@ -90,7 +91,7 @@ object CodeGenerator {
     val code =
       s"""
         import dk.aau.modelardb.engines.SparkDataPointProjector
-        import dk.aau.modelardb.core.DataPoint
+        import dk.aau.modelardb.core.Models.DataPoint
         import java.sql.Timestamp
         import dk.aau.modelardb.core.utility.ValueFunction
         import org.apache.spark.broadcast.Broadcast
@@ -141,7 +142,7 @@ object CodeGenerator {
     val code =
       s"""
         import dk.aau.modelardb.engines.H2SegmentProjector
-        import dk.aau.modelardb.core.SegmentGroup
+        import dk.aau.modelardb.core.GroupBasedCompression.SegmentGroup
         import org.h2.value._
 
         new H2SegmentProjector {
@@ -169,7 +170,7 @@ object CodeGenerator {
     val code =
       s"""
         import dk.aau.modelardb.engines.H2DataPointProjector
-        import dk.aau.modelardb.core.DataPoint
+        import dk.aau.modelardb.core.Models.DataPoint
         import dk.aau.modelardb.core.utility.ValueFunction
         import org.h2.value._
 

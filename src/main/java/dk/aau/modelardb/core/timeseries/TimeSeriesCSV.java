@@ -14,9 +14,8 @@
  */
 package dk.aau.modelardb.core.timeseries;
 
-import dk.aau.modelardb.core.DataPoint;
-import dk.aau.modelardb.core.SIConfigurationDataPoint;
-import dk.aau.modelardb.core.ValueDataPoint;
+import dk.aau.modelardb.core.Models.SIConfigurationDataPoint;
+import dk.aau.modelardb.core.Models.ValueDataPoint;
 
 import java.io.IOException;
 import java.io.InputStream;

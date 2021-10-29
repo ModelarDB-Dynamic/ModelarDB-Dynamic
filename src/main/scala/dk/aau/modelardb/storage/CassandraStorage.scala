@@ -19,7 +19,8 @@ import com.datastax.oss.driver.api.core.cql._
 import com.datastax.spark.connector._
 import com.datastax.spark.connector.cql.CassandraConnector
 import dk.aau.modelardb.core.utility.Static
-import dk.aau.modelardb.core.{Dimensions, SegmentGroup, TimeSeriesGroup}
+import dk.aau.modelardb.core.Dimensions
+import dk.aau.modelardb.core.GroupBasedCompression.{SegmentGroup, TimeSeriesGroup}
 import dk.aau.modelardb.engines.h2.{H2, H2Storage}
 import dk.aau.modelardb.engines.spark.{Spark, SparkStorage}
 import org.apache.spark.SparkConf

@@ -14,8 +14,9 @@
  */
 package dk.aau.modelardb.engines.h2
 
-import dk.aau.modelardb.core.models.ModelTypeFactory
-import dk.aau.modelardb.core.{Configuration, Dimensions, SegmentGroup}
+import dk.aau.modelardb.core.GroupBasedCompression.SegmentGroup
+import dk.aau.modelardb.core.Models.CompressionModels.ModelTypeFactory
+import dk.aau.modelardb.core.{Configuration, Dimensions}
 import dk.aau.modelardb.engines.EngineUtilities
 import dk.aau.modelardb.storage.JDBCStorage
 import org.h2.expression.condition.{Comparison, ConditionAndOr}

@@ -14,7 +14,7 @@
  */
 package dk.aau.modelardb.core.utility;
 
-import dk.aau.modelardb.core.models.Segment;
+import dk.aau.modelardb.core.Models.CompressionModels.Segment;
 
 import java.io.Serializable;
 

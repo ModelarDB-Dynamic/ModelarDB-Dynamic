@@ -14,8 +14,8 @@
  */
 package dk.aau.modelardb.engines.spark
 
-import dk.aau.modelardb.core.ValueDataPoint
-import dk.aau.modelardb.core.models.Segment
+import dk.aau.modelardb.core.Models.CompressionModels.Segment
+import dk.aau.modelardb.core.Models.ValueDataPoint
 import dk.aau.modelardb.engines.{CodeGenerator, EngineUtilities}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row

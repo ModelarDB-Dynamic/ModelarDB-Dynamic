@@ -14,9 +14,11 @@
  */
 package dk.aau.modelardb.integration
 
-import dk.aau.modelardb.core.models.{ModelTypeFactory, Segment}
+import dk.aau.modelardb.core.GroupBasedCompression.{TimeSeriesGroup, WorkingSet}
+import dk.aau.modelardb.core.Models.CompressionModels.{ModelTypeFactory, Segment}
+import dk.aau.modelardb.core.Models.ValueDataPoint
 import dk.aau.modelardb.core.utility.Static
-import dk.aau.modelardb.core.{ValueDataPoint, TimeSeriesGroup, WorkingSet}
+import dk.aau.modelardb.core.WorkingSet
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 

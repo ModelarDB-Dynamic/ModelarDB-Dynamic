@@ -16,6 +16,7 @@ package dk.aau.modelardb.engines.h2
 
 import dk.aau.modelardb.Interface
 import dk.aau.modelardb.core.Dimensions.Types
+import dk.aau.modelardb.core.GroupBasedCompression.{SegmentGroup, WorkingSet}
 import dk.aau.modelardb.core._
 import dk.aau.modelardb.core.utility.{Logger, SegmentFunction, Static}
 import dk.aau.modelardb.engines.EngineUtilities

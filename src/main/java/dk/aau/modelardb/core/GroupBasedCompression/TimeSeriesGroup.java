@@ -12,8 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dk.aau.modelardb.core;
+package dk.aau.modelardb.core.GroupBasedCompression;
 
+import dk.aau.modelardb.core.Models.DataSlice;
+import dk.aau.modelardb.core.Models.ValueDataPoint;
 import dk.aau.modelardb.core.timeseries.AsyncTimeSeries;
 import dk.aau.modelardb.core.timeseries.TimeSeries;
 

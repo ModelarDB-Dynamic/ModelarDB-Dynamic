@@ -14,8 +14,8 @@
 // */
 //package dk.aau.modelardb.core.timeseries;
 //
-//import dk.aau.modelardb.core.DataPoint;
-//import dk.aau.modelardb.core.SegmentGenerator;
+//import dk.aau.modelardb.core.Models.DataPoint;
+//import dk.aau.modelardb.core.GroupBasedCompression.SegmentGenerator;
 //
 //import java.io.IOException;
 //import java.net.InetSocketAddress;
