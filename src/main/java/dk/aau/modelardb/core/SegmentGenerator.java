@@ -47,7 +47,7 @@ public class SegmentGenerator {
     private TimeSeriesGroup timeSeriesGroup;
     //State variables for buffering data points
     private Set<Integer> gaps;
-    private ArrayList<DataPoint[]> buffer;
+    private ArrayList<ValueDataPoint[]> buffer;
     private long[] previousTimeStamps;
     private float dynamicSplitFraction;
     private long emittedFinalizedSegments;
@@ -149,7 +149,7 @@ public class SegmentGenerator {
     }
 
     //** Private Methods **/
-    private void consumeDataPoints(DataPoint[] curDataPointsAndGaps, int activeTimeSeries) {
+    private void consumeDataPoints(ValueDataPoint[] curValueDataPointsAndGaps, int activeTimeSeries) {
         //DEBUG: adds either a key our five seconds delay to continue
         //this.logger.pauseAndPrint(curDataPointsAndGaps);
         //this.logger.sleepAndPrint(curDataPointsAndGaps, 5000);
@@ -161,9 +161,9 @@ public class SegmentGenerator {
 
         //If any of the time series are missing values, a gap is stored for that time series
         int nextDataPoint = 0;
-        DataPoint[] currentDataPoints = new DataPoint[activeTimeSeries];
-        for (int i = 0; i < curDataPointsAndGaps.length; i++) {
-            DataPoint cdpg = curDataPointsAndGaps[i];
+        ValueDataPoint[] currentValueDataPoints = new ValueDataPoint[activeTimeSeries];
+        for (int i = 0; i < curValueDataPointsAndGaps.length; i++) {
+            ValueDataPoint cdpg = curValueDataPointsAndGaps[i];
             if (Float.isNaN(cdpg.value)) {
                 //A NaN value indicates the start of a gap, so we flush and store its tid in gaps
                 if (!this.gaps.contains(cdpg.tid)) {
@@ -178,18 +178,18 @@ public class SegmentGenerator {
                     flushBuffer();
                     this.gaps.remove(cdpg.tid);
                 }
-                currentDataPoints[nextDataPoint] = cdpg;
+                currentValueDataPoints[nextDataPoint] = cdpg;
                 this.previousTimeStamps[i] = cdpg.timestamp;
                 nextDataPoint++;
             }
         }
         //A new data point has been ingested but not yet emitted
-        this.buffer.add(currentDataPoints);
+        this.buffer.add(currentValueDataPoints);
         this.dataPointsYetEmitted++;
 
         //The current model type is given the data points and it verifies that the model can represent them and all prior,
         // it is assumed that append will fail if it failed in the past, so append(t,V) must fail if append(t-1,V) failed
-        if (!this.currentModelType.append(currentDataPoints)) {
+        if (!this.currentModelType.append(currentValueDataPoints)) {
             this.modelTypeIndex += 1;
             if (this.modelTypeIndex == this.modelTypes.length) {
                 //If none of the model types can represent all of the buffered data points, the model type that provides
@@ -331,7 +331,7 @@ public class SegmentGenerator {
 
     private void splitGroupIfItsTimeSeriesAreNoLongerCorrelated() {
         //If only a subset of the time series in it are currently correlated the group is temporarily split into multiple groups
-        DataPoint[] bufferHead = this.buffer.get(0);
+        ValueDataPoint[] bufferHead = this.buffer.get(0);
         float doubleErrorBound = 2 * this.fallbackModelType.errorBound;
         int lengthOfDataPointsInBuffer = bufferHead.length;
         int[] tsTids = Arrays.stream(this.timeSeriesGroup.getTimeSeries()).mapToInt(ts -> ts.tid).toArray();
@@ -416,19 +416,19 @@ public class SegmentGenerator {
         }
     }
 
-    private ArrayList<DataPoint[]> copyBuffer(ArrayList<DataPoint[]> buffer, int[] bufferSplitIndex) {
+    private ArrayList<ValueDataPoint[]> copyBuffer(ArrayList<ValueDataPoint[]> buffer, int[] bufferSplitIndex) {
         //No data points are buffered for time series currently in a gap
         if (bufferSplitIndex.length == 0) {
             return new ArrayList<>();
         }
 
         //Copies all data points for the split time series to the new buffer
-        ArrayList<DataPoint[]> newBuffer = new ArrayList<>(buffer.size());
-        for (DataPoint[] dps : buffer) {
-            DataPoint[] newDps = new DataPoint[bufferSplitIndex.length];
+        ArrayList<ValueDataPoint[]> newBuffer = new ArrayList<>(buffer.size());
+        for (ValueDataPoint[] dps : buffer) {
+            ValueDataPoint[] newDps = new ValueDataPoint[bufferSplitIndex.length];
             int j = 0;
             for (int i : bufferSplitIndex) {
-                newDps[j] = new DataPoint(dps[i].tid, dps[i].timestamp, dps[i].value);
+                newDps[j] = new ValueDataPoint(dps[i].tid, dps[i].timestamp, dps[i].value);
                 j++;
             }
             newBuffer.add(newDps);
@@ -531,10 +531,10 @@ public class SegmentGenerator {
 
         //The overlapping data points are moved to nsg before the old SegmentGenerators are flushed
         for (int next = 1; next <= shortestSharedBufferLength; next++) {
-            DataPoint[] result = new DataPoint[activeJoinIndex.length];
+            ValueDataPoint[] result = new ValueDataPoint[activeJoinIndex.length];
             for (SegmentGenerator sg : sgs) {
-                DataPoint[] dps = sg.buffer.get(sg.buffer.size() - next);
-                for (DataPoint dp : dps) {
+                ValueDataPoint[] dps = sg.buffer.get(sg.buffer.size() - next);
+                for (ValueDataPoint dp : dps) {
                     int write = Arrays.binarySearch(activeJoinIndex, dp.tid);
                     result[write] = dp;
                 }

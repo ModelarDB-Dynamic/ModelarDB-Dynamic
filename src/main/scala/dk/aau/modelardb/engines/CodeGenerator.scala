@@ -15,7 +15,7 @@
 package dk.aau.modelardb.engines
 
 import dk.aau.modelardb.core.utility.ValueFunction
-import dk.aau.modelardb.core.{DataPoint, SegmentGroup}
+import dk.aau.modelardb.core.{ValueDataPoint, SegmentGroup}
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.sql.Row
 import org.h2.table.Column
@@ -27,7 +27,7 @@ abstract class SparkSegmentProjector {
 }
 
 abstract class SparkDataPointProjector {
-  def project(dp: DataPoint, tsmc: Array[Array[Object]], sc: Array[Float], btc: Broadcast[Array[ValueFunction]]): Row
+  def project(dp: ValueDataPoint, tsmc: Array[Array[Object]], sc: Array[Float], btc: Broadcast[Array[ValueFunction]]): Row
 }
 
 abstract class H2SegmentProjector {
@@ -35,7 +35,7 @@ abstract class H2SegmentProjector {
 }
 
 abstract class H2DataPointProjector {
-  def project(dp: DataPoint, currentRow: Array[Value], tsmc: Array[Array[Object]], sc: Array[Float], tc: Array[ValueFunction]): Array[Value]
+  def project(dp: ValueDataPoint, currentRow: Array[Value], tsmc: Array[Array[Object]], sc: Array[Float], tc: Array[ValueFunction]): Array[Value]
 }
 
 //CodeGenerator

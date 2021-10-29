@@ -12,39 +12,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dk.aau.modelardb.core.utility;
+package dk.aau.modelardb.core;
 
-import dk.aau.modelardb.core.ValueDataPoint;
-
-import java.util.ArrayList;
-import java.util.Iterator;
-
-public class ReverseBufferIterator implements Iterator<ValueDataPoint> {
+public class ValueDataPoint extends DataPoint{
 
     /**
      * Instance Variables
      **/
-    private final int source;
-    private final ArrayList<ValueDataPoint[]> list;
-    private int index;
-
+    public final long timestamp;
+    public final float value;
+    public final int samplingInterval;
     /**
      * Constructors
      **/
-    public ReverseBufferIterator(ArrayList<ValueDataPoint[]> list, int source) {
-        this.index = list.size();
-        this.list = list;
-        this.source = source;
+    public ValueDataPoint(int tid, long timestamp, float value, int samplingInterval) {
+        super(tid);
+        this.timestamp = timestamp;
+        this.value = value;
+        this.samplingInterval = samplingInterval;
+    }
+
+    /**
+     * Public Methods
+     **/
+    public String toString() {
+        return "DataPoint: [" + this.getTid() + " | " + new java.sql.Timestamp(this.timestamp) + " | " + this.value + " | " + this.samplingInterval + "]";
     }
 
     @Override
-    public boolean hasNext() {
-        return this.index > 0;
-    }
-
-    @Override
-    public ValueDataPoint next() {
-        this.index -= 1;
-        return this.list.get(this.index)[source];
+    public boolean isConfigurationDataPoint() {
+        return false;
     }
 }

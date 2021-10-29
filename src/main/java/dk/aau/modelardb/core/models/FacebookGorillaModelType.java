@@ -14,7 +14,7 @@
  */
 package dk.aau.modelardb.core.models;
 
-import dk.aau.modelardb.core.DataPoint;
+import dk.aau.modelardb.core.ValueDataPoint;
 import dk.aau.modelardb.core.utility.BitBuffer;
 
 import java.util.List;
@@ -43,19 +43,19 @@ class FacebookGorillaModelType extends ModelType {
      * Public Methods
      **/
     @Override
-    public boolean append(DataPoint[] currentDataPoints) {
+    public boolean append(ValueDataPoint[] currentValueDataPoints) {
         if (this.currentSize == this.lengthBound) {
             return false;
         }
 
         if (this.currentSize == 0) {
-            this.lastVal = Float.floatToIntBits(currentDataPoints[0].value);
+            this.lastVal = Float.floatToIntBits(currentValueDataPoints[0].value);
             this.compressed.writeBits(lastVal, java.lang.Integer.SIZE);
-            for (int i = 1; i < currentDataPoints.length; i++) {
-                compress(currentDataPoints[i].value);
+            for (int i = 1; i < currentValueDataPoints.length; i++) {
+                compress(currentValueDataPoints[i].value);
             }
         } else {
-            for (DataPoint dp : currentDataPoints) {
+            for (ValueDataPoint dp : currentValueDataPoints) {
                 compress(dp.value);
             }
         }
@@ -64,19 +64,19 @@ class FacebookGorillaModelType extends ModelType {
     }
 
     @Override
-    public void initialize(List<DataPoint[]> currentSegment) {
+    public void initialize(List<ValueDataPoint[]> currentSegment) {
         this.currentSize = 0;
         this.compressed = new BitBuffer(4 * this.lengthBound);
         this.storedLeadingZeros = Integer.MAX_VALUE;
         this.storedTrailingZeros = 0;
 
-        for (DataPoint[] dataPoints : currentSegment) {
-            this.append(dataPoints);
+        for (ValueDataPoint[] valueDataPoints : currentSegment) {
+            this.append(valueDataPoints);
         }
     }
 
     @Override
-    public byte[] getModel(long startTime, long endTime, int samplingInterval, List<DataPoint[]> currentSegment) {
+    public byte[] getModel(long startTime, long endTime, int samplingInterval, List<ValueDataPoint[]> currentSegment) {
         return this.compressed.array();
     }
 
@@ -91,7 +91,7 @@ class FacebookGorillaModelType extends ModelType {
     }
 
     @Override
-    public float size(long startTime, long endTime, int samplingInterval, List<DataPoint[]> dps) {
+    public float size(long startTime, long endTime, int samplingInterval, List<ValueDataPoint[]> dps) {
         if (this.currentSize == 0) {
             return Float.NaN;
         } else {

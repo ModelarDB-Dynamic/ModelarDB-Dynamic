@@ -20,9 +20,7 @@ import dk.aau.modelardb.core.timeseries.TimeSeries;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.channels.Selector;
-import java.util.Arrays;
-import java.util.Set;
-import java.util.StringJoiner;
+import java.util.*;
 
 public class TimeSeriesGroup implements Serializable {
 
@@ -33,11 +31,15 @@ public class TimeSeriesGroup implements Serializable {
     public final boolean isAsync;
     public final int samplingInterval;
     private final TimeSeries[] timeSeries;
-    private final DataPoint[] currentDataPoints;
-    private final DataPoint[] nextDataPoints;
     private int timeSeriesActive;
     private int timeSeriesHasNext;
-    private long next;
+    private PriorityQueue<ValueDataPoint> nextValueDataPointForEachTimeSeries = new PriorityQueue<>((dp1, dp2) -> {
+        Comparator<ValueDataPoint> timestampComparator = Comparator.comparingLong(dp -> dp.timestamp);
+        Comparator<ValueDataPoint> samplingIntervalComparator = Comparator.comparingInt(dp -> dp.samplingInterval);
+
+        int comparedTimestamp = timestampComparator.compare(dp1, dp2);
+        return comparedTimestamp == 0 ? comparedTimestamp : samplingIntervalComparator.compare(dp1, dp2);
+    });
 
     /**
      * Constructors
@@ -47,69 +49,19 @@ public class TimeSeriesGroup implements Serializable {
             throw new UnsupportedOperationException("CORE: a group must consist of at least one time series");
         }
 
-        //Each time series is assumed to have the same sampling interval, alignment, and boundness
+        //Each time series is assumed to have the same boundness
         this.isAsync = timeSeries[0] instanceof AsyncTimeSeries;
-        this.samplingInterval = timeSeries[0].samplingInterval;
+        this.samplingInterval = timeSeries[0].getCurrentSamplingInterval();
         for (TimeSeries ts : timeSeries) {
             if (this.isAsync != ts instanceof AsyncTimeSeries) {
                 throw new UnsupportedOperationException("CORE: All time series in a group must be bounded or unbounded");
-            }
-
-            if (this.samplingInterval != ts.samplingInterval) {
-                throw new UnsupportedOperationException("CORE: All time series in a group must share the same sampling interval");
             }
         }
 
         //Initializes variables for holding the latest data point for each time series
         this.gid = gid;
         this.timeSeries = timeSeries;
-        this.nextDataPoints = new DataPoint[timeSeries.length];
-        this.currentDataPoints = new DataPoint[timeSeries.length];
-        this.next = Long.MAX_VALUE;
         this.timeSeriesHasNext = timeSeries.length;
-    }
-
-    TimeSeriesGroup(TimeSeriesGroup tsg, int[] splitIndex) {
-        this.gid = tsg.gid;
-        this.nextDataPoints = new DataPoint[splitIndex.length];
-        this.currentDataPoints = new DataPoint[splitIndex.length];
-        this.timeSeries = new TimeSeries[splitIndex.length];
-        this.next = tsg.next;
-
-        int j = 0;
-        for (int i : splitIndex) {
-            this.timeSeriesHasNext += tsg.getTimeSeries()[i].hasNext() ? 1 : 0;
-            this.nextDataPoints[j] = tsg.nextDataPoints[i];
-            this.timeSeries[j] = tsg.timeSeries[i];
-            j++;
-        }
-        this.isAsync = this.timeSeries[0] instanceof AsyncTimeSeries;
-        this.samplingInterval = this.timeSeries[0].samplingInterval;
-        tsg.timeSeriesHasNext = 0;
-    }
-
-    TimeSeriesGroup(Set<TimeSeriesGroup> tsgs, int[] joinIndex) {
-        this.gid = tsgs.iterator().next().gid;
-        this.nextDataPoints = new DataPoint[joinIndex.length];
-        this.currentDataPoints = new DataPoint[joinIndex.length];
-        this.timeSeries = new TimeSeries[joinIndex.length];
-        this.next = Long.MAX_VALUE;
-
-        for (TimeSeriesGroup tsg : tsgs) {
-            this.timeSeriesHasNext += tsg.timeSeriesHasNext;
-            this.next = Math.min(this.next, tsg.next);
-
-            for (int i = 0; i < tsg.timeSeries.length; i++) {
-                TimeSeries ts = tsg.timeSeries[i];
-                int index = Arrays.binarySearch(joinIndex, ts.tid);
-                this.nextDataPoints[index] = tsg.nextDataPoints[i];
-                this.currentDataPoints[index] = tsg.currentDataPoints[i];
-                this.timeSeries[index] = tsg.timeSeries[i];
-            }
-            tsg.timeSeriesHasNext = 0;
-        }
-        this.isAsync = this.timeSeries[0] instanceof AsyncTimeSeries;
-        this.samplingInterval = this.timeSeries[0].samplingInterval;
     }
 
     /**
@@ -120,13 +72,14 @@ public class TimeSeriesGroup implements Serializable {
             TimeSeries ts = this.timeSeries[i];
             ts.open();
 
-            //Stores the first data point from each time series to track when a gap occurs
+            //Stores the first data point from each time series
             if (ts.hasNext()) {
-                this.nextDataPoints[i] = ts.next();
-                if (this.nextDataPoints[i] == null) {
+                nextValueDataPointForEachTimeSeries.add(ts.next())
+                this.nextValueDataPoints[i] = ts.next();
+                if (this.nextValueDataPoints[i] == null) {
                     throw new IllegalArgumentException("CORE: unable to initialize " + this.timeSeries[i].source);
                 }
-                this.next = Math.min(this.next, this.nextDataPoints[i].timestamp);
+                this.next = Math.min(this.next, this.nextValueDataPoints[i].timestamp);
             }
         }
     }
@@ -167,29 +120,29 @@ public class TimeSeriesGroup implements Serializable {
         return this.timeSeriesHasNext != 0;
     }
 
-    public DataPoint[] next() {
+    public DataSlice next() {
         //Prepares the data points for the next SI
         this.timeSeriesActive = 0;
         this.timeSeriesActive = this.timeSeries.length;
         for (int i = 0; i < this.timeSeries.length; i++) {
             TimeSeries ts = this.timeSeries[i];
 
-            if (this.nextDataPoints[i].timestamp == this.next) {
+            if (this.nextValueDataPoints[i].timestamp == this.next) {
                 //No gap have occurred so this data point can be emitted in this iteration
-                currentDataPoints[i] = this.nextDataPoints[i];
+                currentValueDataPoints[i] = this.nextValueDataPoints[i];
                 if (ts.hasNext()) {
-                    this.nextDataPoints[i] = ts.next();
+                    this.nextValueDataPoints[i] = ts.next();
                 } else {
                     this.timeSeriesHasNext--;
                 }
             } else {
                 //A gap have occurred so this data point cannot be not emitted in this iteration
-                currentDataPoints[i] = new DataPoint(ts.tid, this.next, Float.NaN);
+                currentValueDataPoints[i] = new ValueDataPoint(ts.tid, this.next, Float.NaN);
                 this.timeSeriesActive--;
             }
         }
         this.next += this.samplingInterval;
-        return this.currentDataPoints;
+        return this.currentValueDataPoints;
     }
 
     public int getActiveTimeSeries() {

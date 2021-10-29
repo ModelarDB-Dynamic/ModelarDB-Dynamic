@@ -14,7 +14,7 @@
  */
 package dk.aau.modelardb.core.models;
 
-import dk.aau.modelardb.core.DataPoint;
+import dk.aau.modelardb.core.ValueDataPoint;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
@@ -38,22 +38,22 @@ class UncompressedModelType extends ModelType {
      * Public Methods
      **/
     @Override
-    public boolean append(DataPoint[] currentDataPoints) {
+    public boolean append(ValueDataPoint[] currentValueDataPoints) {
         //UncompressedModelType is a last resort fallback so it simply stores the current buffer in an array
         this.currentSize++;
         return true;
     }
 
     @Override
-    public void initialize(List<DataPoint[]> currentSegment) {
+    public void initialize(List<ValueDataPoint[]> currentSegment) {
         this.currentSize = Integer.min(this.lengthBound, currentSegment.size());
     }
 
     @Override
-    public byte[] getModel(long startTime, long endTime, int samplingInterval, List<DataPoint[]> dps) {
+    public byte[] getModel(long startTime, long endTime, int samplingInterval, List<ValueDataPoint[]> dps) {
         ByteBuffer values = ByteBuffer.allocate(4 * dps.get(0).length * dps.size());
-        for (DataPoint[] dpss : dps) {
-            for (DataPoint dp : dpss) {
+        for (ValueDataPoint[] dpss : dps) {
+            for (ValueDataPoint dp : dpss) {
                 values.putFloat(dp.value);
             }
         }
@@ -71,7 +71,7 @@ class UncompressedModelType extends ModelType {
     }
 
     @Override
-    public float size(long startTime, long endTime, int samplingInterval, List<DataPoint[]> dps) {
+    public float size(long startTime, long endTime, int samplingInterval, List<ValueDataPoint[]> dps) {
         if (this.currentSize == 0) {
             return Float.NaN;
         } else {

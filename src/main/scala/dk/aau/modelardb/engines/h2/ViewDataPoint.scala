@@ -14,7 +14,7 @@
  */
 package dk.aau.modelardb.engines.h2
 
-import dk.aau.modelardb.core.DataPoint
+import dk.aau.modelardb.core.ValueDataPoint
 import org.h2.api.TableEngine
 import org.h2.command.ddl.CreateTableData
 import org.h2.command.dml.AllColumnsForPlan
@@ -182,7 +182,7 @@ class ViewDataPointIndex(table: Table) extends Index {
 class ViewDataPointCursor(filter: TableFilter) extends Cursor {
 
   /** Instance Variables * */
-  private val dataPoints: Iterator[DataPoint] = H2.h2.getSegmentGroups(filter)
+  private val dataPoints: Iterator[ValueDataPoint] = H2.h2.getSegmentGroups(filter)
     .flatMap(_.toSegments(H2.h2storage)).flatMap(segment => segment.grid().iterator().asScala)
   private val values = H2Projector.dataPointProjection(dataPoints, filter)
   private val currentViewRow = new ViewRow()

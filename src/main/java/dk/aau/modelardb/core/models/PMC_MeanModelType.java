@@ -14,7 +14,7 @@
  */
 package dk.aau.modelardb.core.models;
 
-import dk.aau.modelardb.core.DataPoint;
+import dk.aau.modelardb.core.ValueDataPoint;
 import dk.aau.modelardb.core.utility.Static;
 
 import java.nio.ByteBuffer;
@@ -45,7 +45,7 @@ class PMC_MeanModelType extends ModelType {
      * Public Methods
      **/
     @Override
-    public boolean append(DataPoint[] currentDataPoints) {
+    public boolean append(ValueDataPoint[] currentValueDataPoints) {
         if (!this.withinErrorBound) {
             return false;
         }
@@ -54,14 +54,14 @@ class PMC_MeanModelType extends ModelType {
         float nextMin = this.min;
         float nextMax = this.max;
         double nextSum = this.sum;
-        for (DataPoint cdp : currentDataPoints) {
+        for (ValueDataPoint cdp : currentValueDataPoints) {
             float value = cdp.value;
             nextSum += value;
             nextMin = Math.min(nextMin, value);
             nextMax = Math.max(nextMax, value);
         }
 
-        float average = (float) (nextSum / ((this.currentSize + 1) * currentDataPoints.length));
+        float average = (float) (nextSum / ((this.currentSize + 1) * currentValueDataPoints.length));
         if (Static.outsidePercentageErrorBound(this.errorBound, average, nextMin) ||
                 Static.outsidePercentageErrorBound(this.errorBound, average, nextMax)) {
             this.withinErrorBound = false;
@@ -75,22 +75,22 @@ class PMC_MeanModelType extends ModelType {
     }
 
     @Override
-    public void initialize(List<DataPoint[]> currentSegment) {
+    public void initialize(List<ValueDataPoint[]> currentSegment) {
         this.sum = 0.0;
         this.currentSize = 0;
         this.min = Float.MAX_VALUE;
         this.max = -Float.MAX_VALUE;
         this.withinErrorBound = true;
 
-        for (DataPoint[] dataPoints : currentSegment) {
-            if (!append(dataPoints)) {
+        for (ValueDataPoint[] valueDataPoints : currentSegment) {
+            if (!append(valueDataPoints)) {
                 return;
             }
         }
     }
 
     @Override
-    public byte[] getModel(long startTime, long endTime, int samplingInterval, List<DataPoint[]> dps) {
+    public byte[] getModel(long startTime, long endTime, int samplingInterval, List<ValueDataPoint[]> dps) {
         return ByteBuffer.allocate(4).putFloat((float) (this.sum / (this.currentSize * dps.get(0).length))).array();
     }
 
@@ -105,7 +105,7 @@ class PMC_MeanModelType extends ModelType {
     }
 
     @Override
-    public float size(long startTime, long endTime, int samplingInterval, List<DataPoint[]> dps) {
+    public float size(long startTime, long endTime, int samplingInterval, List<ValueDataPoint[]> dps) {
         if (this.currentSize == 0) {
             return Float.NaN;
         } else {

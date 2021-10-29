@@ -15,6 +15,8 @@
 package dk.aau.modelardb.core.timeseries;
 
 import dk.aau.modelardb.core.DataPoint;
+import dk.aau.modelardb.core.SIConfigurationDataPoint;
+import dk.aau.modelardb.core.ValueDataPoint;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,7 +39,7 @@ public class TimeSeriesCSV extends TimeSeries {
     private final float scalingFactor;
     private final int bufferSize;
     private final StringBuffer decodeBuffer;
-    private final String splitString;
+    private final String csvSeparator;
     private final int timestampColumnIndex;
     private final int dateParserType;
     private final int valueColumnIndex;
@@ -50,20 +52,22 @@ public class TimeSeriesCSV extends TimeSeries {
     private StringBuffer nextBuffer;
     private ReadableByteChannel channel;
     private SimpleDateFormat dateParser;
+    private long nextTimestampPointer;
+
     /**
      * Public Methods
      **/
-    public TimeSeriesCSV(String stringPath, int tid, int samplingInterval,
-                         String splitString, boolean hasHeader,
+    public TimeSeriesCSV(String stringPath, int tid, int initialSamplingInterval,
+                         String csvSeparator, boolean hasHeader,
                          int timestampColumnIndex, String dateFormat, String timeZone,
                          int valueColumnIndex, String localeString) {
-        super(stringPath.substring(stringPath.lastIndexOf('/') + 1), tid, samplingInterval);
+        super(stringPath.substring(stringPath.lastIndexOf('/') + 1), tid, initialSamplingInterval);
         this.stringPath = stringPath;
 
         //A small buffer is used so more time series can be ingested in parallel
         this.bufferSize = 1024;
         this.hasHeader = hasHeader;
-        this.splitString = splitString;
+        this.csvSeparator = csvSeparator;
         this.scalingFactor = 1.0F;
 
 
@@ -120,7 +124,7 @@ public class TimeSeriesCSV extends TimeSeries {
         }
     }
 
-    public DataPoint next() {
+    public ValueDataPoint next() {
         try {
             if (this.nextBuffer.length() == 0) {
                 readLines();
@@ -145,7 +149,7 @@ public class TimeSeriesCSV extends TimeSeries {
     }
 
     public String toString() {
-        return "Time Series: [" + this.tid + " | " + this.source + " | " + this.samplingInterval + "]";
+        return "Time Series: [" + this.tid + " | " + this.source + " | " + this.currentSamplingInterval + "]";
     }
 
     public void close() {
@@ -184,36 +188,61 @@ public class TimeSeriesCSV extends TimeSeries {
         this.decodeBuffer.delete(0, lastFullyParsedDataPoint);
     }
 
-    private DataPoint nextDataPoint() throws IOException {
+
+    private ValueDataPoint nextDataPoint() throws IOException {
         try {
             int nextDataPointIndex = this.nextBuffer.indexOf("\n") + 1;
             String[] split;
-
             if (nextDataPointIndex == 0) {
-                split = this.nextBuffer.toString().split(splitString);
+                split = this.nextBuffer.toString().split(csvSeparator);
             } else {
-                split = this.nextBuffer.substring(0, nextDataPointIndex).split(splitString);
-                this.nextBuffer.delete(0, nextDataPointIndex);
+                split = this.nextBuffer.substring(0, nextDataPointIndex).split(csvSeparator);
             }
 
-            //Parses the timestamp column as either Unix time, Java time, or a human readable timestamp
-            long timestamp = 0;
-            switch (this.dateParserType) {
-                case 1:
-                    //Unix time
-                    timestamp = new Date(Long.parseLong(split[timestampColumnIndex]) * 1000).getTime();
-                    break;
-                case 2:
-                    //Java time
-                    timestamp = new Date(Long.parseLong(split[timestampColumnIndex])).getTime();
-                    break;
-                case 3:
-                    //Human readable timestamp
-                    timestamp = dateParser.parse(split[timestampColumnIndex]).getTime();
-                    break;
+
+            ValueDataPoint result;
+            if (SIConfigurationDataPoint.isAConfigurationDataPoint(split[0])) {
+                int configurationValue = Integer.parseInt(split[1]);
+                String configurationKey = split[0];
+                if ("SI".equals(configurationKey)) {
+                    this.currentSamplingInterval = configurationValue;
+                    this.nextTimestampPointer += (this.nextTimestampPointer%this.currentSamplingInterval);
+                }
+                if (nextDataPointIndex != 0) {//delete the config datapoint that have been read from the buffer
+                    this.nextBuffer.delete(0, nextDataPointIndex);
+                }
+                result = nextDataPoint();
+            } else {
+                //Parses the timestamp column as either Unix time, Java time, or a human readable timestamp
+                long timestamp = 0;
+                switch (this.dateParserType) {
+                    case 1:
+                        //Unix time
+                        timestamp = new Date(Long.parseLong(split[timestampColumnIndex]) * 1000).getTime();
+                        break;
+                    case 2:
+                        //Java time
+                        timestamp = new Date(Long.parseLong(split[timestampColumnIndex])).getTime();
+                        break;
+                    case 3:
+                        //Human readable timestamp
+                        timestamp = dateParser.parse(split[timestampColumnIndex]).getTime();
+                        break;
+                }
+                float dataPointValue;
+                if (nextTimestampPointer == timestamp) {
+                    dataPointValue = valueParser.parse(split[valueColumnIndex]).floatValue();
+                    if (nextDataPointIndex != 0) {//delete the data point from the buffer
+                        this.nextBuffer.delete(0, nextDataPointIndex);
+                    }
+                } else {
+                    //datapoint from buffer is not deleted as the timestamp did not match the next pointer. Therefore a gap datapoint is emitted at the expected timestamp
+                    dataPointValue = Float.NaN; // value of Nan indicates Gap
+                }
+                result = new ValueDataPoint(this.tid, timestamp, this.scalingFactor * dataPointValue, this.currentSamplingInterval);
+                this.nextTimestampPointer += this.currentSamplingInterval;
             }
-            float value = valueParser.parse(split[valueColumnIndex]).floatValue();
-            return new DataPoint(this.tid, timestamp, this.scalingFactor * value);
+            return result;
         } catch (ParseException pe) {
             //If the input cannot be parsed the stream is considered empty
             this.channel.close();

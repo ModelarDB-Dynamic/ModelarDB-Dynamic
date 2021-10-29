@@ -14,7 +14,7 @@
  */
 package dk.aau.modelardb.core.models
 
-import dk.aau.modelardb.core.DataPoint
+import dk.aau.modelardb.core.ValueDataPoint
 import org.scalatest.wordspec.AnyWordSpec
 
 import java.util
@@ -23,7 +23,7 @@ abstract class AbstractModelTypeTest extends AnyWordSpec {
 
   "when empty" should {
     val model = getModelType(1, 10, 50)
-    val noDataPoints = new util.ArrayList[Array[DataPoint]]()
+    val noDataPoints = new util.ArrayList[Array[ValueDataPoint]]()
     model.initialize(noDataPoints)
 
     "have length zero" in {
@@ -37,12 +37,12 @@ abstract class AbstractModelTypeTest extends AnyWordSpec {
 
   "when initialized with N data points" should {
     val model = getModelType(1, 10, 50)
-    val dataPoints = new util.ArrayList[Array[DataPoint]]()
-    dataPoints.add(Array(new DataPoint(1, 100, 25)))
-    dataPoints.add(Array(new DataPoint(1, 200, 25)))
-    dataPoints.add(Array(new DataPoint(1, 300, 25)))
-    dataPoints.add(Array(new DataPoint(1, 400, 25)))
-    dataPoints.add(Array(new DataPoint(1, 500, 25)))
+    val dataPoints = new util.ArrayList[Array[ValueDataPoint]]()
+    dataPoints.add(Array(new ValueDataPoint(1, 100, 25)))
+    dataPoints.add(Array(new ValueDataPoint(1, 200, 25)))
+    dataPoints.add(Array(new ValueDataPoint(1, 300, 25)))
+    dataPoints.add(Array(new ValueDataPoint(1, 400, 25)))
+    dataPoints.add(Array(new ValueDataPoint(1, 500, 25)))
     model.initialize(dataPoints)
 
     "have length N" in {

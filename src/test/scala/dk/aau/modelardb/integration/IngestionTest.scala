@@ -16,7 +16,7 @@ package dk.aau.modelardb.integration
 
 import dk.aau.modelardb.core.models.{ModelTypeFactory, Segment}
 import dk.aau.modelardb.core.utility.Static
-import dk.aau.modelardb.core.{DataPoint, TimeSeriesGroup, WorkingSet}
+import dk.aau.modelardb.core.{ValueDataPoint, TimeSeriesGroup, WorkingSet}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -50,7 +50,7 @@ class IngestionTest extends AnyFlatSpec with Matchers {
 
   /** Private Methods * */
   def ingest(newTimeSeriesGroups: () => Array[TimeSeriesGroup], samplingInterval: () => Int, errorBound: Float):
-  (Iterator[DataPoint], Iterator[DataPoint]) = {
+  (Iterator[ValueDataPoint], Iterator[ValueDataPoint]) = {
     //Initialize
     val mtn = Array("dk.aau.modelardb.core.models.PMC_MeanModelType",
       "dk.aau.modelardb.core.models.SwingFilterModelType", "dk.aau.modelardb.core.models.FacebookGorillaModelType")
@@ -70,7 +70,7 @@ class IngestionTest extends AnyFlatSpec with Matchers {
 
     //Verify
     val realTimeSeriesGroups = newTimeSeriesGroups()
-    val rts = new Iterator[DataPoint] {
+    val rts = new Iterator[ValueDataPoint] {
       private var currentTimeSeriesIndex = 0
       private var currentTimeSeries = realTimeSeriesGroups(currentTimeSeriesIndex).getTimeSeries()(0)
       currentTimeSeries.open()
@@ -90,7 +90,7 @@ class IngestionTest extends AnyFlatSpec with Matchers {
         false
       }
 
-      override def next(): DataPoint = currentTimeSeries.next()
+      override def next(): ValueDataPoint = currentTimeSeries.next()
     }
     (segments.iterator.flatMap(s => s.grid().iterator.asScala), rts)
   }

@@ -14,7 +14,7 @@
  */
 package dk.aau.modelardb.core.utility;
 
-import dk.aau.modelardb.core.DataPoint;
+import dk.aau.modelardb.core.ValueDataPoint;
 import dk.aau.modelardb.core.TimeSeriesGroup;
 import dk.aau.modelardb.core.models.ModelType;
 
@@ -70,18 +70,18 @@ public class Logger implements Serializable {
         return java.time.Duration.ofMillis(this.processingTime - oldTime).toString();
     }
 
-    public void pauseAndPrint(DataPoint[] dataPoints) {
+    public void pauseAndPrint(ValueDataPoint[] valueDataPoints) {
         try {
-            print(dataPoints);
+            print(valueDataPoints);
             System.in.read();
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
     }
 
-    public void sleepAndPrint(DataPoint[] dataPoints, long sleepTime) {
+    public void sleepAndPrint(ValueDataPoint[] valueDataPoints, long sleepTime) {
         try {
-            print(dataPoints);
+            print(valueDataPoints);
             Thread.sleep(sleepTime);
         } catch (InterruptedException ie) {
             throw new RuntimeException(ie);
@@ -173,8 +173,8 @@ public class Logger implements Serializable {
                 sizeInBytes / 1024.0F / 1024.0F);
     }
 
-    private void print(DataPoint[] dataPoints) {
-        for (DataPoint dp : dataPoints) {
+    private void print(ValueDataPoint[] valueDataPoints) {
+        for (ValueDataPoint dp : valueDataPoints) {
             System.out.println(dp);
         }
         System.out.println("------------------------------------------");

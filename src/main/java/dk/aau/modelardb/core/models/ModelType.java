@@ -14,7 +14,7 @@
  */
 package dk.aau.modelardb.core.models;
 
-import dk.aau.modelardb.core.DataPoint;
+import dk.aau.modelardb.core.ValueDataPoint;
 import dk.aau.modelardb.core.utility.Static;
 
 import java.io.Serializable;
@@ -42,19 +42,19 @@ public abstract class ModelType implements Serializable {
     /**
      * Public Methods
      **/
-    abstract public boolean append(DataPoint[] currentDataPoints);
+    abstract public boolean append(ValueDataPoint[] currentValueDataPoints);
 
-    abstract public void initialize(List<DataPoint[]> currentSegment);
+    abstract public void initialize(List<ValueDataPoint[]> currentSegment);
 
-    abstract public byte[] getModel(long startTime, long endTime, int samplingInterval, List<DataPoint[]> dps);
+    abstract public byte[] getModel(long startTime, long endTime, int samplingInterval, List<ValueDataPoint[]> dps);
 
     abstract public Segment get(int tid, long startTime, long endTime, int samplingInterval, byte[] model, byte[] offsets);
 
     abstract public int length();
 
-    abstract public float size(long startTime, long endTime, int samplingInterval, List<DataPoint[]> dps);
+    abstract public float size(long startTime, long endTime, int samplingInterval, List<ValueDataPoint[]> dps);
 
-    public boolean withinErrorBound(float errorBound, Iterator<DataPoint> tsA, Iterator<DataPoint> tsB) {
+    public boolean withinErrorBound(float errorBound, Iterator<ValueDataPoint> tsA, Iterator<ValueDataPoint> tsB) {
         boolean allWithinErrorBound = true;
         while (allWithinErrorBound && tsA.hasNext() && tsB.hasNext()){
             allWithinErrorBound = Static.percentageError(tsA.next().value, tsB.next().value) < errorBound;
@@ -62,7 +62,7 @@ public abstract class ModelType implements Serializable {
         return allWithinErrorBound;
     }
 
-    final public float compressionRatio(long startTime, long endTime, int samplingInterval, List<DataPoint[]> dps, int gaps) {
+    final public float compressionRatio(long startTime, long endTime, int samplingInterval, List<ValueDataPoint[]> dps, int gaps) {
         //     DPs tid: int, ts: long, v: float
         // Segment tid: int, start_time: long, end_time: long, mtid: int, model: bytes[], gaps: bytes[]
         //4 + 8 + 4 = 16 * data points is reduced to 4 + 8 + 8 + 4 + sizeof model + sizeof gaps

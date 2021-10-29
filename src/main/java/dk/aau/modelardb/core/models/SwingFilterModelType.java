@@ -14,7 +14,7 @@
  */
 package dk.aau.modelardb.core.models;
 
-import dk.aau.modelardb.core.DataPoint;
+import dk.aau.modelardb.core.ValueDataPoint;
 import dk.aau.modelardb.core.utility.LinearFunction;
 import dk.aau.modelardb.core.utility.Static;
 
@@ -29,7 +29,7 @@ class SwingFilterModelType extends ModelType {
     private int currentSize;
     private LinearFunction upperBound;
     private LinearFunction lowerBound;
-    private DataPoint initialDataPoint;
+    private ValueDataPoint initialValueDataPoint;
     private boolean withinErrorBound;
 
     /**
@@ -46,7 +46,7 @@ class SwingFilterModelType extends ModelType {
      * Public Methods
      **/
     @Override
-    public boolean append(DataPoint[] currentDataPoints) {
+    public boolean append(ValueDataPoint[] currentValueDataPoints) {
         if (!this.withinErrorBound) {
             return false;
         }
@@ -57,9 +57,9 @@ class SwingFilterModelType extends ModelType {
 
         if (this.currentSize == 0) {
             //An average data point must be constructed so all data points in the group are within the error bound
-            float min = Static.min(currentDataPoints);
-            float max = Static.max(currentDataPoints);
-            float avg = Static.avg(currentDataPoints);
+            float min = Static.min(currentValueDataPoints);
+            float max = Static.max(currentValueDataPoints);
+            float avg = Static.avg(currentValueDataPoints);
             if (Static.outsidePercentageErrorBound(this.errorBound, avg, min) ||
                     Static.outsidePercentageErrorBound(this.errorBound, avg, max)) {
                 this.withinErrorBound = false;
@@ -67,45 +67,45 @@ class SwingFilterModelType extends ModelType {
             }
 
             // Line 1 - 2
-            this.initialDataPoint = new DataPoint(currentDataPoints[0].tid, currentDataPoints[0].timestamp, avg);
+            this.initialValueDataPoint = new ValueDataPoint(currentValueDataPoints[0].tid, currentValueDataPoints[0].timestamp, avg);
         } else {
             //Expect for the first set of data point, all data points can be appended one at a time
-            for (DataPoint currentDataPoint : currentDataPoints) {
+            for (ValueDataPoint currentValueDataPoint : currentValueDataPoints) {
                 //Calculates the absolute allowed deviation before the error bound is exceeded. In theory the deviation
                 // should be calculated as the Math.abs(currentDataPoint.value * (this.error / 100.0)). However, due to
                 // the calculation not being perfectly accurate, 100.0 allows data points slightly above the error bound
-                double deviation = Math.abs(currentDataPoint.value * (this.errorBound / 100.1));
+                double deviation = Math.abs(currentValueDataPoint.value * (this.errorBound / 100.1));
 
                 if (this.currentSize == 1) {
                     // Line 3
                     this.upperBound = new LinearFunction(
-                            initialDataPoint.timestamp, initialDataPoint.value,
-                            currentDataPoint.timestamp, currentDataPoint.value + deviation);
+                            initialValueDataPoint.timestamp, initialValueDataPoint.value,
+                            currentValueDataPoint.timestamp, currentValueDataPoint.value + deviation);
                     this.lowerBound = new LinearFunction(
-                            initialDataPoint.timestamp, initialDataPoint.value,
-                            currentDataPoint.timestamp, currentDataPoint.value - deviation);
+                            initialValueDataPoint.timestamp, initialValueDataPoint.value,
+                            currentValueDataPoint.timestamp, currentValueDataPoint.value - deviation);
                     this.currentSize = nextSize;
                 } else {
                     //Line 6
-                    double uba = upperBound.get(currentDataPoint.timestamp);
-                    double lba = lowerBound.get(currentDataPoint.timestamp);
+                    double uba = upperBound.get(currentValueDataPoint.timestamp);
+                    double lba = lowerBound.get(currentValueDataPoint.timestamp);
 
-                    if (uba + deviation < currentDataPoint.value || lba - deviation > currentDataPoint.value) {
+                    if (uba + deviation < currentValueDataPoint.value || lba - deviation > currentValueDataPoint.value) {
                         this.withinErrorBound = false;
                         this.currentSize = currentSize;
                         return false;
                     } else {
                         //Line 16
-                        if (uba - deviation > currentDataPoint.value) {
+                        if (uba - deviation > currentValueDataPoint.value) {
                             this.upperBound = new LinearFunction(
-                                    initialDataPoint.timestamp, initialDataPoint.value,
-                                    currentDataPoint.timestamp, currentDataPoint.value + deviation);
+                                    initialValueDataPoint.timestamp, initialValueDataPoint.value,
+                                    currentValueDataPoint.timestamp, currentValueDataPoint.value + deviation);
                         }
                         //Line 15
-                        if (lba + deviation < currentDataPoint.value) {
+                        if (lba + deviation < currentValueDataPoint.value) {
                             this.lowerBound = new LinearFunction(
-                                    initialDataPoint.timestamp, initialDataPoint.value,
-                                    currentDataPoint.timestamp, currentDataPoint.value - deviation);
+                                    initialValueDataPoint.timestamp, initialValueDataPoint.value,
+                                    currentValueDataPoint.timestamp, currentValueDataPoint.value - deviation);
                         }
                     }
                 }
@@ -116,19 +116,19 @@ class SwingFilterModelType extends ModelType {
     }
 
     @Override
-    public void initialize(List<DataPoint[]> currentSegment) {
+    public void initialize(List<ValueDataPoint[]> currentSegment) {
         this.currentSize = 0;
         this.withinErrorBound = true;
 
-        for (DataPoint[] dataPoints : currentSegment) {
-            if (!append(dataPoints)) {
+        for (ValueDataPoint[] valueDataPoints : currentSegment) {
+            if (!append(valueDataPoints)) {
                 return;
             }
         }
     }
 
     @Override
-    public byte[] getModel(long startTime, long endTime, int samplingInterval, List<DataPoint[]> dps) {
+    public byte[] getModel(long startTime, long endTime, int samplingInterval, List<ValueDataPoint[]> dps) {
         //All lines within the two bounds are valid but always selecting one of the bounds add unnecessary error to sums
         double a = (this.lowerBound.a + this.upperBound.a) / 2.0;
         double b = (this.lowerBound.b + this.upperBound.b) / 2.0;
@@ -153,7 +153,7 @@ class SwingFilterModelType extends ModelType {
     }
 
     @Override
-    public float size(long startTime, long endTime, int samplingInterval, List<DataPoint[]> dps) {
+    public float size(long startTime, long endTime, int samplingInterval, List<ValueDataPoint[]> dps) {
         //A linear function cannot be computed without at least two data points so we return NaN
         if (this.currentSize < 2) {
             return Float.NaN;
@@ -166,9 +166,9 @@ class SwingFilterModelType extends ModelType {
         //Verifies that the model has the necessary precession to be utilized, while the function computed in theory
         // should not exceed the error bound it can do so (especially with 0% error) due to floating-point imprecision
         for (int i = 0; startTime < endTime + samplingInterval; i++, startTime += samplingInterval) {
-            DataPoint[] dpa = dps.get(i);
+            ValueDataPoint[] dpa = dps.get(i);
             float approximation = (float) (a * dpa[0].timestamp + b);
-            for (DataPoint dp : dpa) {
+            for (ValueDataPoint dp : dpa) {
                 if (Static.outsidePercentageErrorBound(this.errorBound, approximation, dp.value)) {
                     return Float.NaN;
                 }

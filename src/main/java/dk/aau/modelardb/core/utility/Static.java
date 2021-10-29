@@ -14,7 +14,7 @@
  */
 package dk.aau.modelardb.core.utility;
 
-import dk.aau.modelardb.core.DataPoint;
+import dk.aau.modelardb.core.ValueDataPoint;
 import dk.aau.modelardb.core.timeseries.TimeSeries;
 
 import java.net.Inet6Address;
@@ -74,9 +74,9 @@ public class Static {
         return tss;
     }
 
-    public static float min(DataPoint[] dps) {
+    public static float min(ValueDataPoint[] dps) {
         float min = dps[0].value;
-        for (DataPoint dp : dps) {
+        for (ValueDataPoint dp : dps) {
             if (dp.value < min) {
                 min = dp.value;
             }
@@ -84,9 +84,9 @@ public class Static {
         return min;
     }
 
-    public static float max(DataPoint[] dps) {
+    public static float max(ValueDataPoint[] dps) {
         float max = dps[0].value;
-        for (DataPoint dp : dps) {
+        for (ValueDataPoint dp : dps) {
             if (max < dp.value) {
                 max = dp.value;
             }
@@ -94,9 +94,9 @@ public class Static {
         return max;
     }
 
-    public static float avg(DataPoint[] dps) {
+    public static float avg(ValueDataPoint[] dps) {
         double sum = 0.0;
-        for (DataPoint dp : dps) {
+        for (ValueDataPoint dp : dps) {
             sum += dp.value;
         }
         return (float) (sum / dps.length);

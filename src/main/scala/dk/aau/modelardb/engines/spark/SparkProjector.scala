@@ -14,7 +14,7 @@
  */
 package dk.aau.modelardb.engines.spark
 
-import dk.aau.modelardb.core.DataPoint
+import dk.aau.modelardb.core.ValueDataPoint
 import dk.aau.modelardb.core.models.Segment
 import dk.aau.modelardb.engines.{CodeGenerator, EngineUtilities}
 import org.apache.spark.rdd.RDD
@@ -118,33 +118,33 @@ object SparkProjector {
     }
   }
 
-  def getDataPointGridFunction(requiredColumns: Array[String]): DataPoint => Row = {
+  def getDataPointGridFunction(requiredColumns: Array[String]): ValueDataPoint => Row = {
     val tssfc = Spark.getSparkStorage.timeSeriesScalingFactorCache
     val btstc = Spark.getBroadcastedTimeSeriesTransformationCache
     val target = computeJumpTarget(requiredColumns, EngineUtilities.dataPointViewNameToIndex, 3)
     (target: @switch) match {
       //Permutations of ('tid')
-      case 1 => (dp: DataPoint) => Row(dp.tid)
+      case 1 => (dp: ValueDataPoint) => Row(dp.tid)
       //Permutations of ('ts')
-      case 2 => (dp: DataPoint) => Row(new Timestamp(dp.timestamp))
+      case 2 => (dp: ValueDataPoint) => Row(new Timestamp(dp.timestamp))
       //Permutations of ('val')
-      case 3 => (dp: DataPoint) => Row(btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)))
+      case 3 => (dp: ValueDataPoint) => Row(btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)))
       //Permutations of ('tid', 'ts')
-      case 12 => (dp: DataPoint) => Row(dp.tid, new Timestamp(dp.timestamp))
-      case 21 => (dp: DataPoint) => Row(new Timestamp(dp.timestamp), dp.tid)
+      case 12 => (dp: ValueDataPoint) => Row(dp.tid, new Timestamp(dp.timestamp))
+      case 21 => (dp: ValueDataPoint) => Row(new Timestamp(dp.timestamp), dp.tid)
       //Permutations of ('tid', 'val')
-      case 13 => (dp: DataPoint) => Row(dp.tid, btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)))
-      case 31 => (dp: DataPoint) => Row(btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)), dp.tid)
+      case 13 => (dp: ValueDataPoint) => Row(dp.tid, btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)))
+      case 31 => (dp: ValueDataPoint) => Row(btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)), dp.tid)
       //Permutations of ('ts', 'val')
-      case 23 => (dp: DataPoint) => Row(new Timestamp(dp.timestamp), btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)))
-      case 32 => (dp: DataPoint) => Row(btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)), new Timestamp(dp.timestamp))
+      case 23 => (dp: ValueDataPoint) => Row(new Timestamp(dp.timestamp), btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)))
+      case 32 => (dp: ValueDataPoint) => Row(btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)), new Timestamp(dp.timestamp))
       //Permutations of ('tid', 'ts', 'val')
-      case 123 => (dp: DataPoint) => Row(dp.tid, new Timestamp(dp.timestamp), btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)))
-      case 132 => (dp: DataPoint) => Row(dp.tid, btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)), new Timestamp(dp.timestamp))
-      case 213 => (dp: DataPoint) => Row(new Timestamp(dp.timestamp), dp.tid, btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)))
-      case 231 => (dp: DataPoint) => Row(new Timestamp(dp.timestamp), btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)), dp.tid)
-      case 312 => (dp: DataPoint) => Row(btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)), dp.tid, new Timestamp(dp.timestamp))
-      case 321 => (dp: DataPoint) => Row(btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)), new Timestamp(dp.timestamp), dp.tid)
+      case 123 => (dp: ValueDataPoint) => Row(dp.tid, new Timestamp(dp.timestamp), btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)))
+      case 132 => (dp: ValueDataPoint) => Row(dp.tid, btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)), new Timestamp(dp.timestamp))
+      case 213 => (dp: ValueDataPoint) => Row(new Timestamp(dp.timestamp), dp.tid, btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)))
+      case 231 => (dp: ValueDataPoint) => Row(new Timestamp(dp.timestamp), btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)), dp.tid)
+      case 312 => (dp: ValueDataPoint) => Row(btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)), dp.tid, new Timestamp(dp.timestamp))
+      case 321 => (dp: ValueDataPoint) => Row(btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)), new Timestamp(dp.timestamp), dp.tid)
       //Static projections cannot be used for rows with dimensions
       case _ => null
     }
@@ -165,7 +165,7 @@ object SparkProjector {
     target
   }
 
-  def getDataPointGridFunctionFallback(requiredColumns: Array[String]): DataPoint => Row = {
+  def getDataPointGridFunctionFallback(requiredColumns: Array[String]): ValueDataPoint => Row = {
     val tsmc = Spark.getSparkStorage.timeSeriesMembersCache
     val tssfc = Spark.getSparkStorage.timeSeriesScalingFactorCache
     val btstc = Spark.getBroadcastedTimeSeriesTransformationCache

@@ -15,7 +15,7 @@
 package dk.aau.modelardb.engines.h2
 
 import dk.aau.modelardb.core.utility.Static
-import dk.aau.modelardb.core.{DataPoint, SegmentGroup}
+import dk.aau.modelardb.core.{ValueDataPoint, SegmentGroup}
 import dk.aau.modelardb.engines.{CodeGenerator, EngineUtilities, H2DataPointProjector, H2SegmentProjector}
 import org.h2.expression.aggregate.AbstractAggregate
 import org.h2.expression.condition.{Comparison, ConditionAndOr}
@@ -81,7 +81,7 @@ object H2Projector {
     }
   }
 
-  def dataPointProjection(dataPoints: Iterator[DataPoint], filter: TableFilter): Iterator[Array[Value]] = {
+  def dataPointProjection(dataPoints: Iterator[ValueDataPoint], filter: TableFilter): Iterator[Array[Value]] = {
     val currentValues = new Array[Value](EngineUtilities.dataPointViewNameToIndex.size)
     val requiredColumns = tableFilterToColumns(filter)
     val columnNames = requiredColumns.map(_.getName.toLowerCase)

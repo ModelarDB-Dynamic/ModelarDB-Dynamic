@@ -14,7 +14,7 @@
  */
 package dk.aau.modelardb.core.models;
 
-import dk.aau.modelardb.core.DataPoint;
+import dk.aau.modelardb.core.ValueDataPoint;
 import dk.aau.modelardb.core.utility.CubeFunction;
 import dk.aau.modelardb.core.utility.Static;
 import org.apache.commons.lang.time.DateUtils;
@@ -107,7 +107,7 @@ public abstract class Segment {
         return currentLength;
     }
 
-    public Stream<DataPoint> grid() {
+    public Stream<ValueDataPoint> grid() {
         //If the segment have been restricted by start time the data points should be returned from an offset,
         // offsets store the following offsets: [0] Group Offset, [1] Group Size, [2] Temporal Offset computed by Start()
         int groupOffset = this.offsets[0] - 1;
@@ -116,7 +116,7 @@ public abstract class Segment {
 
         return IntStream.range(0, this.length()).mapToObj(index -> {
             long ts = this.startTime + (this.samplingInterval * (long) index);
-            return new DataPoint(tid, ts, get(ts, (index + temporalOffset) * groupSize + groupOffset));
+            return new ValueDataPoint(tid, ts, get(ts, (index + temporalOffset) * groupSize + groupOffset));
         });
     }
 
