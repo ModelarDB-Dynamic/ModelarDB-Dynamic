@@ -13,7 +13,9 @@ public class SIConfigurationDataPoint extends DataPoint {
         this.samplingInterval = samplingInterval;
     }
 
+
     public static boolean isAConfigurationDataPoint(String timeSeriesKey) {
+        // OMEGAHACK
         return Pattern.matches("[^0-9]", timeSeriesKey);
     }
 

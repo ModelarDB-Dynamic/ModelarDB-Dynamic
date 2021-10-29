@@ -18,6 +18,7 @@ import dk.aau.modelardb.core.Models.DataSlice;
 import dk.aau.modelardb.core.Models.ValueDataPoint;
 import dk.aau.modelardb.core.timeseries.AsyncTimeSeries;
 import dk.aau.modelardb.core.timeseries.TimeSeries;
+import org.apache.commons.lang.NotImplementedException;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -70,18 +71,13 @@ public class TimeSeriesGroup implements Serializable {
      * Public Methods
      **/
     public void initialize() {
-        for (int i = 0; i < this.timeSeries.length; i++) {
-            TimeSeries ts = this.timeSeries[i];
+
+        for (TimeSeries ts : this.timeSeries) {
             ts.open();
 
-            //Stores the first data point from each time series
+            // Initialize the first slice in P queue
             if (ts.hasNext()) {
-                nextValueDataPointForEachTimeSeries.add(ts.next())
-                this.nextValueDataPoints[i] = ts.next();
-                if (this.nextValueDataPoints[i] == null) {
-                    throw new IllegalArgumentException("CORE: unable to initialize " + this.timeSeries[i].source);
-                }
-                this.next = Math.min(this.next, this.nextValueDataPoints[i].timestamp);
+                nextValueDataPointForEachTimeSeries.add(ts.next());
             }
         }
     }
@@ -122,29 +118,46 @@ public class TimeSeriesGroup implements Serializable {
         return this.timeSeriesHasNext != 0;
     }
 
-    public DataSlice next() {
+    public DataSlice GetSlice() {
         //Prepares the data points for the next SI
-        this.timeSeriesActive = 0;
-        this.timeSeriesActive = this.timeSeries.length;
-        for (int i = 0; i < this.timeSeries.length; i++) {
-            TimeSeries ts = this.timeSeries[i];
+        List<ValueDataPoint> valueDataPointList = new ArrayList<>();
 
-            if (this.nextValueDataPoints[i].timestamp == this.next) {
-                //No gap have occurred so this data point can be emitted in this iteration
-                currentValueDataPoints[i] = this.nextValueDataPoints[i];
-                if (ts.hasNext()) {
-                    this.nextValueDataPoints[i] = ts.next();
-                } else {
-                    this.timeSeriesHasNext--;
+        do {
+            valueDataPointList.add(this.nextValueDataPointForEachTimeSeries.poll());
+            ValueDataPoint point = valueDataPointList.get(valueDataPointList.size() - 1);
+
+            ValueDataPoint nextPoint = null;
+            for (TimeSeries timeSeriesSingular : timeSeries){
+                if (timeSeriesSingular.tid == point.getTid()){
+                    nextPoint = timeSeriesSingular.next();
+                    break;
                 }
-            } else {
-                //A gap have occurred so this data point cannot be not emitted in this iteration
-                currentValueDataPoints[i] = new ValueDataPoint(ts.tid, this.next, Float.NaN);
-                this.timeSeriesActive--;
             }
-        }
-        this.next += this.samplingInterval;
-        return this.currentValueDataPoints;
+            
+            if (nextPoint == null)
+                throw new RuntimeException();
+            
+            // Do we have a fake point? I.e value is a gap point
+            if (!Float.isNaN(nextPoint.value))
+                this.nextValueDataPointForEachTimeSeries.add(nextPoint);
+            
+        } while (!nextValueDataPointForEachTimeSeries.isEmpty() 
+                && sameSIAndSameTimestamp(valueDataPointList.get(0), this.nextValueDataPointForEachTimeSeries.peek()));
+
+        return new DataSlice(valueDataPointList.toArray(new ValueDataPoint[0]), tidsChanged(), valueDataPointList.get(0).samplingInterval);
+    }
+
+
+    private boolean sameSIAndSameTimestamp(ValueDataPoint first, ValueDataPoint second){
+       if (first.timestamp != second.timestamp)
+           return false;
+        return first.samplingInterval == second.samplingInterval;
+    }
+
+
+    // What is
+    private boolean tidsChanged(){
+        throw new NotImplementedException();
     }
 
     public int getActiveTimeSeries() {

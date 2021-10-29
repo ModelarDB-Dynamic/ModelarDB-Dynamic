@@ -190,6 +190,10 @@ public class TimeSeriesCSV extends TimeSeries {
 
     private ValueDataPoint nextDataPoint() throws IOException {
         try {
+            // HACK: We search for a newline in buffer. If yes our nextDataPointIndex will be not 0.
+            // When we don't find a newline indexOf will return -1 which we add 1 and get 0.
+            // We plus with one because the buffer is 0 indexed and when we call delete we want to delete up to
+            // indexOf("\n") + 1 in the buffered data.
             int nextDataPointIndex = this.nextBuffer.indexOf("\n") + 1;
             String[] split;
             if (nextDataPointIndex == 0) {
@@ -198,36 +202,27 @@ public class TimeSeriesCSV extends TimeSeries {
                 split = this.nextBuffer.substring(0, nextDataPointIndex).split(csvSeparator);
             }
 
-
             ValueDataPoint result;
             if (SIConfigurationDataPoint.isAConfigurationDataPoint(split[0])) {
-                int configurationValue = Integer.parseInt(split[1]);
-                String configurationKey = split[0];
-                if ("SI".equals(configurationKey)) {
-                    this.currentSamplingInterval = configurationValue;
-                    this.nextTimestampPointer += (this.nextTimestampPointer%this.currentSamplingInterval);
+                try {
+                    int configurationValue = Integer.parseInt(split[1]);
+                    String configurationKey = split[0];
+                    if ("SI".equals(configurationKey)) {
+                        this.currentSamplingInterval = configurationValue;
+                        // We update the nextTimeStampPointer to point at the next data point with the updated SI
+                        this.nextTimestampPointer -= (this.nextTimestampPointer - this.currentSamplingInterval);
+                    }
+                    if (nextDataPointIndex != 0) {//delete the config datapoint that have been read from the buffer
+                        this.nextBuffer.delete(0, nextDataPointIndex);
+                    }
+                    result = nextDataPoint();
+                } catch(NumberFormatException nfe) {
+                    throw new IOException(nfe);
                 }
-                if (nextDataPointIndex != 0) {//delete the config datapoint that have been read from the buffer
-                    this.nextBuffer.delete(0, nextDataPointIndex);
-                }
-                result = nextDataPoint();
+
             } else {
                 //Parses the timestamp column as either Unix time, Java time, or a human readable timestamp
-                long timestamp = 0;
-                switch (this.dateParserType) {
-                    case 1:
-                        //Unix time
-                        timestamp = new Date(Long.parseLong(split[timestampColumnIndex]) * 1000).getTime();
-                        break;
-                    case 2:
-                        //Java time
-                        timestamp = new Date(Long.parseLong(split[timestampColumnIndex])).getTime();
-                        break;
-                    case 3:
-                        //Human readable timestamp
-                        timestamp = dateParser.parse(split[timestampColumnIndex]).getTime();
-                        break;
-                }
+                long timestamp = parseTimeStamp(split);
                 float dataPointValue;
                 if (nextTimestampPointer == timestamp) {
                     dataPointValue = valueParser.parse(split[valueColumnIndex]).floatValue();
@@ -235,7 +230,8 @@ public class TimeSeriesCSV extends TimeSeries {
                         this.nextBuffer.delete(0, nextDataPointIndex);
                     }
                 } else {
-                    //datapoint from buffer is not deleted as the timestamp did not match the next pointer. Therefore a gap datapoint is emitted at the expected timestamp
+                    // Datapoint from buffer is not deleted as the timestamp did not match the next pointer.
+                    // Therefore a gap datapoint is emitted at the expected timestamp
                     dataPointValue = Float.NaN; // value of Nan indicates Gap
                 }
                 result = new ValueDataPoint(this.tid, timestamp, this.scalingFactor * dataPointValue, this.currentSamplingInterval);
@@ -246,6 +242,24 @@ public class TimeSeriesCSV extends TimeSeries {
             //If the input cannot be parsed the stream is considered empty
             this.channel.close();
             throw new java.lang.RuntimeException(pe);
+        }
+    }
+
+    private long parseTimeStamp(String[] split){
+        switch (this.dateParserType) {
+            case 1:
+                //Unix time
+                return new Date(Long.parseLong(split[timestampColumnIndex]) * 1000).getTime();
+            case 2:
+                //Java time
+                return new Date(Long.parseLong(split[timestampColumnIndex])).getTime();
+            default:
+                //Human readable timestamp
+                try {
+                    return dateParser.parse(split[timestampColumnIndex]).getTime();
+                } catch (ParseException parseException){
+                    throw new RuntimeException(parseException);
+                }
         }
     }
 }

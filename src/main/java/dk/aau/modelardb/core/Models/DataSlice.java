@@ -6,9 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DataSlice {
+    public final int samplingInterval;
     private final boolean tidsHaveChanged;
-    private final ArrayList<ValueDataPoint> valueDataPoints;
-    private final int samplingInterval;
+    public final ArrayList<ValueDataPoint> valueDataPoints;
 
     public DataSlice(ValueDataPoint[] valueDataPoints, boolean tidsHaveChanged, int samplingInterval) {
         checkAllSamplingIntervalsTheSame();

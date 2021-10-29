@@ -15,11 +15,12 @@
 package dk.aau.modelardb.core.timeseries;
 
 import dk.aau.modelardb.core.Models.DataPoint;
+import dk.aau.modelardb.core.Models.ValueDataPoint;
 
 import java.io.Serializable;
 import java.util.Iterator;
 
-public abstract class TimeSeries implements Serializable, Iterator<DataPoint> {
+public abstract class TimeSeries implements Serializable, Iterator<ValueDataPoint> {
     /**
      * Instance Variables
      **/
