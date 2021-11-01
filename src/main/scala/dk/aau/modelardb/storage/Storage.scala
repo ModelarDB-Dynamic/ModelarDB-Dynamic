@@ -14,9 +14,10 @@
  */
 package dk.aau.modelardb.storage
 
-import dk.aau.modelardb.core.models.{ModelType, ModelTypeFactory}
+import dk.aau.modelardb.core.GroupBasedCompression.TimeSeriesGroup
+import dk.aau.modelardb.core.Models.CompressionModels.{ModelType, ModelTypeFactory}
 import dk.aau.modelardb.core.utility.{Pair, Static, ValueFunction}
-import dk.aau.modelardb.core.{Configuration, Dimensions, TimeSeriesGroup}
+import dk.aau.modelardb.core.{Configuration, Dimensions}
 
 import scala.collection.mutable
 import scala.math.Ordering.Implicits.infixOrderingOps

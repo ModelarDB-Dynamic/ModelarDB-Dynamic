@@ -14,7 +14,7 @@
  */
 package dk.aau.modelardb.engines.h2
 
-import dk.aau.modelardb.core.SegmentGroup
+import dk.aau.modelardb.core.GroupBasedCompression.SegmentGroup
 import dk.aau.modelardb.storage.Storage
 import org.h2.table.TableFilter
 

@@ -14,7 +14,7 @@
  */
 package dk.aau.modelardb.engines.h2
 
-import dk.aau.modelardb.core.SegmentGroup
+import dk.aau.modelardb.core.GroupBasedCompression.SegmentGroup
 import org.h2.api.TableEngine
 import org.h2.command.ddl.CreateTableData
 import org.h2.command.dml.AllColumnsForPlan

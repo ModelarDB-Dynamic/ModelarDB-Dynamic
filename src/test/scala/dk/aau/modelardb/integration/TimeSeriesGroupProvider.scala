@@ -14,7 +14,7 @@
  */
 package dk.aau.modelardb.integration
 
-import dk.aau.modelardb.core.TimeSeriesGroup
+import dk.aau.modelardb.core.GroupBasedCompression.TimeSeriesGroup
 import dk.aau.modelardb.core.timeseries.TimeSeriesORC
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path

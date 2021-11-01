@@ -12,9 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dk.aau.modelardb.core;
+package dk.aau.modelardb.core.Models;
 
-public class ValueDataPoint extends DataPoint{
+public class ValueDataPoint extends DataPoint {
 
     /**
      * Instance Variables
@@ -37,6 +37,10 @@ public class ValueDataPoint extends DataPoint{
      **/
     public String toString() {
         return "DataPoint: [" + this.getTid() + " | " + new java.sql.Timestamp(this.timestamp) + " | " + this.value + " | " + this.samplingInterval + "]";
+    }
+
+    public boolean isGapPoint(){
+        return Float.isNaN(this.value);
     }
 
     @Override

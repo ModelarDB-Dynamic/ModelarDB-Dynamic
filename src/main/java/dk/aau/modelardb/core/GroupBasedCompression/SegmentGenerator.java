@@ -12,9 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dk.aau.modelardb.core;
+package dk.aau.modelardb.core.GroupBasedCompression;
 
-import dk.aau.modelardb.core.models.ModelType;
+import dk.aau.modelardb.core.Models.CompressionModels.ModelType;
+import dk.aau.modelardb.core.Models.DataSlice;
+import dk.aau.modelardb.core.Models.ValueDataPoint;
 import dk.aau.modelardb.core.timeseries.TimeSeries;
 import dk.aau.modelardb.core.utility.Logger;
 import dk.aau.modelardb.core.utility.ReverseBufferIterator;
@@ -148,8 +150,7 @@ public class SegmentGenerator {
         this.timeSeriesGroup.close();
     }
 
-    //** Private Methods **/
-    private void consumeDataPoints(ValueDataPoint[] curValueDataPointsAndGaps, int activeTimeSeries) {
+    public void consumeSlice(DataSlice slice, int activeTimeSeries) {
         //DEBUG: adds either a key our five seconds delay to continue
         //this.logger.pauseAndPrint(curDataPointsAndGaps);
         //this.logger.sleepAndPrint(curDataPointsAndGaps, 5000);
@@ -162,21 +163,19 @@ public class SegmentGenerator {
         //If any of the time series are missing values, a gap is stored for that time series
         int nextDataPoint = 0;
         ValueDataPoint[] currentValueDataPoints = new ValueDataPoint[activeTimeSeries];
-        for (int i = 0; i < curValueDataPointsAndGaps.length; i++) {
-            ValueDataPoint cdpg = curValueDataPointsAndGaps[i];
-            if (Float.isNaN(cdpg.value)) {
+        for (int i = 0; i < slice.valueDataPoints.size(); i++) {
+            ValueDataPoint cdpg = slice.valueDataPoints.get(i);
+            if (cdpg.isGapPoint()) {
                 //A NaN value indicates the start of a gap, so we flush and store its tid in gaps
-                if (!this.gaps.contains(cdpg.tid)) {
+                if (!this.gaps.contains(cdpg.getTid())) {
                     flushBuffer();
-                    this.gaps.add(cdpg.tid);
+                    this.gaps.add(cdpg.getTid());
                 }
             } else {
-                //A floating-point value indicates the end of a gap if more then the sampling interval have passed
-                long pts = this.previousTimeStamps[i];
-                if ((cdpg.timestamp - pts) > this.samplingInterval) {
-                    //A gap have ended so we flush the buffer and remove the tid from gaps
+                if (this.gaps.contains(cdpg.getTid())){
+                    // a gap has ended
                     flushBuffer();
-                    this.gaps.remove(cdpg.tid);
+                    this.gaps.remove(cdpg.getTid());
                 }
                 currentValueDataPoints[nextDataPoint] = cdpg;
                 this.previousTimeStamps[i] = cdpg.timestamp;
@@ -210,6 +209,7 @@ public class SegmentGenerator {
         }
     }
 
+    //** Private Methods **/
     private void flushBuffer() {
         //If no data points are currently stored in the buffer it cannot be flushed
         if (this.buffer.isEmpty()) {

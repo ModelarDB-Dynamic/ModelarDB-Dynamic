@@ -14,7 +14,7 @@
  */
 package dk.aau.modelardb.engines.h2
 
-import dk.aau.modelardb.core.models.{ModelType, Segment}
+import dk.aau.modelardb.core.Models.CompressionModels.{ModelType, Segment}
 import dk.aau.modelardb.core.utility.{CubeFunction, Static}
 import org.h2.api.AggregateFunction
 

@@ -1,4 +1,4 @@
-package dk.aau.modelardb.core;
+package dk.aau.modelardb.core.Models;
 
 import java.util.regex.Pattern;
 
@@ -13,7 +13,9 @@ public class SIConfigurationDataPoint extends DataPoint {
         this.samplingInterval = samplingInterval;
     }
 
+
     public static boolean isAConfigurationDataPoint(String timeSeriesKey) {
+        // OMEGAHACK
         return Pattern.matches("[^0-9]", timeSeriesKey);
     }
 

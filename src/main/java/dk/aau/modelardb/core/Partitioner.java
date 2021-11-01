@@ -14,6 +14,8 @@
  */
 package dk.aau.modelardb.core;
 
+import dk.aau.modelardb.core.GroupBasedCompression.TimeSeriesGroup;
+import dk.aau.modelardb.core.GroupBasedCompression.WorkingSet;
 import dk.aau.modelardb.core.timeseries.*;
 import dk.aau.modelardb.core.utility.Pair;
 import dk.aau.modelardb.core.utility.Static;

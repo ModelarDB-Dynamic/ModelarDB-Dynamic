@@ -12,10 +12,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dk.aau.modelardb.core;
+package dk.aau.modelardb.core.GroupBasedCompression;
 
+import dk.aau.modelardb.core.Models.DataSlice;
+import dk.aau.modelardb.core.Models.ValueDataPoint;
 import dk.aau.modelardb.core.timeseries.AsyncTimeSeries;
 import dk.aau.modelardb.core.timeseries.TimeSeries;
+import org.apache.commons.lang.NotImplementedException;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -31,6 +34,7 @@ public class TimeSeriesGroup implements Serializable {
     public final boolean isAsync;
     public final int samplingInterval;
     private final TimeSeries[] timeSeries;
+    private final Map<Integer, Integer> tidToTimeSeriesIndex;
     private int timeSeriesActive;
     private int timeSeriesHasNext;
     private PriorityQueue<ValueDataPoint> nextValueDataPointForEachTimeSeries = new PriorityQueue<>((dp1, dp2) -> {
@@ -61,6 +65,10 @@ public class TimeSeriesGroup implements Serializable {
         //Initializes variables for holding the latest data point for each time series
         this.gid = gid;
         this.timeSeries = timeSeries;
+        this.tidToTimeSeriesIndex = new HashMap<>();
+        for (int i = 0; i < timeSeries.length; i++) {
+            this.tidToTimeSeriesIndex.put(timeSeries[i].tid,i);
+        }
         this.timeSeriesHasNext = timeSeries.length;
     }
 
@@ -68,18 +76,13 @@ public class TimeSeriesGroup implements Serializable {
      * Public Methods
      **/
     public void initialize() {
-        for (int i = 0; i < this.timeSeries.length; i++) {
-            TimeSeries ts = this.timeSeries[i];
+
+        for (TimeSeries ts : this.timeSeries) {
             ts.open();
 
-            //Stores the first data point from each time series
+            // Initialize the first slice in P queue
             if (ts.hasNext()) {
-                nextValueDataPointForEachTimeSeries.add(ts.next())
-                this.nextValueDataPoints[i] = ts.next();
-                if (this.nextValueDataPoints[i] == null) {
-                    throw new IllegalArgumentException("CORE: unable to initialize " + this.timeSeries[i].source);
-                }
-                this.next = Math.min(this.next, this.nextValueDataPoints[i].timestamp);
+                nextValueDataPointForEachTimeSeries.add(ts.next());
             }
         }
     }
@@ -120,29 +123,29 @@ public class TimeSeriesGroup implements Serializable {
         return this.timeSeriesHasNext != 0;
     }
 
-    public DataSlice next() {
+    public DataSlice GetSlice() {
         //Prepares the data points for the next SI
-        this.timeSeriesActive = 0;
-        this.timeSeriesActive = this.timeSeries.length;
-        for (int i = 0; i < this.timeSeries.length; i++) {
-            TimeSeries ts = this.timeSeries[i];
+        List<ValueDataPoint> valueDataPointList = new ArrayList<>();
+        do {
+            ValueDataPoint point = this.nextValueDataPointForEachTimeSeries.poll(); //TODO #MarryJane esben can waste 5 hours renaming #GoodUseOfTime
+            valueDataPointList.add(point);
 
-            if (this.nextValueDataPoints[i].timestamp == this.next) {
-                //No gap have occurred so this data point can be emitted in this iteration
-                currentValueDataPoints[i] = this.nextValueDataPoints[i];
-                if (ts.hasNext()) {
-                    this.nextValueDataPoints[i] = ts.next();
-                } else {
-                    this.timeSeriesHasNext--;
-                }
-            } else {
-                //A gap have occurred so this data point cannot be not emitted in this iteration
-                currentValueDataPoints[i] = new ValueDataPoint(ts.tid, this.next, Float.NaN);
-                this.timeSeriesActive--;
-            }
-        }
-        this.next += this.samplingInterval;
-        return this.currentValueDataPoints;
+            int timeSeriesIndex = this.tidToTimeSeriesIndex.get(point.getTid());
+            ValueDataPoint nextPoint = this.timeSeries[timeSeriesIndex].next();
+
+            if (nextPoint == null)
+                throw new RuntimeException();
+        } while (!nextValueDataPointForEachTimeSeries.isEmpty()
+                && sameSIAndSameTimestamp(valueDataPointList.get(0), this.nextValueDataPointForEachTimeSeries.peek()));
+
+        return new DataSlice(valueDataPointList, valueDataPointList.get(0).samplingInterval);
+    }
+
+
+    private boolean sameSIAndSameTimestamp(ValueDataPoint first, ValueDataPoint second){
+       if (first.timestamp != second.timestamp)
+           return false;
+        return first.samplingInterval == second.samplingInterval;
     }
 
     public int getActiveTimeSeries() {

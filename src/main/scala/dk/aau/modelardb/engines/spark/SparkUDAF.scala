@@ -14,7 +14,7 @@
  */
 package dk.aau.modelardb.engines.spark
 
-import dk.aau.modelardb.core.models.Segment
+import dk.aau.modelardb.core.Models.CompressionModels.Segment
 import dk.aau.modelardb.core.utility.{CubeFunction, Static}
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.expressions.Aggregator

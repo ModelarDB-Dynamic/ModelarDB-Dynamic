@@ -15,6 +15,7 @@
 package dk.aau.modelardb.engines.spark
 
 import dk.aau.modelardb.Interface
+import dk.aau.modelardb.core.GroupBasedCompression.TimeSeriesGroup
 import dk.aau.modelardb.core._
 import dk.aau.modelardb.core.utility.{Static, ValueFunction}
 import dk.aau.modelardb.engines.EngineUtilities

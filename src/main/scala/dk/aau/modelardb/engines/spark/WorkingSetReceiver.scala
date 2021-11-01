@@ -14,7 +14,7 @@
  */
 package dk.aau.modelardb.engines.spark
 
-import dk.aau.modelardb.core.WorkingSet
+import dk.aau.modelardb.core.GroupBasedCompression.WorkingSet
 import dk.aau.modelardb.core.utility.SegmentFunction
 import org.apache.spark.sql.Row
 import org.apache.spark.storage.StorageLevel
