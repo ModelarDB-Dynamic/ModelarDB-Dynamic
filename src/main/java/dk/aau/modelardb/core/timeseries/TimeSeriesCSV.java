@@ -210,7 +210,7 @@ public class TimeSeriesCSV extends TimeSeries {
                     if ("SI".equals(configurationKey)) {
                         this.currentSamplingInterval = configurationValue;
                         // We update the nextTimeStampPointer to point at the next data point with the updated SI
-                        this.nextTimestampPointer -= (this.nextTimestampPointer - this.currentSamplingInterval);
+                        this.nextTimestampPointer -= this.currentSamplingInterval - (this.nextTimestampPointer % this.currentSamplingInterval);
                     }
                     if (nextDataPointIndex != 0) {//delete the config datapoint that have been read from the buffer
                         this.nextBuffer.delete(0, nextDataPointIndex);
