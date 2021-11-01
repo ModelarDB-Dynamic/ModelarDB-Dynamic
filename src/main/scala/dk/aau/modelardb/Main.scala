@@ -64,7 +64,7 @@ object Main {
   /** Private Methods * */
   private def readConfigurationFile(configPath: String): Configuration = {
     Static.info(s"ModelarDB: $configPath")
-    val configuration = new Configuration()
+    val configuration = Configuration.INSTANCE;
     val models = ArrayBuffer[String]()
     val sources = ArrayBuffer[String]()
     val derivedSources = new util.HashMap[String, ArrayBuffer[Pair[String, ValueFunction]]]()

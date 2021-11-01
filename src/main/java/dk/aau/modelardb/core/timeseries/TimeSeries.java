@@ -20,7 +20,7 @@ import dk.aau.modelardb.core.Models.ValueDataPoint;
 import java.io.Serializable;
 import java.util.Iterator;
 
-public abstract class TimeSeries implements Serializable, Iterator<ValueDataPoint> {
+public abstract class TimeSeries implements Serializable, Iterator<DataPoint> {
     /**
      * Instance Variables
      **/

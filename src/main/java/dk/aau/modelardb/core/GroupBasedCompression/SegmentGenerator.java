@@ -22,6 +22,8 @@ import dk.aau.modelardb.core.utility.Logger;
 import dk.aau.modelardb.core.utility.ReverseBufferIterator;
 import dk.aau.modelardb.core.utility.SegmentFunction;
 import dk.aau.modelardb.core.utility.Static;
+import org.apache.commons.lang.NotImplementedException;
+import org.apache.hadoop.util.hash.Hash;
 
 import java.util.*;
 import java.util.function.Supplier;
@@ -62,6 +64,10 @@ public class SegmentGenerator {
     private int dataPointsYetEmitted;
     private ModelType currentModelType;
     private ModelType lastEmittedModelType;
+
+    private boolean finalized = false;
+    private HashMap<Integer, SegmentGenerator> tidToSGChildren;
+
     /**
      * Constructors
      **/
@@ -103,6 +109,7 @@ public class SegmentGenerator {
 
         //DEBUG: logger instance for counting segments used for this generator
         this.logger = new Logger(this.timeSeriesGroup.size());
+        this.tidToSGChildren = new HashMap<>();
     }
 
     /**
@@ -141,7 +148,15 @@ public class SegmentGenerator {
         return this.timeSeriesGroup;
     }
 
+    public boolean isFinalized() {
+        return finalized;
+    }
+
     void close() {
+        if (finalized) {
+            return;
+        }
+        this.finalized = true;
         for (SegmentGenerator sg : this.splitSegmentGenerators) {
             sg.flushBuffer();
             sg.timeSeriesGroup.close();
@@ -150,7 +165,34 @@ public class SegmentGenerator {
         this.timeSeriesGroup.close();
     }
 
-    public void consumeSlice(DataSlice slice, int activeTimeSeries) {
+    public void consumeSlice(DataSlice slice) {
+        if (this.splitSegmentGenerators.isEmpty()){
+            // Consume
+            consumeValueDataPoints(slice.getValueDataPoints());
+        } else { // Make children
+            for (SegmentGenerator sg : this.splitSegmentGenerators) {
+                for (TimeSeries ts : sg.timeSeriesGroup.getTimeSeries()) {
+                    this.tidToSGChildren.put(ts.tid, sg);
+                }
+            }
+
+            List<ValueDataPoint> sliceForFirstChild = new ArrayList<>();
+            List<ValueDataPoint> sliceForSecondChildTwo = new ArrayList<>();
+
+            for (ValueDataPoint vdp : slice.getValueDataPoints()){
+                SegmentGenerator sg = tidToSGChildren.get(vdp.getTid());
+                sg.tids.contains(vdp.getTid());
+
+            }
+        }
+    }
+
+    // TODO: implement this
+    public void consumeValueDataPoints(List<ValueDataPoint> valueDataPoints) {
+        throw new NotImplementedException();
+    }
+
+    public void consumeSliceOLD(DataSlice slice, int activeTimeSeries) {
         //DEBUG: adds either a key our five seconds delay to continue
         //this.logger.pauseAndPrint(curDataPointsAndGaps);
         //this.logger.sleepAndPrint(curDataPointsAndGaps, 5000);
@@ -172,7 +214,7 @@ public class SegmentGenerator {
                     this.gaps.add(cdpg.getTid());
                 }
             } else {
-                if (this.gaps.contains(cdpg.getTid())){
+                if (this.gaps.contains(cdpg.getTid())) {
                     // a gap has ended
                     flushBuffer();
                     this.gaps.remove(cdpg.getTid());

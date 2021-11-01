@@ -14,6 +14,8 @@
  */
 package dk.aau.modelardb.core.timeseries;
 
+import dk.aau.modelardb.core.Configuration;
+import dk.aau.modelardb.core.Models.DataPoint;
 import dk.aau.modelardb.core.Models.SIConfigurationDataPoint;
 import dk.aau.modelardb.core.Models.ValueDataPoint;
 
@@ -123,10 +125,11 @@ public class TimeSeriesCSV extends TimeSeries {
         }
     }
 
-    public ValueDataPoint next() {
+    public DataPoint next() {
         try {
             if (this.nextBuffer.length() == 0) {
                 readLines();
+                return new SIConfigurationDataPoint(this.tid, Configuration.INSTANCE.getSamplingInterval(), Integer.MIN_VALUE);
             }
             return nextDataPoint();
         } catch (IOException ioe) {
@@ -188,7 +191,7 @@ public class TimeSeriesCSV extends TimeSeries {
     }
 
 
-    private ValueDataPoint nextDataPoint() throws IOException {
+    private DataPoint nextDataPoint() throws IOException {
         try {
             // HACK: We search for a newline in buffer. If yes our nextDataPointIndex will be not 0.
             // When we don't find a newline indexOf will return -1 which we add 1 and get 0.
@@ -203,10 +206,9 @@ public class TimeSeriesCSV extends TimeSeries {
                 split = this.nextBuffer.toString().split(csvSeparator);
             }
 
-            ValueDataPoint result;
+            DataPoint result;
             if (SIConfigurationDataPoint.isAConfigurationDataPoint(split[0])) {
-                handleConfigDataPoint(nextDataPointIndex, hasNextDatapoint, split);
-                result = this.nextDataPoint();
+                result = handleConfigDataPoint(nextDataPointIndex, hasNextDatapoint, split);
             } else {
                 result = handleValueDatapoint(nextDataPointIndex, hasNextDatapoint, split);
             }
@@ -235,19 +237,24 @@ public class TimeSeriesCSV extends TimeSeries {
         return new ValueDataPoint(this.tid, timestamp, this.scalingFactor * dataPointValue, this.currentSamplingInterval);
     }
 
-    private void handleConfigDataPoint(int nextDataPointIndex, boolean hasNextDatapoint, String[] split) throws IOException {
+    private SIConfigurationDataPoint handleConfigDataPoint(int nextDataPointIndex, boolean hasNextDatapoint, String[] split) throws IOException {
+        int previousSamplingInterval = this.currentSamplingInterval;
         try {
             String configurationKey = split[0];
             if ("SI".equals(configurationKey)) {
-                double currTime =  this.expectedTimestampPointer - this.currentSamplingInterval; // revert to prev datapoint timestamp
-                int newSI =  Integer.parseInt(split[1]);
+                double currTime = this.expectedTimestampPointer - this.currentSamplingInterval; // revert to prev datapoint timestamp
+                int newSI = Integer.parseInt(split[1]);
                 // increment to point to expected value using new sampling interval
                 this.expectedTimestampPointer += newSI - (currTime % newSI);
                 this.currentSamplingInterval = newSI;
+
+                if (hasNextDatapoint) {//delete the config datapoint that have been read from the buffer
+                    this.nextBuffer.delete(0, nextDataPointIndex);
+                }
+            } else {
+                throw new RuntimeException("config key not supported");
             }
-            if (hasNextDatapoint) {//delete the config datapoint that have been read from the buffer
-                this.nextBuffer.delete(0, nextDataPointIndex);
-            }
+            return new SIConfigurationDataPoint(this.tid, this.currentSamplingInterval, previousSamplingInterval);
         } catch(NumberFormatException nfe) {
             throw new IOException(nfe);
         }

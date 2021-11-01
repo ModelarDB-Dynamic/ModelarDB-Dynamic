@@ -1,16 +1,20 @@
 package dk.aau.modelardb.core.Models;
 
+import scala.Int;
+
 import java.util.regex.Pattern;
 
 public class SIConfigurationDataPoint extends DataPoint {
 
     private final String configurationKey;
-    private final int samplingInterval;
+    private final int newSamplingInterval;
+    private final int previousSamplingInterval;
 
-    public SIConfigurationDataPoint(int timeSeriesId, String configurationKey, int samplingInterval) {
+    public SIConfigurationDataPoint(int timeSeriesId, int newSamplingInterval, int previousSamplingInterval) {
         super(timeSeriesId);
-        this.configurationKey = configurationKey;
-        this.samplingInterval = samplingInterval;
+        this.configurationKey = "SI";
+        this.newSamplingInterval = newSamplingInterval;
+        this.previousSamplingInterval = previousSamplingInterval;
     }
 
 
@@ -23,9 +27,18 @@ public class SIConfigurationDataPoint extends DataPoint {
         return configurationKey;
     }
 
-    public int getSamplingInterval() {
-        return samplingInterval;
+    public int getNewSamplingInterval() {
+        return newSamplingInterval;
     }
+
+    public int getPreviousSamplingInterval() {
+        return previousSamplingInterval;
+    }
+
+    public boolean hasPreviousSamplingInterval() {
+        return previousSamplingInterval != Integer.MIN_VALUE;
+    }
+
 
     @Override
     public boolean isConfigurationDataPoint() {

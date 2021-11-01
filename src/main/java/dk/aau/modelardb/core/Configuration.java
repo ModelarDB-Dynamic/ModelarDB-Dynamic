@@ -30,10 +30,12 @@ public class Configuration {
      **/
     private final HashMap<String, Object[]> values;
 
+    public static final Configuration INSTANCE = new Configuration();
+
     /**
      * Constructors
      **/
-    public Configuration() {
+    private Configuration() {
         this.values = new HashMap<>();
     }
 

@@ -11,6 +11,6 @@ public abstract class DataPoint {
         return tid;
     }
 
-    abstract boolean isConfigurationDataPoint();
+    public abstract boolean isConfigurationDataPoint();
 
 }

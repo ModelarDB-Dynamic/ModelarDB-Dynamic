@@ -14,11 +14,12 @@
  */
 package dk.aau.modelardb.core.GroupBasedCompression;
 
+import dk.aau.modelardb.core.Models.DataPoint;
 import dk.aau.modelardb.core.Models.DataSlice;
+import dk.aau.modelardb.core.Models.SIConfigurationDataPoint;
 import dk.aau.modelardb.core.Models.ValueDataPoint;
 import dk.aau.modelardb.core.timeseries.AsyncTimeSeries;
 import dk.aau.modelardb.core.timeseries.TimeSeries;
-import org.apache.commons.lang.NotImplementedException;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -34,16 +35,10 @@ public class TimeSeriesGroup implements Serializable {
     public final boolean isAsync;
     public final int samplingInterval;
     private final TimeSeries[] timeSeries;
-    private final Map<Integer, Integer> tidToTimeSeriesIndex;
-    private int timeSeriesActive;
-    private int timeSeriesHasNext;
-    private PriorityQueue<ValueDataPoint> nextValueDataPointForEachTimeSeries = new PriorityQueue<>((dp1, dp2) -> {
-        Comparator<ValueDataPoint> timestampComparator = Comparator.comparingLong(dp -> dp.timestamp);
-        Comparator<ValueDataPoint> samplingIntervalComparator = Comparator.comparingInt(dp -> dp.samplingInterval);
-
-        int comparedTimestamp = timestampComparator.compare(dp1, dp2);
-        return comparedTimestamp == 0 ? comparedTimestamp : samplingIntervalComparator.compare(dp1, dp2);
-    });
+    private Map<Integer, Integer> tidToTimeSeriesIndex;
+    private int amountOfTimeSeriesWithNext;
+    private PriorityQueue<ValueDataPoint> nextValueDataPointPriorityQueue = new PriorityQueue<>(getDataPointComparator());
+    private List<SIConfigurationDataPoint> configurationDataPoints;
 
     /**
      * Constructors
@@ -62,38 +57,52 @@ public class TimeSeriesGroup implements Serializable {
             }
         }
 
+        this.configurationDataPoints = new ArrayList<>();
+        tidToTimeSeriesIndex = new HashMap<>();
+        for (int i = 0; i < timeSeries.length; i++) {
+            tidToTimeSeriesIndex.put(timeSeries[i].tid, i);
+        }
+
         //Initializes variables for holding the latest data point for each time series
         this.gid = gid;
         this.timeSeries = timeSeries;
-        this.tidToTimeSeriesIndex = new HashMap<>();
-        for (int i = 0; i < timeSeries.length; i++) {
-            this.tidToTimeSeriesIndex.put(timeSeries[i].tid,i);
-        }
-        this.timeSeriesHasNext = timeSeries.length;
+        this.amountOfTimeSeriesWithNext = timeSeries.length;
+    }
+
+    private static Comparator<ValueDataPoint> getDataPointComparator() {
+        return (ValueDataPoint dp1, ValueDataPoint dp2) -> {
+            Comparator<ValueDataPoint> timestampComparator = Comparator.comparingLong(dp -> dp.timestamp);
+            Comparator<ValueDataPoint> samplingIntervalComparator = Comparator.comparingInt(dp -> dp.samplingInterval);
+
+            int comparedTimestamp = timestampComparator.compare(dp1, dp2);
+            return comparedTimestamp == 0 ? comparedTimestamp : samplingIntervalComparator.compare(dp1, dp2);
+        };
     }
 
     /**
      * Public Methods
      **/
     public void initialize() {
-
         for (TimeSeries ts : this.timeSeries) {
             ts.open();
 
             // Initialize the first slice in P queue
-            if (ts.hasNext()) {
-                nextValueDataPointForEachTimeSeries.add(ts.next());
+            DataPoint next = ts.next();
+            while (next.isConfigurationDataPoint()) {
+                this.configurationDataPoints.add((SIConfigurationDataPoint) next);
+                next = ts.next();
             }
+            nextValueDataPointPriorityQueue.add((ValueDataPoint) next);
         }
     }
 
-    public void attachToSelector(Selector s, SegmentGenerator mg) throws IOException {
+/*    public void attachToSelector(Selector s, SegmentGenerator mg) throws IOException {
         for (TimeSeries ts : this.timeSeries) {
             if (ts instanceof AsyncTimeSeries) {
                 ((AsyncTimeSeries) ts).attachToSelector(s, mg);
             }
         }
-    }
+    }*/
 
     public TimeSeries[] getTimeSeries() {
         return this.timeSeries;
@@ -120,41 +129,61 @@ public class TimeSeriesGroup implements Serializable {
     }
 
     public boolean hasNext() {
-        return this.timeSeriesHasNext != 0;
+        return this.amountOfTimeSeriesWithNext != 0;
     }
 
-    public DataSlice GetSlice() {
+    public DataSlice getSlice() {
         //Prepares the data points for the next SI
         List<ValueDataPoint> valueDataPointList = new ArrayList<>();
         do {
-            ValueDataPoint point = this.nextValueDataPointForEachTimeSeries.poll(); //TODO #MarryJane esben can waste 5 hours renaming #GoodUseOfTime
+            ValueDataPoint point = this.nextValueDataPointPriorityQueue.poll();
             valueDataPointList.add(point);
 
-            int timeSeriesIndex = this.tidToTimeSeriesIndex.get(point.getTid());
-            ValueDataPoint nextPoint = this.timeSeries[timeSeriesIndex].next();
+            ValueDataPoint nextValueDatapoint = nextValueDatapoint(point.getTid());
+            this.nextValueDataPointPriorityQueue.add(nextValueDatapoint);
 
-            if (nextPoint == null)
-                throw new RuntimeException();
-        } while (!nextValueDataPointForEachTimeSeries.isEmpty()
-                && sameSIAndSameTimestamp(valueDataPointList.get(0), this.nextValueDataPointForEachTimeSeries.peek()));
+        } while (!nextValueDataPointPriorityQueue.isEmpty()
+                && sameSIAndSameTimestamp(valueDataPointList.get(0), this.nextValueDataPointPriorityQueue.peek()));
+
 
         return new DataSlice(valueDataPointList, valueDataPointList.get(0).samplingInterval);
     }
 
+    private ValueDataPoint nextValueDatapoint(int tid) {
+        int timeSeriesIndex = this.tidToTimeSeriesIndex.get(tid);
+        TimeSeries currentTimeSeries = this.timeSeries[timeSeriesIndex];
 
-    private boolean sameSIAndSameTimestamp(ValueDataPoint first, ValueDataPoint second){
-       if (first.timestamp != second.timestamp)
-           return false;
+        while(currentTimeSeries.hasNext()) {
+            DataPoint next = currentTimeSeries.next();
+            if (next.isConfigurationDataPoint()) {
+                this.configurationDataPoints.add((SIConfigurationDataPoint) next);
+            } else {
+                return (ValueDataPoint) next;
+            }
+        }
+        throw new RuntimeException("Last point of timeseries {" + tid + "} is config datapoint");
+    }
+
+
+    private boolean sameSIAndSameTimestamp(ValueDataPoint first, ValueDataPoint second) {
+        if (first.timestamp != second.timestamp)
+            return false;
         return first.samplingInterval == second.samplingInterval;
     }
 
     public int getActiveTimeSeries() {
-        return this.timeSeriesActive;
+        return this.amountOfTimeSeriesWithNext;
     }
 
     public void close() {
         for (TimeSeries ts : this.timeSeries) {
             ts.close();
         }
+    }
+
+    public List<SIConfigurationDataPoint> getConfigurationDataPoints() {
+        ArrayList<SIConfigurationDataPoint> result = new ArrayList<>(this.configurationDataPoints);
+        this.configurationDataPoints.clear();
+        return result;
     }
 }

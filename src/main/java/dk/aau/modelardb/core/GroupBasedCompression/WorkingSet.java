@@ -93,7 +93,7 @@ public class WorkingSet implements Serializable {
         this.haveExecutionBeenTerminated = haveExecutionBeenTerminated;
 
         processBounded();
-        processUnbounded();
+        // processUnbounded();
 
         //Ensures all resources are closed
         for (TimeSeriesGroup tsg : this.timeSeriesGroups) {
@@ -122,15 +122,16 @@ public class WorkingSet implements Serializable {
             if (this.haveExecutionBeenTerminated.getAsBoolean()) {
                 return;
             }
-            SegmentGenerator sg = getNextSegmentGenerator();
-            sg.consumeAllDataPoints();
-            sg.close();
-            sg.logger.printGeneratorResult(sg.getTimeSeriesGroup());
-            this.logger.add(sg.logger);
+            SegmentGeneratorController sgc = getNextSegmentGeneratorController();
+            sgc.start();
+            // Don't know what close is on controller
+            // sgc.close();
+            // sgc.logger.printGeneratorResult(sgc.getTimeSeriesGroup());
+            // this.logger.add(sgc.logger);
         }
     }
 
-    private void processUnbounded() throws IOException {
+    /* private void processUnbounded() throws IOException {
         //There is no work to do if no unbounded time series were in the configuration file or if the engine is terminated
         if (this.currentTimeSeriesGroup == this.timeSeriesGroups.length || this.haveExecutionBeenTerminated.getAsBoolean()) {
             return;
@@ -141,7 +142,7 @@ public class WorkingSet implements Serializable {
         //The SegmentGenerators are attached to the Selector to make them easy to access when a data point is received
         while (this.currentTimeSeriesGroup < this.timeSeriesGroups.length) {
             TimeSeriesGroup tsg = this.timeSeriesGroups[this.currentTimeSeriesGroup];
-            SegmentGenerator sg = getNextSegmentGenerator();
+            SegmentGeneratorController sgc = getNextSegmentGeneratorController();
             tsg.attachToSelector(selector, sg);
             unboundedChannelsRegistered++;
         }
@@ -186,9 +187,9 @@ public class WorkingSet implements Serializable {
                 }
             }
         }
-    }
+    }*/
 
-    private SegmentGenerator getNextSegmentGenerator() {
+    private SegmentGeneratorController getNextSegmentGeneratorController() {
         int index = this.currentTimeSeriesGroup++;
         TimeSeriesGroup tsg = this.timeSeriesGroups[index];
         tsg.initialize();
@@ -199,7 +200,7 @@ public class WorkingSet implements Serializable {
         if (this.dynamicSplitFraction != 0.0F) {
             tids = Arrays.stream(tsg.getTimeSeries()).map(ts -> ts.tid).collect(Collectors.toList());
         }
-        return new SegmentGenerator(tsg, modelTypeInitializer, fallbackModelType, tids, this.maximumLatency,
+        return new SegmentGeneratorController(tsg, modelTypeInitializer, fallbackModelType, tids, this.maximumLatency,
                 this.dynamicSplitFraction, this.consumeTemporarySegment, this.consumeFinalizedSegment);
     }
 }
