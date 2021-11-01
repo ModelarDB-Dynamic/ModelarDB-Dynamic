@@ -34,6 +34,7 @@ public class TimeSeriesGroup implements Serializable {
     public final boolean isAsync;
     public final int samplingInterval;
     private final TimeSeries[] timeSeries;
+    private final Map<Integer, Integer> tidToTimeSeriesIndex;
     private int timeSeriesActive;
     private int timeSeriesHasNext;
     private PriorityQueue<ValueDataPoint> nextValueDataPointForEachTimeSeries = new PriorityQueue<>((dp1, dp2) -> {
@@ -64,6 +65,10 @@ public class TimeSeriesGroup implements Serializable {
         //Initializes variables for holding the latest data point for each time series
         this.gid = gid;
         this.timeSeries = timeSeries;
+        this.tidToTimeSeriesIndex = new HashMap<>();
+        for (int i = 0; i < timeSeries.length; i++) {
+            this.tidToTimeSeriesIndex.put(timeSeries[i].tid,i);
+        }
         this.timeSeriesHasNext = timeSeries.length;
     }
 
@@ -121,30 +126,19 @@ public class TimeSeriesGroup implements Serializable {
     public DataSlice GetSlice() {
         //Prepares the data points for the next SI
         List<ValueDataPoint> valueDataPointList = new ArrayList<>();
-
         do {
-            valueDataPointList.add(this.nextValueDataPointForEachTimeSeries.poll());
-            ValueDataPoint point = valueDataPointList.get(valueDataPointList.size() - 1);
+            ValueDataPoint point = this.nextValueDataPointForEachTimeSeries.poll(); //TODO #MarryJane esben can waste 5 hours renaming #GoodUseOfTime
+            valueDataPointList.add(point);
 
-            ValueDataPoint nextPoint = null;
-            for (TimeSeries timeSeriesSingular : timeSeries){
-                if (timeSeriesSingular.tid == point.getTid()){
-                    nextPoint = timeSeriesSingular.next();
-                    break;
-                }
-            }
-            
+            int timeSeriesIndex = this.tidToTimeSeriesIndex.get(point.getTid());
+            ValueDataPoint nextPoint = this.timeSeries[timeSeriesIndex].next();
+
             if (nextPoint == null)
                 throw new RuntimeException();
-            
-            // Do we have a fake point? I.e value is a gap point
-            if (!Float.isNaN(nextPoint.value))
-                this.nextValueDataPointForEachTimeSeries.add(nextPoint);
-            
-        } while (!nextValueDataPointForEachTimeSeries.isEmpty() 
+        } while (!nextValueDataPointForEachTimeSeries.isEmpty()
                 && sameSIAndSameTimestamp(valueDataPointList.get(0), this.nextValueDataPointForEachTimeSeries.peek()));
 
-        return new DataSlice(valueDataPointList.toArray(new ValueDataPoint[0]), tidsChanged(), valueDataPointList.get(0).samplingInterval);
+        return new DataSlice(valueDataPointList, valueDataPointList.get(0).samplingInterval);
     }
 
 
@@ -152,12 +146,6 @@ public class TimeSeriesGroup implements Serializable {
        if (first.timestamp != second.timestamp)
            return false;
         return first.samplingInterval == second.samplingInterval;
-    }
-
-
-    // What is
-    private boolean tidsChanged(){
-        throw new NotImplementedException();
     }
 
     public int getActiveTimeSeries() {

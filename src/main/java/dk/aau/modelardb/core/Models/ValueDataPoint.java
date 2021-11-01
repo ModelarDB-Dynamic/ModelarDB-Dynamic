@@ -39,6 +39,10 @@ public class ValueDataPoint extends DataPoint {
         return "DataPoint: [" + this.getTid() + " | " + new java.sql.Timestamp(this.timestamp) + " | " + this.value + " | " + this.samplingInterval + "]";
     }
 
+    public boolean isGapPoint(){
+        return Float.isNaN(this.value);
+    }
+
     @Override
     public boolean isConfigurationDataPoint() {
         return false;

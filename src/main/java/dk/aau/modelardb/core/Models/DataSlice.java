@@ -7,13 +7,11 @@ import java.util.List;
 
 public class DataSlice {
     public final int samplingInterval;
-    private final boolean tidsHaveChanged;
-    public final ArrayList<ValueDataPoint> valueDataPoints;
+    public final List<ValueDataPoint> valueDataPoints;
 
-    public DataSlice(ValueDataPoint[] valueDataPoints, boolean tidsHaveChanged, int samplingInterval) {
+    public DataSlice(List<ValueDataPoint> valueDataPoints,  int samplingInterval) {
         checkAllSamplingIntervalsTheSame();
-        this.valueDataPoints = new ArrayList<>(List.of(valueDataPoints));
-        this.tidsHaveChanged = tidsHaveChanged;
+        this.valueDataPoints = valueDataPoints;
         this.samplingInterval = samplingInterval;
     }
 

@@ -165,17 +165,15 @@ public class SegmentGenerator {
         ValueDataPoint[] currentValueDataPoints = new ValueDataPoint[activeTimeSeries];
         for (int i = 0; i < slice.valueDataPoints.size(); i++) {
             ValueDataPoint cdpg = slice.valueDataPoints.get(i);
-            if (Float.isNaN(cdpg.value)) {
+            if (cdpg.isGapPoint()) {
                 //A NaN value indicates the start of a gap, so we flush and store its tid in gaps
                 if (!this.gaps.contains(cdpg.getTid())) {
                     flushBuffer();
                     this.gaps.add(cdpg.getTid());
                 }
             } else {
-                //A floating-point value indicates the end of a gap if more then the sampling interval have passed
-                long pts = this.previousTimeStamps[i];
-                if ((cdpg.timestamp - pts) > this.samplingInterval) {
-                    //A gap have ended so we flush the buffer and remove the tid from gaps
+                if (this.gaps.contains(cdpg.getTid())){
+                    // a gap has ended
                     flushBuffer();
                     this.gaps.remove(cdpg.getTid());
                 }

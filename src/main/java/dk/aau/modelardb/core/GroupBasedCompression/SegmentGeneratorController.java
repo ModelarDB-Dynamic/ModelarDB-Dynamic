@@ -38,14 +38,14 @@ public class SegmentGeneratorController {
         this.finalizedSegmentStream = finalizedSegmentStream;
     }
     
-    public void feedSlices(){
+    public void start(){
         while (timeSeriesGroup.hasNext()){
-            delegateSliceToSegmentGenerators();
+            delegateSliceToSegmentGenerators(timeSeriesGroup.GetSlice());
         }
     }
     
-    private void delegateSliceToSegmentGenerators(){
-        DataSlice slice = timeSeriesGroup.GetSlice();
+    private void delegateSliceToSegmentGenerators(DataSlice slice){
+        //TODO TIDS FOR SLICE GIVEN SAMPLING INTERVAL MUST BE CHECKED AS WELL AS SI
         if (samplingIntervalToSegmentGenerator.containsKey(slice.samplingInterval)) {
             samplingIntervalToSegmentGenerator.get(slice.samplingInterval).consumeSlice(slice);
         } else {
