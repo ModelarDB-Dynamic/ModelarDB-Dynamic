@@ -23,7 +23,6 @@ import dk.aau.modelardb.core.utility.ReverseBufferIterator;
 import dk.aau.modelardb.core.utility.SegmentFunction;
 import dk.aau.modelardb.core.utility.Static;
 import org.apache.commons.lang.NotImplementedException;
-import org.apache.hadoop.util.hash.Hash;
 
 import java.util.*;
 import java.util.function.Supplier;
@@ -66,7 +65,9 @@ public class SegmentGenerator {
     private ModelType lastEmittedModelType;
 
     private boolean finalized = false;
-    private HashMap<Integer, SegmentGenerator> tidToSGChildren;
+    private List<Integer> childTidsOne;
+    private List<Integer> childTidsTwo;
+
 
     /**
      * Constructors
@@ -109,7 +110,8 @@ public class SegmentGenerator {
 
         //DEBUG: logger instance for counting segments used for this generator
         this.logger = new Logger(this.timeSeriesGroup.size());
-        this.tidToSGChildren = new HashMap<>();
+        this.childTidsOne = new ArrayList<>();
+        this.childTidsTwo = new ArrayList<>();
     }
 
     /**
@@ -170,20 +172,22 @@ public class SegmentGenerator {
             // Consume
             consumeValueDataPoints(slice.getValueDataPoints());
         } else { // Make children
-            for (SegmentGenerator sg : this.splitSegmentGenerators) {
-                for (TimeSeries ts : sg.timeSeriesGroup.getTimeSeries()) {
-                    this.tidToSGChildren.put(ts.tid, sg);
-                }
-            }
+
+            childTidsOne.addAll(this.splitSegmentGenerators.get(0).tids);
+            childTidsTwo.addAll(this.splitSegmentGenerators.get(1).tids);
 
             List<ValueDataPoint> sliceForFirstChild = new ArrayList<>();
             List<ValueDataPoint> sliceForSecondChildTwo = new ArrayList<>();
 
             for (ValueDataPoint vdp : slice.getValueDataPoints()){
-                SegmentGenerator sg = tidToSGChildren.get(vdp.getTid());
-                sg.tids.contains(vdp.getTid());
-
+                if (childTidsOne.contains(vdp.getTid())) {
+                    sliceForFirstChild.add(vdp);
+                } else if (childTidsTwo.contains(vdp.getTid())){
+                    sliceForSecondChildTwo.add(vdp);
+                }
             }
+            this.splitSegmentGenerators.get(0).consumeSlice(new DataSlice(sliceForFirstChild, this.samplingInterval));
+            this.splitSegmentGenerators.get(1).consumeSlice(new DataSlice(sliceForSecondChildTwo, this.samplingInterval));
         }
     }
 
