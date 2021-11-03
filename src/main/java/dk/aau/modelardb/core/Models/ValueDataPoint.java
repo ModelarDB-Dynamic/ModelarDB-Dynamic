@@ -14,7 +14,11 @@
  */
 package dk.aau.modelardb.core.Models;
 
-public class ValueDataPoint extends DataPoint {
+public class ValueDataPoint extends DataPoint implements Comparable<ValueDataPoint>{
+    @Override
+    public int compareTo(ValueDataPoint o) {
+        return Integer.compare(this.getTid(), o.getTid());
+    }
 
     /**
      * Instance Variables
@@ -47,4 +51,5 @@ public class ValueDataPoint extends DataPoint {
     public boolean isConfigurationDataPoint() {
         return false;
     }
+
 }

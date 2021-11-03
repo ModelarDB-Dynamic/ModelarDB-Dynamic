@@ -29,6 +29,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static java.util.Collections.unmodifiableList;
+
 public class SegmentGenerator {
 
     /**
@@ -65,8 +67,6 @@ public class SegmentGenerator {
     private ModelType lastEmittedModelType;
 
     private boolean finalized = false;
-    private List<Integer> childTidsOne;
-    private List<Integer> childTidsTwo;
 
 
     /**
@@ -82,7 +82,7 @@ public class SegmentGenerator {
         this.modelTypes = modelTypeInitializer.get();
         this.fallbackModelType = fallbackModelType;
         this.maximumLatency = maximumLatency;
-        this.tids = tids;
+        this.tids = Collections.unmodifiableList(tids);
         this.samplingInterval = timeSeriesGroup.samplingInterval;
 
         this.modelTypeInitializer = modelTypeInitializer;
@@ -110,8 +110,6 @@ public class SegmentGenerator {
 
         //DEBUG: logger instance for counting segments used for this generator
         this.logger = new Logger(this.timeSeriesGroup.size());
-        this.childTidsOne = new ArrayList<>();
-        this.childTidsTwo = new ArrayList<>();
     }
 
     /**
@@ -170,11 +168,11 @@ public class SegmentGenerator {
     public void consumeSlice(DataSlice slice) {
         if (this.splitSegmentGenerators.isEmpty()){
             // Consume
-            consumeValueDataPoints(slice.getValueDataPoints());
+            consumeDataPoints(slice.getValueDataPoints());
         } else { // Make children
 
-            childTidsOne.addAll(this.splitSegmentGenerators.get(0).tids);
-            childTidsTwo.addAll(this.splitSegmentGenerators.get(1).tids);
+            List<Integer> childTidsOne = this.splitSegmentGenerators.get(0).tids;
+            List<Integer> childTidsTwo = this.splitSegmentGenerators.get(1).tids;
 
             List<ValueDataPoint> sliceForFirstChild = new ArrayList<>();
             List<ValueDataPoint> sliceForSecondChildTwo = new ArrayList<>();
@@ -188,23 +186,24 @@ public class SegmentGenerator {
             }
             this.splitSegmentGenerators.get(0).consumeSlice(new DataSlice(sliceForFirstChild, this.samplingInterval));
             this.splitSegmentGenerators.get(1).consumeSlice(new DataSlice(sliceForSecondChildTwo, this.samplingInterval));
+
+            joinGroupsIfTheirTimeSeriesAreCorrelated();
         }
     }
 
     // TODO: implement this
-    public void consumeValueDataPoints(List<ValueDataPoint> valueDataPoints) {
+    public void consumeDataPoints(ValueDataPoint[] dataPoints) {
+        
         throw new NotImplementedException();
     }
 
-    public void consumeSliceOLD(DataSlice slice, int activeTimeSeries) {
+    public void consumeDataPoints(DataSlice slice, int activeTimeSeries) {
         //DEBUG: adds either a key our five seconds delay to continue
         //this.logger.pauseAndPrint(curDataPointsAndGaps);
         //this.logger.sleepAndPrint(curDataPointsAndGaps, 5000);
 
         //If no time series provided any values for this time stamp all computations can be skipped
-        if (activeTimeSeries == 0) {
-            return;
-        }
+
 
         //If any of the time series are missing values, a gap is stored for that time series
         int nextDataPoint = 0;

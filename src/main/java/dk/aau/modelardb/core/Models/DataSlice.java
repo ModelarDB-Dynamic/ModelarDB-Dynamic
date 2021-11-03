@@ -1,5 +1,10 @@
 package dk.aau.modelardb.core.Models;
 
+import scala.tools.nsc.doc.model.Val;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class DataSlice {
@@ -18,6 +23,11 @@ public class DataSlice {
 
     public List<ValueDataPoint> getValueDataPoints() {
         return valueDataPoints;
+    }
+
+    public ValueDataPoint[] getDataPoints(){
+        Collections.sort(this.valueDataPoints);
+        return this.valueDataPoints.toArray(new ValueDataPoint[0]);
     }
 
     private static void checkAllSamplingIntervalsTheSame(List<ValueDataPoint> valueDataPoints, int samplingInterval) {
