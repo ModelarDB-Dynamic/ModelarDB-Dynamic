@@ -4,6 +4,7 @@ import dk.aau.modelardb.core.Models.CompressionModels.ModelType;
 import dk.aau.modelardb.core.Models.DataSlice;
 import dk.aau.modelardb.core.Models.SIConfigurationDataPoint;
 import dk.aau.modelardb.core.utility.SegmentFunction;
+import org.apache.hadoop.util.hash.Hash;
 import org.apache.spark.sql.sources.In;
 
 import java.util.*;
@@ -19,14 +20,14 @@ public class SegmentGeneratorController {
     private final SegmentFunction temporarySegmentStream;
     private final SegmentFunction finalizedSegmentStream;
     private TimeSeriesGroup timeSeriesGroup;
-    private List<Integer> allTids;
+    private Set<Integer> allTids;
     private float dynamicSplitFraction;
 
     private Map<Integer, SegmentGenerator> SIToSegmentGenerator;
     private Map<Integer, Set<Integer>> SItoTids;
 
     public SegmentGeneratorController(TimeSeriesGroup timeSeriesGroup, Supplier<ModelType[]> modelTypeInitializer,
-                                      ModelType fallbackModelType, List<Integer> allTids, int maximumLatency, float dynamicSplitFraction,
+                                      ModelType fallbackModelType, Set<Integer> allTids, int maximumLatency, float dynamicSplitFraction,
                                       SegmentFunction temporarySegmentStream, SegmentFunction finalizedSegmentStream) {
         this.timeSeriesGroup = timeSeriesGroup;
         this.modelTypeInitializer = modelTypeInitializer;
@@ -54,8 +55,14 @@ public class SegmentGeneratorController {
         }
     }
 
-    private SegmentGenerator createSegmentGenerator(List<Integer> tids) {
-        return new SegmentGenerator(timeSeriesGroup, modelTypeInitializer, fallbackModelType, tids, maximumLatency, dynamicSplitFraction, temporarySegmentStream, finalizedSegmentStream);
+    private SegmentGenerator createSegmentGenerator(List<Integer> tids, int samplingInterval) {
+        HashSet<Integer> tidSet = new HashSet<>(tids);
+
+        HashSet<Integer> permanentGapTids = new HashSet<>(this.allTids);
+        permanentGapTids.removeAll(tidSet);
+
+
+        return new SegmentGenerator(this.timeSeriesGroup.gid, samplingInterval, modelTypeInitializer, fallbackModelType, tids, maximumLatency, dynamicSplitFraction, temporarySegmentStream, finalizedSegmentStream);
     }
 
     private void handleConfigDataPoints(List<SIConfigurationDataPoint> configurationDataPoints) {
@@ -79,29 +86,29 @@ public class SegmentGeneratorController {
         }
     }
 
-    private void addTidToSegmentGenerator(int si, int tid) {
-        finalizeSegmentGeneratorForSI(si);
+    private void addTidToSegmentGenerator(int samplingInterval, int tid) {
+        finalizeSegmentGeneratorForSI(samplingInterval);
 
-        if (!this.SItoTids.containsKey(si)) {
-            this.SItoTids.put(si, new HashSet<>());
+        if (!this.SItoTids.containsKey(samplingInterval)) {
+            this.SItoTids.put(samplingInterval, new HashSet<>());
         }
 
-        Set<Integer> tids = this.SItoTids.get(si);
+        Set<Integer> tids = this.SItoTids.get(samplingInterval);
         tids.add(tid);
 
-        SIToSegmentGenerator.put(si, createSegmentGenerator(new ArrayList<>(tids)));
+        SIToSegmentGenerator.put(samplingInterval, createSegmentGenerator(new ArrayList<>(tids), samplingInterval));
     }
 
-    private void removeTidFromSegmentGenerator(int si, int tid){
-        finalizeSegmentGeneratorForSI(si);
+    private void removeTidFromSegmentGenerator(int samplingInterval, int tid){
+        finalizeSegmentGeneratorForSI(samplingInterval);
 
-        Set<Integer> tids = this.SItoTids.get(si);
+        Set<Integer> tids = this.SItoTids.get(samplingInterval);
         tids.remove(tid);
 
         if (tids.size() > 0) { // Create a new segment generator if there still exists some time series with previous SI
-            SIToSegmentGenerator.put(si, createSegmentGenerator(new ArrayList<>(tids)));
+            SIToSegmentGenerator.put(samplingInterval, createSegmentGenerator(new ArrayList<>(tids), samplingInterval));
         } else {
-            SItoTids.remove(si);
+            SItoTids.remove(samplingInterval);
         }
     }
 

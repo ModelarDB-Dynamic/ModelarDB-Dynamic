@@ -24,6 +24,7 @@ import java.io.Serializable;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.BooleanSupplier;
@@ -200,7 +201,8 @@ public class WorkingSet implements Serializable {
         if (this.dynamicSplitFraction != 0.0F) {
             tids = Arrays.stream(tsg.getTimeSeries()).map(ts -> ts.tid).collect(Collectors.toList());
         }
-        return new SegmentGeneratorController(tsg, modelTypeInitializer, fallbackModelType, tids, this.maximumLatency,
+        assert tids != null;
+        return new SegmentGeneratorController(tsg, modelTypeInitializer, fallbackModelType, new HashSet<>(tids), this.maximumLatency,
                 this.dynamicSplitFraction, this.consumeTemporarySegment, this.consumeFinalizedSegment);
     }
 }
