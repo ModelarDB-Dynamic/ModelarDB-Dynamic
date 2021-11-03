@@ -14,6 +14,8 @@
  */
 package dk.aau.modelardb.core.Models;
 
+import java.util.Objects;
+
 public class ValueDataPoint extends DataPoint implements Comparable<ValueDataPoint>{
     @Override
     public int compareTo(ValueDataPoint o) {
@@ -52,4 +54,16 @@ public class ValueDataPoint extends DataPoint implements Comparable<ValueDataPoi
         return false;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ValueDataPoint that = (ValueDataPoint) o;
+        return timestamp == that.timestamp && Float.compare(that.value, value) == 0 && samplingInterval == that.samplingInterval;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(timestamp, value, samplingInterval);
+    }
 }
