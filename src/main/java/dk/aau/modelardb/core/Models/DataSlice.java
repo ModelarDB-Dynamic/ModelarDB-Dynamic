@@ -22,6 +22,7 @@ public class DataSlice {
     }
 
     public List<ValueDataPoint> getValueDataPoints() {
+        Collections.sort(this.valueDataPoints);
         return valueDataPoints;
     }
 
