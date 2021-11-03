@@ -15,7 +15,6 @@
 package dk.aau.modelardb.integration
 
 import dk.aau.modelardb.core.GroupBasedCompression.TimeSeriesGroup
-import dk.aau.modelardb.core.timeseries.TimeSeriesORC
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hive.ql.exec.vector.TimestampColumnVector
@@ -25,6 +24,8 @@ import org.scalatest.Assertions
 import java.io.File
 import scala.collection.mutable
 
+// TODO: write again if we decide to support orc or rewrite to use CSV
+/*
 trait TimeSeriesGroupProvider extends Assertions {
   /** Instance Variables * */
   private val orcTestDataKey: String = "MODELARDB_TEST_DATA_ORC"
@@ -83,3 +84,4 @@ trait TimeSeriesGroupProvider extends Assertions {
     new TimeSeriesGroup(id, Array(tso))
   }
 }
+*/

@@ -56,7 +56,8 @@ public class Partitioner {
         for (String source : sources) {
             cms += 1;
             TimeSeries ts;
-            if (source.contains(":")) {
+            // TODO: implement this again if we want to support other input sources
+            /*if (source.contains(":")) {
                 ts = new AsyncTimeSeriesSocket(source, cms, samplingInterval, separator,
                         timestampColumnIndex, dateFormat, timeZone, valueColumnIndex, locale);
             } else if (source.endsWith(".orc")) {
@@ -64,9 +65,11 @@ public class Partitioner {
             } else if (source.endsWith(".parquet")) {
                 ts = new TimeSeriesParquet(source, cms, samplingInterval, timestampColumnIndex, valueColumnIndex);
             } else {
-                ts = new TimeSeriesCSV(source, cms, samplingInterval, separator, header,
-                        timestampColumnIndex, dateFormat, timeZone, valueColumnIndex, locale);
-            }
+
+            }*/
+            ts = new TimeSeriesCSV(source, cms, samplingInterval, separator, header,
+                    timestampColumnIndex, dateFormat, timeZone, valueColumnIndex, locale);
+
             tss.add(ts);
 
             //If any derived time series are defined for the source they must be mapped to its tid

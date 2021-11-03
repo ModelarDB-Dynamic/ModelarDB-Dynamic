@@ -38,11 +38,11 @@ abstract class AbstractModelTypeTest extends AnyWordSpec {
   "when initialized with N data points" should {
     val model = getModelType(1, 10, 50)
     val dataPoints = new util.ArrayList[Array[ValueDataPoint]]()
-    dataPoints.add(Array(new ValueDataPoint(1, 100, 25)))
-    dataPoints.add(Array(new ValueDataPoint(1, 200, 25)))
-    dataPoints.add(Array(new ValueDataPoint(1, 300, 25)))
-    dataPoints.add(Array(new ValueDataPoint(1, 400, 25)))
-    dataPoints.add(Array(new ValueDataPoint(1, 500, 25)))
+    dataPoints.add(Array(new ValueDataPoint(1, 100, 25, 100)))
+    dataPoints.add(Array(new ValueDataPoint(1, 200, 25, 100)))
+    dataPoints.add(Array(new ValueDataPoint(1, 300, 25, 100)))
+    dataPoints.add(Array(new ValueDataPoint(1, 400, 25, 100)))
+    dataPoints.add(Array(new ValueDataPoint(1, 500, 25, 100)))
     model.initialize(dataPoints)
 
     "have length N" in {
