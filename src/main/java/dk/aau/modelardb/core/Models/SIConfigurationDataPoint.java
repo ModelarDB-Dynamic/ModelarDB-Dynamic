@@ -2,6 +2,7 @@ package dk.aau.modelardb.core.Models;
 
 import scala.Int;
 
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 public class SIConfigurationDataPoint extends DataPoint {
@@ -19,8 +20,7 @@ public class SIConfigurationDataPoint extends DataPoint {
 
 
     public static boolean isAConfigurationDataPoint(String timeSeriesKey) {
-        // OMEGAHACK
-        return Pattern.matches("[^0-9]", timeSeriesKey);
+        return "SI".equals(timeSeriesKey);
     }
 
     public String getConfigurationKey() {
@@ -53,5 +53,21 @@ public class SIConfigurationDataPoint extends DataPoint {
     @Override
     public boolean isConfigurationDataPoint() {
         return true;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) {
+            return false;
+        }
+        SIConfigurationDataPoint that = (SIConfigurationDataPoint) o;
+        return newSamplingInterval == that.newSamplingInterval && previousSamplingInterval == that.previousSamplingInterval && configurationKey.equals(that.configurationKey);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(configurationKey, newSamplingInterval, previousSamplingInterval);
     }
 }

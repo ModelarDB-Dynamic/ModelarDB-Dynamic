@@ -21,7 +21,7 @@ class TimeSeriesCSVTest {
 
     @BeforeEach
     void setup() {
-        ts = CSVTimeSeriesProvider.createTimeSeries1();
+        ts = CSVTimeSeriesProvider.createSimpleTimeSeries();
         ts.open();
     }
 
@@ -62,11 +62,44 @@ class TimeSeriesCSVTest {
         Assertions.assertFalse(configPoint.hasPreviousSamplingInterval());
     }
 
+    private SIConfigurationDataPoint createDefaultConfigPoint(int tid) {
+        return new SIConfigurationDataPoint(tid, Configuration.INSTANCE.getSamplingInterval(), Integer.MIN_VALUE);
+    }
+
+    private void printOutTimeSeries(TimeSeriesCSV timeSeries) {
+        while (timeSeries.hasNext()) {
+            var point = timeSeries.next();
+            System.out.println(point);
+        }
+    }
+
+    private void checkTimeSeriesAgainstExpectedList(List<DataPoint> expectedDataPoints, TimeSeriesCSV timeSeries)  {
+        int i = 0;
+        while (timeSeries.hasNext()) {
+            var point = timeSeries.next();
+            var expectedPoint = expectedDataPoints.get(i);
+            if (point instanceof ValueDataPoint && expectedPoint instanceof ValueDataPoint) {
+                // TODO: check if this is necesssary
+                var valuePoint = (ValueDataPoint)point;
+                var expectedValuePoint = (ValueDataPoint)expectedPoint;
+                Assertions.assertEquals(expectedValuePoint, valuePoint);
+            } else if (point instanceof SIConfigurationDataPoint && expectedPoint instanceof SIConfigurationDataPoint) {
+                var configPoint = (SIConfigurationDataPoint)point;
+                var expectedConfigPoint = (SIConfigurationDataPoint)expectedPoint;
+                Assertions.assertEquals(expectedConfigPoint, configPoint);
+            } else {
+                throw new IllegalArgumentException("The types of the actual and expected data points did not match for: i = " +  i);
+            }
+            i++;
+        }
+    }
+
     @Test
-    void nextReturnsCorrectValuePoints() {
-        List<ValueDataPoint> expectedDataPoints = new ArrayList<>();
+    void simpleTimeSeries() {
+        List<DataPoint> expectedDataPoints = new ArrayList<>();
         int tid = ts.tid;
         int si = ts.getCurrentSamplingInterval();
+        expectedDataPoints.add(createDefaultConfigPoint(tid));
         expectedDataPoints.add(new ValueDataPoint(tid, 100, 1.0F, si));
         expectedDataPoints.add(new ValueDataPoint(tid, 200, 1.0F, si));
         expectedDataPoints.add(new ValueDataPoint(tid, 300, 1.0F, si));
@@ -78,24 +111,76 @@ class TimeSeriesCSVTest {
         expectedDataPoints.add(new ValueDataPoint(tid, 900, 5.0F, si));
         expectedDataPoints.add(new ValueDataPoint(tid, 1000, 5.0F, si));
 
-        // Reads out the config point and then ignores it
-        var point = ts.next();
-        Assertions.assertTrue(point instanceof SIConfigurationDataPoint);
+        checkTimeSeriesAgainstExpectedList(expectedDataPoints, ts);
+    }
 
-        int i = 0;
-        while (ts.hasNext()) {
-            point = ts.next();
-            Assertions.assertTrue(point instanceof ValueDataPoint);
-            var valuePoint = (ValueDataPoint)point;
-            Assertions.assertEquals(expectedDataPoints.get(i), valuePoint);
-            i++;
-        }
+    @Test
+    void timeSeriesWithGaps() {
+        ts = CSVTimeSeriesProvider.createTimeSeriesWithGaps();
+        ts.open();
+        List<DataPoint> expectedDataPoints = new ArrayList<>();
+        int tid = ts.tid;
+        int si = ts.getCurrentSamplingInterval();
+        expectedDataPoints.add(createDefaultConfigPoint(tid));
+        expectedDataPoints.add(new ValueDataPoint(tid, 100, 1.0F, si));
+        expectedDataPoints.add(new ValueDataPoint(tid, 200, 1.0F, si));
+        expectedDataPoints.add(new ValueDataPoint(tid, 300, Float.NaN, si));
+        expectedDataPoints.add(new ValueDataPoint(tid, 400, Float.NaN, si));
+        expectedDataPoints.add(new ValueDataPoint(tid, 500, 1.0F, si));
+        expectedDataPoints.add(new ValueDataPoint(tid, 600, Float.NaN, si));
+        expectedDataPoints.add(new ValueDataPoint(tid, 700, Float.NaN, si));
+        expectedDataPoints.add(new ValueDataPoint(tid, 800, Float.NaN, si));
+        expectedDataPoints.add(new ValueDataPoint(tid, 900, Float.NaN, si));
+        expectedDataPoints.add(new ValueDataPoint(tid, 1000, 1.0F, si));
+
+        checkTimeSeriesAgainstExpectedList(expectedDataPoints, ts);
+    }
+
+    @Test
+    void timeSeriesStartsWithConfig() {
+        ts = CSVTimeSeriesProvider.createTimeSeriesStartsWithConfigPoints();
+        ts.open();
+
+        List<DataPoint> expectedDataPoints = new ArrayList<>();
+        int tid = ts.tid;
+        int newSi = 50;
+        expectedDataPoints.add(createDefaultConfigPoint(tid));
+        expectedDataPoints.add(new SIConfigurationDataPoint(tid, newSi, ts.getCurrentSamplingInterval()));
+        expectedDataPoints.add(new ValueDataPoint(tid, 0, 1.0F, newSi));
+        expectedDataPoints.add(new ValueDataPoint(tid, 50, 1.0F, newSi));
+        expectedDataPoints.add(new ValueDataPoint(tid, 100, 1.0F, newSi));
+        expectedDataPoints.add(new ValueDataPoint(tid, 150, 1.0F, newSi));
+        expectedDataPoints.add(new ValueDataPoint(tid, 200, 1.0F, newSi));
+        expectedDataPoints.add(new ValueDataPoint(tid, 250, 1.0F, newSi));
+
+        checkTimeSeriesAgainstExpectedList(expectedDataPoints, ts);
     }
 
     @Test
     void timeSeriesWithConfigPoint() {
-        // TODO CREATE THIS BY MAKING A NEW TIME SERIES WITH CONFIG POINT IN IT
+        ts = CSVTimeSeriesProvider.createTimeSeriesWithConfigPoints();
+        ts.open();
 
+        List<DataPoint> expectedDataPoints = new ArrayList<>();
+        int tid = ts.tid;
+        int currSi = ts.getCurrentSamplingInterval();
+        expectedDataPoints.add(createDefaultConfigPoint(tid));
+        expectedDataPoints.add(new ValueDataPoint(tid, 100, 1.0F, currSi));
+        expectedDataPoints.add(new ValueDataPoint(tid, 200, 1.0F, currSi));
+        expectedDataPoints.add(new ValueDataPoint(tid, 300, 1.0F, currSi));
+        int newSi = 200;
+        expectedDataPoints.add(new SIConfigurationDataPoint(tid, newSi, currSi));
+        currSi = newSi;
+        expectedDataPoints.add(new ValueDataPoint(tid, 400, 2.0F, currSi));
+        expectedDataPoints.add(new ValueDataPoint(tid, 600, 2.0F, currSi));
+        expectedDataPoints.add(new ValueDataPoint(tid, 800, 2.0F, currSi));
+        newSi = 100;
+        expectedDataPoints.add(new SIConfigurationDataPoint(tid, newSi, currSi));
+        currSi = newSi;
+        expectedDataPoints.add(new ValueDataPoint(tid, 900, 3.0F, currSi));
+        expectedDataPoints.add(new ValueDataPoint(tid, 1000, 3.0F, currSi));
+
+        checkTimeSeriesAgainstExpectedList(expectedDataPoints, ts);
     }
 
 }

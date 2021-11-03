@@ -144,7 +144,12 @@ public class TimeSeriesCSV extends TimeSeries {
             if (this.nextBuffer.length() == 0) {
                 readLines();
             }
-            return nextDataPoint();
+            if (hasNext()) {
+                return nextDataPoint();
+            } else {
+                throw new RuntimeException("No more lines could be read when calling next");
+            }
+
         } catch (IOException ioe) {
             close();
             throw new java.lang.RuntimeException(ioe);
@@ -256,25 +261,27 @@ public class TimeSeriesCSV extends TimeSeries {
             dataPointValue = Float.NaN; // value of Nan indicates Gap
             // Datapoint from buffer is not deleted as we emitted a GAP point instead.
         }
+        var valuePoint = new ValueDataPoint(this.tid, expectedTimestampPointer, this.scalingFactor * dataPointValue, this.currentSamplingInterval);
         this.expectedTimestampPointer += this.currentSamplingInterval;
-        return new ValueDataPoint(this.tid, timestamp, this.scalingFactor * dataPointValue, this.currentSamplingInterval);
+        return valuePoint;
     }
 
-    private SIConfigurationDataPoint handleConfigDataPoint(int nextDataPointIndex, boolean hasNextDatapoint, String[] split) throws IOException {
+    private SIConfigurationDataPoint handleConfigDataPoint(int nextDataPointIndex, boolean hasNextDatapoint, String[] split) throws IOException, ParseException {
         int previousSamplingInterval = this.currentSamplingInterval;
         try {
             String configurationKey = split[0];
             if ("SI".equals(configurationKey)) {
-                double currTime = this.expectedTimestampPointer - this.currentSamplingInterval; // revert to prev datapoint timestamp
-                int newSI = Integer.parseInt(split[1]);
-                // increment to point to expected value using new sampling interval
-                long difference = (long)(newSI - (currTime % newSI));
-                this.expectedTimestampPointer += difference;
+                int newSI = valueParser.parse(split[1]).intValue();
+                if (this.expectedTimestampPointer != null) { // Readjust the expected time stamp
+                    this.expectedTimestampPointer = this.expectedTimestampPointer - this.currentSamplingInterval; // revert to prev datapoint timestamp
+                    // increment to point to expected value using new sampling interval
+                    long difference = (long)(newSI - (this.expectedTimestampPointer % newSI));
+                    this.expectedTimestampPointer += difference;
+                }
                 this.currentSamplingInterval = newSI;
 
-                if (hasNextDatapoint) {//delete the config datapoint that have been read from the buffer
-                    this.nextBuffer.delete(0, nextDataPointIndex);
-                }
+                //delete the config datapoint that have been read from the buffer
+                this.nextBuffer.delete(0, nextDataPointIndex);
             } else {
                 throw new RuntimeException("config key not supported");
             }
