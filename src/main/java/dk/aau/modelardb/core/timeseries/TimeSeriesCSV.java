@@ -35,7 +35,6 @@ import java.util.Locale;
 import java.util.zip.GZIPInputStream;
 
 public class TimeSeriesCSV extends TimeSeries {
-
     private final boolean hasHeader;
     private final float scalingFactor;
     private final int bufferSize;
@@ -45,6 +44,10 @@ public class TimeSeriesCSV extends TimeSeries {
     private final int dateParserType;
     private final int valueColumnIndex;
     private final NumberFormat valueParser;
+    private boolean hasReturnedDefaultConfigPoint;
+    private boolean isOpened;
+
+
     /**
      * Instance Variables
      **/
@@ -93,6 +96,8 @@ public class TimeSeriesCSV extends TimeSeries {
         this.valueParser = NumberFormat.getInstance(locale);
         this.decodeBuffer = new StringBuffer();
         this.nextBuffer = new StringBuffer();
+
+        this.isOpened = false;
     }
 
     public void open() throws RuntimeException {
@@ -119,6 +124,9 @@ public class TimeSeriesCSV extends TimeSeries {
                 readLines();
                 this.nextBuffer.delete(0, this.nextBuffer.indexOf("\n") + 1);
             }
+
+            this.hasReturnedDefaultConfigPoint = false;
+            this.isOpened = true;
         } catch (IOException ioe) {
             //An unchecked exception is used so the function can be called in a lambda function
             throw new RuntimeException(ioe);
@@ -127,9 +135,13 @@ public class TimeSeriesCSV extends TimeSeries {
 
     public DataPoint next() {
         try {
+            if (! hasReturnedDefaultConfigPoint) {
+                hasReturnedDefaultConfigPoint = true;
+                return new SIConfigurationDataPoint(this.tid, Configuration.INSTANCE.getSamplingInterval(), Integer.MIN_VALUE);
+            }
+
             if (this.nextBuffer.length() == 0) {
                 readLines();
-                return new SIConfigurationDataPoint(this.tid, Configuration.INSTANCE.getSamplingInterval(), Integer.MIN_VALUE);
             }
             return nextDataPoint();
         } catch (IOException ioe) {
@@ -151,7 +163,7 @@ public class TimeSeriesCSV extends TimeSeries {
     }
 
     public String toString() {
-        return "Time Series: [" + this.tid + " | " + this.source + " | " + this.currentSamplingInterval + "]";
+        return "Time Series: [" + this.tid + " | " + this.source + " | " + this.currentSamplingInterval + "| IsOpened:" + this.isOpened + "]";
     }
 
     public void close() {
@@ -166,6 +178,7 @@ public class TimeSeriesCSV extends TimeSeries {
             this.byteBuffer = null;
             this.nextBuffer = null;
             this.channel = null;
+            this.isOpened = false;
         } catch (IOException ioe) {
             throw new java.lang.RuntimeException(ioe);
         }
@@ -175,6 +188,11 @@ public class TimeSeriesCSV extends TimeSeries {
      * Private Methods
      **/
     private void readLines() throws IOException {
+        if (!this.isOpened) {
+            throw new RuntimeException("You tried to read a line without opening the channel");
+        }
+
+
         //Reads until the channel no longer provides any bytes or at least one full data point have been read
         int bytesRead;
         do {
