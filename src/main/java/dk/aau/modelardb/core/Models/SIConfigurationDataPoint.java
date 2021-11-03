@@ -39,6 +39,16 @@ public class SIConfigurationDataPoint extends DataPoint {
         return previousSamplingInterval != Integer.MIN_VALUE;
     }
 
+    public String toString() {
+        String previousSIstring;
+        if (!hasPreviousSamplingInterval()) {
+            previousSIstring = "No previous SI";
+        } else {
+            previousSIstring = Integer.toString(previousSamplingInterval);
+        }
+
+        return "SIConfigurationDataPoint: [" + this.getTid() + " | " + newSamplingInterval + " | " + previousSIstring + "]";
+    }
 
     @Override
     public boolean isConfigurationDataPoint() {
