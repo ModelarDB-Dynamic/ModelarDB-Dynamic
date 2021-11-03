@@ -251,10 +251,10 @@ class JDBCStorage(connectionStringAndTypes: String) extends Storage with H2Stora
     val startTime = resultSet.getLong(2)
     val samplingInterval = resultSet.getInt(3)
     val endTime = resultSet.getLong(4)
-    val mtid = resultSet.getInt(5)
+    val mTid = resultSet.getInt(5)
     val model = resultSet.getBytes(6)
     val gaps = resultSet.getBytes(7)
-    new SegmentGroup(gid, startTime, samplingInterval, endTime, mtid, model, gaps)
+    new SegmentGroup(gid, startTime, samplingInterval, endTime, mTid, model, gaps)
   }
 
   def getFirstInteger(query: PreparedStatement): Int = {
