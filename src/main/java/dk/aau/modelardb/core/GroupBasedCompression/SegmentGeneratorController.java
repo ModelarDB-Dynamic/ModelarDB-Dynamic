@@ -61,8 +61,7 @@ public class SegmentGeneratorController {
         HashSet<Integer> permanentGapTids = new HashSet<>(this.allTids);
         permanentGapTids.removeAll(tidSet);
 
-
-        return new SegmentGenerator(this.timeSeriesGroup.gid, samplingInterval, modelTypeInitializer, fallbackModelType, tids, maximumLatency, dynamicSplitFraction, temporarySegmentStream, finalizedSegmentStream);
+        return new SegmentGenerator(this.timeSeriesGroup.gid, samplingInterval, permanentGapTids, modelTypeInitializer, fallbackModelType, tids, maximumLatency, dynamicSplitFraction, temporarySegmentStream, finalizedSegmentStream);
     }
 
     private void handleConfigDataPoints(List<SIConfigurationDataPoint> configurationDataPoints) {

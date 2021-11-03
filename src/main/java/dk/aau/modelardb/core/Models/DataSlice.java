@@ -2,10 +2,9 @@ package dk.aau.modelardb.core.Models;
 
 import scala.tools.nsc.doc.model.Val;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class DataSlice {
     private final int samplingInterval;
@@ -15,6 +14,11 @@ public class DataSlice {
         this.valueDataPoints = valueDataPoints;
         this.samplingInterval = samplingInterval;
         checkAllSamplingIntervalsTheSame(this.valueDataPoints, this.samplingInterval);
+    }
+
+    private DataSlice(int samplingInterval) {
+        this.samplingInterval = samplingInterval;
+        this.valueDataPoints = new ArrayList<>();
     }
 
     public int getSamplingInterval() {
@@ -36,5 +40,23 @@ public class DataSlice {
             if(dataPoint.samplingInterval != samplingInterval)
                 throw new RuntimeException("Sampling interval for all data points must be the same for data slice");
         });
+    }
+
+    public Map<Set<Integer>, DataSlice> getSubDataSlice(Set<Set<Integer>> tidss) {
+        Map<Set<Integer>, DataSlice> tidsToSubDataSlice = tidss.stream().collect(Collectors.toMap(Function.identity(), item -> new DataSlice(this.samplingInterval)));
+
+        Map<Integer, Set<Integer>> tidToSetOfTids = new HashMap<>();
+        for (Set<Integer> tids : tidss) {
+            for (Integer  tid: tids) {
+                tidToSetOfTids.put(tid, tids);
+            }
+        }
+
+        for (ValueDataPoint valueDataPoint : this.valueDataPoints) {
+            Set<Integer> tids = tidToSetOfTids.get(valueDataPoint.getTid());
+            tidsToSubDataSlice.get(tids).valueDataPoints.add(valueDataPoint);
+        }
+
+     return tidsToSubDataSlice;
     }
 }

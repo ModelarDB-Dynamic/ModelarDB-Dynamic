@@ -22,7 +22,7 @@ import dk.aau.modelardb.core.utility.Logger;
 import dk.aau.modelardb.core.utility.ReverseBufferIterator;
 import dk.aau.modelardb.core.utility.SegmentFunction;
 import dk.aau.modelardb.core.utility.Static;
-import org.apache.hadoop.util.hash.Hash;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -129,23 +129,17 @@ public class SegmentGenerator {
         if (this.splitSegmentGenerators.isEmpty()) {
             // Consume
             consumeDataPoints(slice.getDataPoints());
-        } else { // Make children
+        } else { // Delegate slices to children
+            Map<SegmentGenerator, HashSet<Integer>> segmentGeneratorToTids = this.splitSegmentGenerators.stream()
+                    .map(segmentGenerator -> Pair.of(segmentGenerator, new HashSet<>(segmentGenerator.tids)))
+                    .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
 
-            List<Integer> childTidsOne = this.splitSegmentGenerators.get(0).tids;
-            List<Integer> childTidsTwo = this.splitSegmentGenerators.get(1).tids;
+            Map<Set<Integer>, DataSlice> dataSliceByTids = slice.getSubDataSlice(new HashSet<>(segmentGeneratorToTids.values()));
 
-            List<ValueDataPoint> sliceForFirstChild = new ArrayList<>();
-            List<ValueDataPoint> sliceForSecondChildTwo = new ArrayList<>();
-
-            for (ValueDataPoint vdp : slice.getValueDataPoints()) {
-                if (childTidsOne.contains(vdp.getTid())) {
-                    sliceForFirstChild.add(vdp);
-                } else if (childTidsTwo.contains(vdp.getTid())) {
-                    sliceForSecondChildTwo.add(vdp);
-                }
+            for (Map.Entry<SegmentGenerator, HashSet<Integer>> segmentGeneratorTidsPair : segmentGeneratorToTids.entrySet()) {
+                DataSlice dataSliceForSubGenerator = dataSliceByTids.get(segmentGeneratorTidsPair.getValue());
+                segmentGeneratorTidsPair.getKey().consumeSlice(dataSliceForSubGenerator);
             }
-            this.splitSegmentGenerators.get(0).consumeSlice(new DataSlice(sliceForFirstChild, this.samplingInterval));
-            this.splitSegmentGenerators.get(1).consumeSlice(new DataSlice(sliceForSecondChildTwo, this.samplingInterval));
 
             joinGroupsIfTheirTimeSeriesAreCorrelated();
         }
@@ -492,32 +486,29 @@ public class SegmentGenerator {
         //The join index is build with the assumption that groups are numerically ordered by tid
         ArrayList<Integer> totalJoinIndexList = new ArrayList<>();
         ArrayList<Integer> activeJoinIndexList = new ArrayList<>();
-        for (SegmentGenerator sg : sgs) {
-            for (TimeSeries ts : sg.timeSeriesGroup.getTimeSeries()) {
-                totalJoinIndexList.add(ts.tid);
 
+        for (SegmentGenerator sg : sgs) {
+            totalJoinIndexList.addAll(sg.tids);
+            for (Integer tid : sg.tids) {
                 //Segment generators store the tid for all time series it controls currently in a gap
-                if (!sg.gaps.contains(ts.tid)) {
-                    activeJoinIndexList.add(ts.tid);
+                if (!sg.gaps.contains(tid)) {
+                    activeJoinIndexList.add(tid);
                 }
             }
         }
-        Collections.sort(totalJoinIndexList);
-        Collections.sort(activeJoinIndexList);
-        int[] totalJoinIndex = totalJoinIndexList.stream().mapToInt(i -> i).toArray();
-        int[] activeJoinIndex = activeJoinIndexList.stream().mapToInt(i -> i).toArray();
-
-        //Construct a new time series group with all of the time series
-        Set<TimeSeriesGroup> tsgs = sgs.stream().map(sg -> sg.timeSeriesGroup).collect(Collectors.toSet());
-        TimeSeriesGroup tsg = new TimeSeriesGroup(tsgs, totalJoinIndex);
 
         //If the original group is recreated the master SegmentGenerator is used, otherwise a new one is created
         SegmentGenerator nsg;
-        if (this.tids.size() == tsg.getTimeSeries().length) {
+        if (this.tids.size() == totalJoinIndexList.size()) {
             nsg = this;
-            this.timeSeriesGroup = tsg;
         } else {
-            nsg = new SegmentGenerator(tsg, this.modelTypeInitializer, this.fallbackModelType, this.tids,
+            Set<Integer> allSgPermanentGaps = sgs.stream().flatMap(sg -> sg.permanentGapTids.stream()).collect(Collectors.toSet());
+
+            for (Integer tid : totalJoinIndexList) {
+                allSgPermanentGaps.remove(tid);
+            }
+
+            nsg = new SegmentGenerator(this.gid, this.samplingInterval, allSgPermanentGaps, this.modelTypeInitializer, this.fallbackModelType, this.tids,
                     this.maximumLatency, this.dynamicSplitFraction, this.temporarySegmentStream, this.finalizedSegmentStream);
             nsg.logger = this.logger;
             nsg.splitSegmentGenerators = this.splitSegmentGenerators;
@@ -526,34 +517,9 @@ public class SegmentGenerator {
         }
         this.splitSegmentGenerators.removeAll(sgs);
 
-        //The overlapping data points are moved to nsg before the old SegmentGenerators are flushed
-        for (int next = 1; next <= shortestSharedBufferLength; next++) {
-            ValueDataPoint[] result = new ValueDataPoint[activeJoinIndex.length];
-            for (SegmentGenerator sg : sgs) {
-                ValueDataPoint[] dps = sg.buffer.get(sg.buffer.size() - next);
-                for (ValueDataPoint dp : dps) {
-                    int write = Arrays.binarySearch(activeJoinIndex, dp.getTid());
-                    result[write] = dp;
-                }
-            }
-            nsg.buffer.add(result);
-        }
-        Collections.reverse(nsg.buffer);
-
         //The remaining data points stored by each SegmentGenerator are flushed
         for (SegmentGenerator sg : sgs) {
-            int size = sg.buffer.size();
-            sg.buffer.subList(size - nsg.buffer.size(), size).clear();
-            sg.modelTypeIndex = 0;
-            sg.currentModelType = sg.modelTypes[0];
-            sg.currentModelType.initialize(sg.buffer);
             sg.flushBuffer();
-            TimeSeries[] tss = sg.timeSeriesGroup.getTimeSeries();
-            for (int i = 0; i < tss.length; i++) {
-                TimeSeries ts = tss[i];
-                int index = Arrays.binarySearch(totalJoinIndex, ts.tid);
-                nsg.previousTimeStamps[index] = sg.previousTimeStamps[i];
-            }
         }
 
         //Finally the set of time series currently in a gap and controlled by nsg is computed
