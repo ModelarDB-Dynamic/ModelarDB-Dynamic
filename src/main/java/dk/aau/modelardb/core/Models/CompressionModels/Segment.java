@@ -116,7 +116,8 @@ public abstract class Segment {
 
         return IntStream.range(0, this.length()).mapToObj(index -> {
             long ts = this.startTime + (this.samplingInterval * (long) index);
-            return new ValueDataPoint(tid, ts, get(ts, (index + temporalOffset) * groupSize + groupOffset));
+            // TODO: check that this is correct
+            return new ValueDataPoint(tid, ts, get(ts, (index + temporalOffset) * groupSize + groupOffset), samplingInterval);
         });
     }
 

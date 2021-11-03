@@ -67,7 +67,7 @@ class SwingFilterModelType extends ModelType {
             }
 
             // Line 1 - 2
-            this.initialValueDataPoint = new ValueDataPoint(currentValueDataPoints[0].tid, currentValueDataPoints[0].timestamp, avg);
+            this.initialValueDataPoint = new ValueDataPoint(currentValueDataPoints[0].getTid(), currentValueDataPoints[0].timestamp, avg, currentValueDataPoints[0].samplingInterval);
         } else {
             //Expect for the first set of data point, all data points can be appended one at a time
             for (ValueDataPoint currentValueDataPoint : currentValueDataPoints) {

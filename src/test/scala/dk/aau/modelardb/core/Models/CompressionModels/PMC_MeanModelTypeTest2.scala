@@ -24,9 +24,9 @@ import java.util
 class PMC_MeanModelTypeTest2 extends AnyFunSuite with Matchers {
 
   test("Initialize") {
-    val d1 = new ValueDataPoint(1, 123L, 13.0f)
-    val d2 = new ValueDataPoint(2, 124L, 12.0f)
-    val d3 = new ValueDataPoint(3, 125L, 14.0f)
+    val d1 = new ValueDataPoint(1, 123L, 13.0f, 1)
+    val d2 = new ValueDataPoint(2, 124L, 12.0f, 1)
+    val d3 = new ValueDataPoint(3, 125L, 14.0f, 1)
     val array = Array(d1, d2, d3)
     val list = util.Arrays.asList(array)
     val model = new PMC_MeanModelType(12, 10, 10)

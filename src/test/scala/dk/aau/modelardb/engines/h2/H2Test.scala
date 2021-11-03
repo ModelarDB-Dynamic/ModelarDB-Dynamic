@@ -79,7 +79,7 @@ class H2Test extends AnyFlatSpec with Matchers with MockFactory {
       storage.modelTypeCache = Array(model, model)
       storage.timeSeriesMembersCache = Array(null, Array())
 
-      val configuration = new Configuration()
+      val configuration = Configuration.INSTANCE
       configuration.add("modelardb.batch_size", 500)
       val h2 = new H2(configuration, storage)
       H2.initialize(h2, storage)
