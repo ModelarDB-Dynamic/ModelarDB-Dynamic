@@ -31,7 +31,7 @@ public class SegmentGroup {
     public final int gid;
     public final long startTime;
     public final long endTime;
-//    public final int samplingInterval;
+    public final int samplingInterval;
     public final int mtid;
     public final byte[] model;
     public final byte[] offsets;
@@ -39,11 +39,11 @@ public class SegmentGroup {
     /**
      * Constructors
      **/
-    public SegmentGroup(int gid, long startTime, long endTime,/* int samplingInterval,*/ int mtid, byte[] model, byte[] offsets) {
+    public SegmentGroup(int gid, long startTime, int samplingInterval, long endTime, int mtid, byte[] model, byte[] offsets) {
         this.gid = gid;
         this.startTime = startTime;
         this.endTime = endTime;
-//        this.samplingInterval = samplingInterval;
+        this.samplingInterval = samplingInterval;
         this.mtid = mtid;
         this.model = model;
         this.offsets = offsets;
@@ -65,6 +65,7 @@ public class SegmentGroup {
         return sb.toString();
     }
 
+    //TODO use sampling interval
     public SegmentGroup[] explode(int[][] groupMetadataCache, HashMap<Integer, int[]> groupDerivedCache) {
         int[] gmc = groupMetadataCache[this.gid];
         int[] derivedTimeSeries = groupDerivedCache.getOrElse(this.gid, () -> SegmentGroup.defaultDerivedTimeSeries);
@@ -88,7 +89,7 @@ public class SegmentGroup {
                 int tid = gmc[index];
                 //Offsets store the following: [0] Group Offset, [1] Group Size, [2] Temporal Offset
                 byte[] offset = ByteBuffer.allocate(12).putInt(nextSegment + 1).putInt(storedGroupSize).putInt(temporalOffset).array();
-                segments[nextSegment] = new SegmentGroup(tid, this.startTime, this.endTime, this.mtid, this.model, offset);
+                segments[nextSegment] = new SegmentGroup(tid, this.startTime, this.samplingInterval, this.endTime, this.mtid, this.model, offset);
                 nextSegment++;
             }
         } else {
@@ -107,7 +108,7 @@ public class SegmentGroup {
                 if (!Static.contains(tid, timeSeriesInAGap)) {
                     //Offsets store the following: [0] Group Offset, [1] Group Size, [2] Temporal Offset
                     byte[] offset = ByteBuffer.allocate(12).putInt(nextSegment + 1).putInt(storedGroupSize).putInt(temporalOffset).array();
-                    segments[nextSegment] = new SegmentGroup(tid, this.startTime, this.endTime, this.mtid, this.model, offset);
+                    segments[nextSegment] = new SegmentGroup(tid, this.startTime, this.samplingInterval, this.endTime, this.mtid, this.model, offset);
                     nextSegment++;
                 }
             }
@@ -116,7 +117,7 @@ public class SegmentGroup {
         //The segment for a derived time series are the same as the segment of their source time series, only the tid is changed
         for (int i = 0, j = 0; i < derivedTimeSeries.length && j < segments.length; ) {
             if (derivedTimeSeries[i] == segments[j].gid) {
-                segments[nextSegment] = new SegmentGroup(derivedTimeSeries[i + 1], this.startTime, this.endTime,
+                segments[nextSegment] = new SegmentGroup(derivedTimeSeries[i + 1], this.startTime,this.samplingInterval, this.endTime,
                         this.mtid, this.model, segments[j].offsets);
                 nextSegment++;
                 i += 2;

@@ -103,9 +103,9 @@ class H2(configuration: Configuration, h2storage: H2Storage) {
   private def ingest(workingSet: WorkingSet): Unit = {
     //Creates a method that stores temporary segments in memory and finalized segments in batches to be written to disk
     val consumeTemporary = new SegmentFunction {
-      override def emit(gid: Int, startTime: Long, endTime: Long, mtid: Int, model: Array[Byte], gaps: Array[Byte]): Unit = {
+      override def emit(gid: Int, startTime: Long, samplingInterval: Int, endTime: Long, mtid: Int, model: Array[Byte], gaps: Array[Byte]): Unit = {
         cacheLock.writeLock().lock()
-        val newTemporarySegment = new SegmentGroup(gid, startTime, endTime, mtid, model, gaps)
+        val newTemporarySegment = new SegmentGroup(gid, startTime, samplingInterval, endTime, mtid, model, gaps)
         val currentTemporarySegments = temporarySegments.getOrElse(gid, Array())
         temporarySegments(gid) = updateTemporarySegment(currentTemporarySegments, newTemporarySegment, isTemporary = true)
         cacheLock.writeLock().unlock()
@@ -113,10 +113,10 @@ class H2(configuration: Configuration, h2storage: H2Storage) {
     }
 
     val consumeFinalized = new SegmentFunction {
-      override def emit(gid: Int, startTime: Long, endTime: Long, mtid: Int, model: Array[Byte], gaps: Array[Byte]): Unit = {
+      override def emit(gid: Int, startTime: Long, samplingInterval: Int, endTime: Long, mtid: Int, model: Array[Byte], gaps: Array[Byte]): Unit = {
         cacheLock.writeLock().lock()
         //Update the current temporary segments
-        val newFinalizedSegment = new SegmentGroup(gid, startTime, endTime, mtid, model, gaps)
+        val newFinalizedSegment = new SegmentGroup(gid, startTime, samplingInterval, endTime, mtid, model, gaps)
         val currentTemporarySegments = temporarySegments.getOrElse(gid, Array())
         temporarySegments(gid) = updateTemporarySegment(currentTemporarySegments, newFinalizedSegment, isTemporary = false)
 
@@ -181,7 +181,7 @@ class H2(configuration: Configuration, h2storage: H2Storage) {
           val startTime = inputSegmentGroup.endTime + samplingInterval
           if (startTime <= cachedSegmentGroup.endTime) {
             val newGaps = Static.intToBytes(cachedGap :+ -((startTime - cachedSegmentGroup.startTime) / samplingInterval).toInt)
-            cache(i) = new SegmentGroup(cachedSegmentGroup.gid, startTime, cachedSegmentGroup.endTime,
+            cache(i) = new SegmentGroup(cachedSegmentGroup.gid, startTime, samplingInterval, cachedSegmentGroup.endTime,
               cachedSegmentGroup.mtid, cachedSegmentGroup.model, newGaps)
           }
         }

@@ -49,7 +49,7 @@ class JDBCStorage(connectionStringAndTypes: String) extends Storage with H2Stora
     if ( ! tables.next()) {
       val stmt = this.connection.createStatement()
       stmt.executeUpdate(s"CREATE TABLE model_type(mtid INTEGER, name ${this.textType})")
-      stmt.executeUpdate(s"CREATE TABLE segment(gid INTEGER, start_time BIGINT, end_time BIGINT, mtid INTEGER, model ${this.blobType}, gaps ${this.blobType})")
+      stmt.executeUpdate(s"CREATE TABLE segment(gid INTEGER, start_time BIGINT, end_time BIGINT, samplingInterval INTEGER, mtid INTEGER, model ${this.blobType}, gaps ${this.blobType})")
       stmt.executeUpdate(s"CREATE TABLE time_series(tid INTEGER, scaling_factor REAL, sampling_interval INTEGER, gid INTEGER${getDimensionsSQL(dimensions, this.textType)})")
 
       stmt.executeUpdate("CREATE INDEX segment_gid ON segment(gid)")
@@ -58,7 +58,7 @@ class JDBCStorage(connectionStringAndTypes: String) extends Storage with H2Stora
     }
 
     //Prepares the necessary statements
-    this.insertStmt = this.connection.prepareStatement("INSERT INTO segment VALUES(?, ?, ?, ?, ?, ?)")
+    this.insertStmt = this.connection.prepareStatement("INSERT INTO segment VALUES(?, ?, ?, ?, ?, ?, ?)")
     this.getMaxTidStmt = this.connection.prepareStatement("SELECT MAX(tid) FROM time_series")
     this.getMaxGidStmt = this.connection.prepareStatement("SELECT MAX(gid) FROM time_series")
   }
@@ -163,10 +163,11 @@ class JDBCStorage(connectionStringAndTypes: String) extends Storage with H2Stora
       for (segmentGroup <- segmentGroups.take(size)) {
         this.insertStmt.setInt(1, segmentGroup.gid)
         this.insertStmt.setLong(2, segmentGroup.startTime)
-        this.insertStmt.setLong(3, segmentGroup.endTime)
-        this.insertStmt.setInt(4, segmentGroup.mtid)
-        this.insertStmt.setBytes(5, segmentGroup.model)
-        this.insertStmt.setBytes(6, segmentGroup.offsets)
+        this.insertStmt.setInt(3, segmentGroup.samplingInterval)
+        this.insertStmt.setLong(4, segmentGroup.endTime)
+        this.insertStmt.setInt(5, segmentGroup.mtid)
+        this.insertStmt.setBytes(6, segmentGroup.model)
+        this.insertStmt.setBytes(7, segmentGroup.offsets)
         this.insertStmt.addBatch()
       }
       this.insertStmt.executeBatch()
@@ -190,8 +191,8 @@ class JDBCStorage(connectionStringAndTypes: String) extends Storage with H2Stora
   }
 
   override def storeSegmentGroups(sparkSession: SparkSession, df: DataFrame): Unit = {
-    val groups = df.collect().map(row => new SegmentGroup(row.getInt(0), row.getTimestamp(1).getTime,
-      row.getTimestamp(2).getTime, row.getInt(3), row.getAs[Array[Byte]](4), row.getAs[Array[Byte]](5)))
+    val groups = df.collect().map(row => new SegmentGroup(row.getInt(0), row.getTimestamp(1).getTime, row.getInt(2),
+      row.getTimestamp(3).getTime, row.getInt(4), row.getAs[Array[Byte]](5), row.getAs[Array[Byte]](6)))
     storeSegmentGroups(groups, groups.length)
   }
 
@@ -248,11 +249,12 @@ class JDBCStorage(connectionStringAndTypes: String) extends Storage with H2Stora
   private def resultSetToSegmentGroup(resultSet: ResultSet): SegmentGroup = {
     val gid = resultSet.getInt(1)
     val startTime = resultSet.getLong(2)
-    val endTime = resultSet.getLong(3)
-    val mtid = resultSet.getInt(4)
-    val model = resultSet.getBytes(5)
-    val gaps = resultSet.getBytes(6)
-    new SegmentGroup(gid, startTime, endTime, mtid, model, gaps)
+    val samplingInterval = resultSet.getInt(3)
+    val endTime = resultSet.getLong(4)
+    val mtid = resultSet.getInt(5)
+    val model = resultSet.getBytes(6)
+    val gaps = resultSet.getBytes(7)
+    new SegmentGroup(gid, startTime, samplingInterval, endTime, mtid, model, gaps)
   }
 
   def getFirstInteger(query: PreparedStatement): Int = {

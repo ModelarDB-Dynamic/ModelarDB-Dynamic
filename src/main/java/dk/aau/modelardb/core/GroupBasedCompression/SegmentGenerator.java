@@ -310,7 +310,7 @@ public class SegmentGenerator {
         long endTime = this.buffer.get(modelTypeLength - 1)[0].timestamp;
         int[] gaps = segmentGaps.stream().mapToInt(l -> l).toArray();
         byte[] model = modelType.getModel(startTime, endTime, samplingInterval, this.buffer);
-        stream.emit(this.gid, startTime, endTime, modelType.mtid, model, Static.intToBytes(gaps));
+        stream.emit(this.gid, startTime, this.samplingInterval, endTime, modelType.mtid, model, Static.intToBytes(gaps));
     }
 
     private boolean checkIfCompressionRatioIsBelowAverageAndUpdateTheAverage(double compressionRatio) {
