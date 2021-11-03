@@ -136,7 +136,7 @@ class ParquetStorage(rootFolder: String) extends FileStorage(rootFolder) {
         val group = new SimpleGroup(schema)
         group.add(0, ts.tid)
         group.add(1, ts.scalingFactor)
-        group.add(2, ts.currentSamplingInterval)
+        group.add(2, ts.getCurrentSamplingInterval)
         group.add(3, tsg.gid)
         for (mi <- dimensions.get(ts.source).zipWithIndex) {
           dimensionTypes(mi._2) match {

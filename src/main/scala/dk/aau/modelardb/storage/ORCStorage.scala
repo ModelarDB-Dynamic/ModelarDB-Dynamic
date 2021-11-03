@@ -123,7 +123,7 @@ class ORCStorage(rootFolder: String) extends FileStorage(rootFolder) {
         } //batch.size++
         batch.cols(0).asInstanceOf[LongColumnVector].vector(row) = ts.tid
         batch.cols(1).asInstanceOf[DoubleColumnVector].vector(row) = ts.scalingFactor
-        batch.cols(2).asInstanceOf[LongColumnVector].vector(row) = ts.currentSamplingInterval
+        batch.cols(2).asInstanceOf[LongColumnVector].vector(row) = ts.getCurrentSamplingInterval
         batch.cols(3).asInstanceOf[LongColumnVector].vector(row) = tsg.gid
         for (mi <- dimensions.get(ts.source).zipWithIndex) {
           dimensionTypes(mi._2) match {

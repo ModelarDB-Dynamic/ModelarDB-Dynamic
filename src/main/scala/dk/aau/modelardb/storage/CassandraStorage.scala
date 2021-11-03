@@ -102,7 +102,7 @@ class CassandraStorage(connectionString: String) extends Storage with H2Storage 
           .addPositionalValues(
             ts.tid.asInstanceOf[Object],
             ts.scalingFactor.asInstanceOf[Object],
-            ts.currentSamplingInterval.asInstanceOf[Object],
+            ts.getCurrentSamplingInterval.asInstanceOf[Object],
             tsg.gid.asInstanceOf[Object])
 
         val members = dimensions.get(ts.source)

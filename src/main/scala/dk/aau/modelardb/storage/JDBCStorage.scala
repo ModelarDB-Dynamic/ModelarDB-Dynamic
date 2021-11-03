@@ -73,7 +73,7 @@ class JDBCStorage(connectionStringAndTypes: String) extends Storage with H2Stora
         insertSourceStmt.clearParameters()
         insertSourceStmt.setInt(1, ts.tid)
         insertSourceStmt.setFloat(2, ts.scalingFactor)
-        insertSourceStmt.setInt(3, ts.currentSamplingInterval)
+        insertSourceStmt.setInt(3, ts.getCurrentSamplingInterval)
         insertSourceStmt.setInt(4, tsg.gid)
 
         var column = 5

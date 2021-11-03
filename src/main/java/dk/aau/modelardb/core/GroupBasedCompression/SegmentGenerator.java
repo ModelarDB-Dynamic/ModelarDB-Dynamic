@@ -179,10 +179,10 @@ public class SegmentGenerator {
             List<ValueDataPoint> sliceForFirstChild = new ArrayList<>();
             List<ValueDataPoint> sliceForSecondChildTwo = new ArrayList<>();
 
-            for (ValueDataPoint vdp : slice.getValueDataPoints()){
+            for (ValueDataPoint vdp : slice.getValueDataPoints()) {
                 if (childTidsOne.contains(vdp.getTid())) {
                     sliceForFirstChild.add(vdp);
-                } else if (childTidsTwo.contains(vdp.getTid())){
+                } else if (childTidsTwo.contains(vdp.getTid())) {
                     sliceForSecondChildTwo.add(vdp);
                 }
             }
@@ -392,7 +392,7 @@ public class SegmentGenerator {
                 //Comparing a time series to itself should always return true
                 if (i == j) {
                     bufferSplitIndexes.add(i);
-                    timeSeriesSplitIndexes.add(Arrays.binarySearch(tsTids, bufferHead[i].tid));
+                    timeSeriesSplitIndexes.add(Arrays.binarySearch(tsTids, bufferHead[i].getTid()));
                     continue;
                 }
 
@@ -404,7 +404,7 @@ public class SegmentGenerator {
                 //Time series should be ingested together if all of their data point are within the double error bound
                 if (allDataPointsWithinDoubleErrorBound) {
                     bufferSplitIndexes.add(j);
-                    timeSeriesSplitIndexes.add(Arrays.binarySearch(tsTids, bufferHead[j].tid));
+                    timeSeriesSplitIndexes.add(Arrays.binarySearch(tsTids, bufferHead[j].getTid()));
                 }
             }
             //If the size of the split is the number of the time series not currently in a gap, no split is required
@@ -415,7 +415,7 @@ public class SegmentGenerator {
             //Only the time series that currently are not in a gap can be grouped together as they have data points buffered
             bufferSplitIndexes.forEach(timeSeriesWithoutGaps::remove);
             HashSet<Integer> gaps = new HashSet<>(this.tids);
-            bufferSplitIndexes.forEach(index -> gaps.remove(this.buffer.get(0)[index].tid));
+            bufferSplitIndexes.forEach(index -> gaps.remove(this.buffer.get(0)[index].getTid()));
             int[] bufferSplitIndex = bufferSplitIndexes.stream().mapToInt(k -> k).toArray();
             int[] timeSeriesSplitIndex = timeSeriesSplitIndexes.stream().mapToInt(k -> k).toArray();
             splitSegmentGenerator(bufferSplitIndex, timeSeriesSplitIndex, gaps);
@@ -474,7 +474,7 @@ public class SegmentGenerator {
             ValueDataPoint[] newDps = new ValueDataPoint[bufferSplitIndex.length];
             int j = 0;
             for (int i : bufferSplitIndex) {
-                newDps[j] = new ValueDataPoint(dps[i].tid, dps[i].timestamp, dps[i].value);
+                newDps[j] = new ValueDataPoint(dps[i].getTid(), dps[i].timestamp, dps[i].value);
                 j++;
             }
             newBuffer.add(newDps);
@@ -581,7 +581,7 @@ public class SegmentGenerator {
             for (SegmentGenerator sg : sgs) {
                 ValueDataPoint[] dps = sg.buffer.get(sg.buffer.size() - next);
                 for (ValueDataPoint dp : dps) {
-                    int write = Arrays.binarySearch(activeJoinIndex, dp.tid);
+                    int write = Arrays.binarySearch(activeJoinIndex, dp.getTid());
                     result[write] = dp;
                 }
             }
@@ -607,7 +607,7 @@ public class SegmentGenerator {
 
         //Finally the set of time series currently in a gap and controlled by nsg is computed
         Set<Integer> gaps = new HashSet<>(this.tids);
-        Arrays.stream(nsg.buffer.get(0)).forEach(dp -> gaps.remove(dp.tid));
+        Arrays.stream(nsg.buffer.get(0)).forEach(dp -> gaps.remove(dp.getTid()));
         nsg.gaps = gaps;
 
         //Initializes the first model with the content in the new combined buffer

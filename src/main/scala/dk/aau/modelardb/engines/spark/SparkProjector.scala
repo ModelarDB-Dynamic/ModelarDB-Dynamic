@@ -124,27 +124,27 @@ object SparkProjector {
     val target = computeJumpTarget(requiredColumns, EngineUtilities.dataPointViewNameToIndex, 3)
     (target: @switch) match {
       //Permutations of ('tid')
-      case 1 => (dp: ValueDataPoint) => Row(dp.tid)
+      case 1 => (dp: ValueDataPoint) => Row(dp.getTid)
       //Permutations of ('ts')
       case 2 => (dp: ValueDataPoint) => Row(new Timestamp(dp.timestamp))
       //Permutations of ('val')
-      case 3 => (dp: ValueDataPoint) => Row(btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)))
+      case 3 => (dp: ValueDataPoint) => Row(btstc.value(dp.getTid).transform(dp.value, tssfc(dp.getTid)))
       //Permutations of ('tid', 'ts')
-      case 12 => (dp: ValueDataPoint) => Row(dp.tid, new Timestamp(dp.timestamp))
-      case 21 => (dp: ValueDataPoint) => Row(new Timestamp(dp.timestamp), dp.tid)
+      case 12 => (dp: ValueDataPoint) => Row(dp.getTid, new Timestamp(dp.timestamp))
+      case 21 => (dp: ValueDataPoint) => Row(new Timestamp(dp.timestamp), dp.getTid)
       //Permutations of ('tid', 'val')
-      case 13 => (dp: ValueDataPoint) => Row(dp.tid, btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)))
-      case 31 => (dp: ValueDataPoint) => Row(btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)), dp.tid)
+      case 13 => (dp: ValueDataPoint) => Row(dp.getTid, btstc.value(dp.getTid).transform(dp.value, tssfc(dp.getTid)))
+      case 31 => (dp: ValueDataPoint) => Row(btstc.value(dp.getTid).transform(dp.value, tssfc(dp.getTid)), dp.getTid)
       //Permutations of ('ts', 'val')
-      case 23 => (dp: ValueDataPoint) => Row(new Timestamp(dp.timestamp), btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)))
-      case 32 => (dp: ValueDataPoint) => Row(btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)), new Timestamp(dp.timestamp))
+      case 23 => (dp: ValueDataPoint) => Row(new Timestamp(dp.timestamp), btstc.value(dp.getTid).transform(dp.value, tssfc(dp.getTid)))
+      case 32 => (dp: ValueDataPoint) => Row(btstc.value(dp.getTid).transform(dp.value, tssfc(dp.getTid)), new Timestamp(dp.timestamp))
       //Permutations of ('tid', 'ts', 'val')
-      case 123 => (dp: ValueDataPoint) => Row(dp.tid, new Timestamp(dp.timestamp), btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)))
-      case 132 => (dp: ValueDataPoint) => Row(dp.tid, btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)), new Timestamp(dp.timestamp))
-      case 213 => (dp: ValueDataPoint) => Row(new Timestamp(dp.timestamp), dp.tid, btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)))
-      case 231 => (dp: ValueDataPoint) => Row(new Timestamp(dp.timestamp), btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)), dp.tid)
-      case 312 => (dp: ValueDataPoint) => Row(btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)), dp.tid, new Timestamp(dp.timestamp))
-      case 321 => (dp: ValueDataPoint) => Row(btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid)), new Timestamp(dp.timestamp), dp.tid)
+      case 123 => (dp: ValueDataPoint) => Row(dp.getTid, new Timestamp(dp.timestamp), btstc.value(dp.getTid).transform(dp.value, tssfc(dp.getTid)))
+      case 132 => (dp: ValueDataPoint) => Row(dp.getTid, btstc.value(dp.getTid).transform(dp.value, tssfc(dp.getTid)), new Timestamp(dp.timestamp))
+      case 213 => (dp: ValueDataPoint) => Row(new Timestamp(dp.timestamp), dp.getTid, btstc.value(dp.getTid).transform(dp.value, tssfc(dp.getTid)))
+      case 231 => (dp: ValueDataPoint) => Row(new Timestamp(dp.timestamp), btstc.value(dp.getTid).transform(dp.value, tssfc(dp.getTid)), dp.getTid)
+      case 312 => (dp: ValueDataPoint) => Row(btstc.value(dp.getTid).transform(dp.value, tssfc(dp.getTid)), dp.getTid, new Timestamp(dp.timestamp))
+      case 321 => (dp: ValueDataPoint) => Row(btstc.value(dp.getTid).transform(dp.value, tssfc(dp.getTid)), new Timestamp(dp.timestamp), dp.getTid)
       //Static projections cannot be used for rows with dimensions
       case _ => null
     }
@@ -172,10 +172,10 @@ object SparkProjector {
     val columns = requiredColumns.map(EngineUtilities.dataPointViewNameToIndex)
     dp =>
       Row.fromSeq(columns.map({
-        case 1 => dp.tid
+        case 1 => dp.getTid
         case 2 => new Timestamp(dp.timestamp)
-        case 3 => btstc.value(dp.tid).transform(dp.value, tssfc(dp.tid))
-        case index => tsmc(dp.tid)(index - 4)
+        case 3 => btstc.value(dp.getTid).transform(dp.value, tssfc(dp.getTid))
+        case index => tsmc(dp.getTid)(index - 4)
       }))
   }
 }
