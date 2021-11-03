@@ -58,6 +58,9 @@ public class ValueDataPoint extends DataPoint implements Comparable<ValueDataPoi
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) {
+            return false;
+        }
         ValueDataPoint that = (ValueDataPoint) o;
         return timestamp == that.timestamp && Float.compare(that.value, value) == 0 && samplingInterval == that.samplingInterval;
     }

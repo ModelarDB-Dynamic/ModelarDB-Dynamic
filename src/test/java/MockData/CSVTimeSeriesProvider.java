@@ -22,14 +22,28 @@ public class CSVTimeSeriesProvider {
                                  timeZone, valueColumnIndex, locale);
     }
 
-    public static TimeSeriesCSV createTimeSeries1() {
-        String fileName = "time_series_1_data.csv";
+    public static TimeSeriesCSV createSimpleTimeSeries() {
+        String fileName = "simple_time_series.csv";
         return  createTimeSeries(fileName, 1, 100);
     }
 
+    public static TimeSeriesCSV createTimeSeriesWithGaps() {
+        String fileName = "time_series_with_gaps.csv";
+        return  createTimeSeries(fileName, 2, 100);
+    }
+
+    public static TimeSeriesCSV createTimeSeriesStartsWithConfigPoints() {
+        String fileName = "time_series_starts_with_config.csv";
+        return  createTimeSeries(fileName, 3, 100);
+    }
+
+    public static TimeSeriesCSV createTimeSeriesWithConfigPoints() {
+        String fileName = "time_series_with_config.csv";
+        return  createTimeSeries(fileName, 4, 100);
+    }
 
     public static TimeSeriesCSV createEmptyTimeSeries() {
-        String path = "empty_data.csv";
+        String path = "empty_time_series.csv";
         return  createTimeSeries(path, 10, 100);
     }
 
