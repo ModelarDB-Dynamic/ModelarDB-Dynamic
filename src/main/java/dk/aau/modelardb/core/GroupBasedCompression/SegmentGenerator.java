@@ -29,8 +29,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static java.util.Collections.unmodifiableList;
-
 public class SegmentGenerator {
 
     /**
@@ -166,9 +164,9 @@ public class SegmentGenerator {
     }
 
     public void consumeSlice(DataSlice slice) {
-        if (this.splitSegmentGenerators.isEmpty()){
+        if (this.splitSegmentGenerators.isEmpty()) {
             // Consume
-            consumeDataPoints(slice.getValueDataPoints());
+            consumeDataPoints(slice.getDataPoints());
         } else { // Make children
 
             List<Integer> childTidsOne = this.splitSegmentGenerators.get(0).tids;
@@ -193,7 +191,25 @@ public class SegmentGenerator {
 
     // TODO: implement this
     public void consumeDataPoints(ValueDataPoint[] dataPoints) {
-        
+        if (dataPoints.length == 0) {
+            return;
+        }
+
+        for (ValueDataPoint dataPoint : dataPoints) {
+            if (dataPoint.isGapPoint()) {
+                if (!this.gaps.contains(dataPoint.getTid())) {
+                    flushBuffer();
+                    this.gaps.add(dataPoint.getTid());
+                }
+            } else {
+                if (this.gaps.contains(dataPoint.getTid())) {
+                    // a gap has ended
+                    flushBuffer();
+                    this.gaps.remove(dataPoint.getTid());
+                }
+            }
+        }
+
         throw new NotImplementedException();
     }
 
@@ -203,7 +219,9 @@ public class SegmentGenerator {
         //this.logger.sleepAndPrint(curDataPointsAndGaps, 5000);
 
         //If no time series provided any values for this time stamp all computations can be skipped
-
+        if (activeTimeSeries == 0) {
+            return;
+        }
 
         //If any of the time series are missing values, a gap is stored for that time series
         int nextDataPoint = 0;
