@@ -15,7 +15,7 @@
 package dk.aau.modelardb
 
 import dk.aau.modelardb.core._
-import dk.aau.modelardb.core.Models.CompressionModels.ModelTypeFactory
+import dk.aau.modelardb.core.model.compression.ModelTypeFactory
 import dk.aau.modelardb.core.utility.{Pair, Static, ValueFunction}
 import dk.aau.modelardb.engines.{CodeGenerator, EngineFactory}
 import dk.aau.modelardb.storage.StorageFactory

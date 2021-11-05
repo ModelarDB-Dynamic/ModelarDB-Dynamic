@@ -14,7 +14,7 @@
  */
 package dk.aau.modelardb.core.utility;
 
-import dk.aau.modelardb.core.Models.ValueDataPoint;
+import dk.aau.modelardb.core.model.ValueDataPoint;
 
 import java.util.ArrayList;
 import java.util.Iterator;

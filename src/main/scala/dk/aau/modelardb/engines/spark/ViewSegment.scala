@@ -82,8 +82,8 @@ class ViewSegment(dimensions: Array[StructField])(@transient val sqlContext: SQL
     val gmdc = storage.groupMetadataCache
     val gdc = storage.groupDerivedCache
     row =>
-      val sg = new SegmentGroup(row.getInt(0), row.getTimestamp(1).getTime, row.getTimestamp(2).getTime,
-        row.getInt(3), row.getAs[Array[Byte]](4), row.getAs[Array[Byte]](5))
+      val sg = new SegmentGroup(row.getInt(0), row.getTimestamp(1).getTime, row.getInt(2), row.getTimestamp(3).getTime,
+        row.getInt(4), row.getAs[Array[Byte]](5), row.getAs[Array[Byte]](6))
       sg.explode(gmdc, gdc).map(e =>
         Row(e.gid, new Timestamp(e.startTime), new Timestamp(e.endTime), e.mtid, e.model, e.offsets))
   }

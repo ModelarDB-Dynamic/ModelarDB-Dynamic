@@ -49,7 +49,7 @@ class JDBCStorage(connectionStringAndTypes: String) extends Storage with H2Stora
     if ( ! tables.next()) {
       val stmt = this.connection.createStatement()
       stmt.executeUpdate(s"CREATE TABLE model_type(mtid INTEGER, name ${this.textType})")
-      stmt.executeUpdate(s"CREATE TABLE segment(gid INTEGER, start_time BIGINT, end_time BIGINT, samplingInterval INTEGER, mtid INTEGER, model ${this.blobType}, gaps ${this.blobType})")
+      stmt.executeUpdate(s"CREATE TABLE segment(gid INTEGER, start_time BIGINT, samplingInterval INTEGER, end_time BIGINT, mtid INTEGER, model ${this.blobType}, gaps ${this.blobType})")
       stmt.executeUpdate(s"CREATE TABLE time_series(tid INTEGER, scaling_factor REAL, sampling_interval INTEGER, gid INTEGER${getDimensionsSQL(dimensions, this.textType)})")
 
       stmt.executeUpdate("CREATE INDEX segment_gid ON segment(gid)")

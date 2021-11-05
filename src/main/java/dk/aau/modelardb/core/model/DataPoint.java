@@ -1,4 +1,4 @@
-package dk.aau.modelardb.core.Models;
+package dk.aau.modelardb.core.model;
 
 import java.util.Objects;
 

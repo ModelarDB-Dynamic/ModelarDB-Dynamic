@@ -1,6 +1,4 @@
-package dk.aau.modelardb.core.Models;
-
-import scala.tools.nsc.doc.model.Val;
+package dk.aau.modelardb.core.model;
 
 import java.util.*;
 import java.util.function.Function;

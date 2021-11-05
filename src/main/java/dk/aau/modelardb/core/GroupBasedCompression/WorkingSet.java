@@ -14,18 +14,15 @@
  */
 package dk.aau.modelardb.core.GroupBasedCompression;
 
-import dk.aau.modelardb.core.Models.CompressionModels.ModelType;
-import dk.aau.modelardb.core.Models.CompressionModels.ModelTypeFactory;
+import dk.aau.modelardb.core.model.compression.ModelType;
+import dk.aau.modelardb.core.model.compression.ModelTypeFactory;
 import dk.aau.modelardb.core.utility.Logger;
 import dk.aau.modelardb.core.utility.SegmentFunction;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;

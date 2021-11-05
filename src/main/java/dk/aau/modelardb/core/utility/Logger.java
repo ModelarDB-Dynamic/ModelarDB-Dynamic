@@ -14,9 +14,9 @@
  */
 package dk.aau.modelardb.core.utility;
 
-import dk.aau.modelardb.core.Models.ValueDataPoint;
+import dk.aau.modelardb.core.model.ValueDataPoint;
 import dk.aau.modelardb.core.GroupBasedCompression.TimeSeriesGroup;
-import dk.aau.modelardb.core.Models.CompressionModels.ModelType;
+import dk.aau.modelardb.core.model.compression.ModelType;
 
 import java.io.IOException;
 import java.io.Serializable;

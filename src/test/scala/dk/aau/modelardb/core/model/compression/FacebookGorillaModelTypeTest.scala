@@ -12,10 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dk.aau.modelardb.core.Models.CompressionModels
+package dk.aau.modelardb.core.model.compression
 
-class PMC_MeanModelTypeTest extends AbstractModelTypeTest {
+class FacebookGorillaModelTypeTest extends AbstractModelTypeTest {
   override protected def getModelType(mtid: Int, errorBound: Float, lengthBound: Int): ModelType = {
-    new PMC_MeanModelType(mtid, errorBound, lengthBound)
+    new FacebookGorillaModelType(mtid, errorBound, lengthBound)
   }
 }

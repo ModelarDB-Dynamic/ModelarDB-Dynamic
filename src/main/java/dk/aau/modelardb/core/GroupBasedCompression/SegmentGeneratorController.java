@@ -1,11 +1,9 @@
 package dk.aau.modelardb.core.GroupBasedCompression;
 
-import dk.aau.modelardb.core.Models.CompressionModels.ModelType;
-import dk.aau.modelardb.core.Models.DataSlice;
-import dk.aau.modelardb.core.Models.SIConfigurationDataPoint;
+import dk.aau.modelardb.core.model.compression.ModelType;
+import dk.aau.modelardb.core.model.DataSlice;
+import dk.aau.modelardb.core.model.SIConfigurationDataPoint;
 import dk.aau.modelardb.core.utility.SegmentFunction;
-import org.apache.hadoop.util.hash.Hash;
-import org.apache.spark.sql.sources.In;
 
 import java.util.*;
 import java.util.function.Supplier;

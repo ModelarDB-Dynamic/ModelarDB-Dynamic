@@ -12,10 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dk.aau.modelardb.core.Models.CompressionModels
+package dk.aau.modelardb.core.model.compression
 
-class SwingFilterModelTypeTest extends AbstractModelTypeTest {
+class UncompressedModelTypeTest extends AbstractModelTypeTest {
   override protected def getModelType(mtid: Int, errorBound: Float, lengthBound: Int): ModelType = {
-    new SwingFilterModelType(mtid, errorBound, lengthBound)
+    new UncompressedModelType(mtid, errorBound, lengthBound)
   }
 }

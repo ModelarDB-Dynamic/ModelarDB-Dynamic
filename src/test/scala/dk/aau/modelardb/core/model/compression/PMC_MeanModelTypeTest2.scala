@@ -12,9 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dk.aau.modelardb.core.Models.CompressionModels
+package dk.aau.modelardb.core.model.compression
 
-import dk.aau.modelardb.core.Models.ValueDataPoint
+import dk.aau.modelardb.core.model.ValueDataPoint
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 

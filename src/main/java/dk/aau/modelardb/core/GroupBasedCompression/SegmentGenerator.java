@@ -14,10 +14,9 @@
  */
 package dk.aau.modelardb.core.GroupBasedCompression;
 
-import dk.aau.modelardb.core.Models.CompressionModels.ModelType;
-import dk.aau.modelardb.core.Models.DataSlice;
-import dk.aau.modelardb.core.Models.ValueDataPoint;
-import dk.aau.modelardb.core.timeseries.TimeSeries;
+import dk.aau.modelardb.core.model.compression.ModelType;
+import dk.aau.modelardb.core.model.DataSlice;
+import dk.aau.modelardb.core.model.ValueDataPoint;
 import dk.aau.modelardb.core.utility.Logger;
 import dk.aau.modelardb.core.utility.ReverseBufferIterator;
 import dk.aau.modelardb.core.utility.SegmentFunction;

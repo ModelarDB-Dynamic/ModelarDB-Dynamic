@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dk.aau.modelardb.core.Models;
+package dk.aau.modelardb.core.model;
 
 import java.util.Objects;
 

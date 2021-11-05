@@ -14,7 +14,7 @@
  */
 package dk.aau.modelardb.engines.h2
 
-import dk.aau.modelardb.core.Models.ValueDataPoint
+import dk.aau.modelardb.core.model.ValueDataPoint
 import org.h2.api.TableEngine
 import org.h2.command.ddl.CreateTableData
 import org.h2.command.dml.AllColumnsForPlan

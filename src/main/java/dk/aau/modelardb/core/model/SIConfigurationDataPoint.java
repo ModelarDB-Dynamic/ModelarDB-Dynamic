@@ -1,9 +1,6 @@
-package dk.aau.modelardb.core.Models;
-
-import scala.Int;
+package dk.aau.modelardb.core.model;
 
 import java.util.Objects;
-import java.util.regex.Pattern;
 
 public class SIConfigurationDataPoint extends DataPoint {
 

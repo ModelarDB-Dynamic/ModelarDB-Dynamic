@@ -14,8 +14,7 @@
  */
 package dk.aau.modelardb.core.timeseries;
 
-import dk.aau.modelardb.core.Models.DataPoint;
-import dk.aau.modelardb.core.Models.ValueDataPoint;
+import dk.aau.modelardb.core.model.DataPoint;
 
 import java.io.Serializable;
 import java.util.Iterator;

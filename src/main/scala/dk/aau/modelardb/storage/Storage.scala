@@ -15,7 +15,7 @@
 package dk.aau.modelardb.storage
 
 import dk.aau.modelardb.core.GroupBasedCompression.TimeSeriesGroup
-import dk.aau.modelardb.core.Models.CompressionModels.{ModelType, ModelTypeFactory}
+import dk.aau.modelardb.core.model.compression.{ModelType, ModelTypeFactory}
 import dk.aau.modelardb.core.utility.{Pair, Static, ValueFunction}
 import dk.aau.modelardb.core.{Configuration, Dimensions}
 
@@ -68,7 +68,7 @@ abstract class Storage {
     // function, per definition the mtid of the fallback model type is one
     val modelTypesToBeInserted = mutable.HashMap[String, Integer]()
     val modelsWithFallback = mutable.ArrayBuffer[String](configuration.getModelTypeNames: _*)
-    modelsWithFallback.prepend("dk.aau.modelardb.core.models.UncompressedModelType")
+    modelsWithFallback.prepend("dk.aau.modelardb.core.model.compression.UncompressedModelType")
     val modelTypesInStorage = this.getModelTypes
     var mtid: Integer = modelTypesInStorage.values.reduceOption(_ max _).getOrElse(0)
 

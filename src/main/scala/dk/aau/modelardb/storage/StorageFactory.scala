@@ -21,13 +21,16 @@ object StorageFactory {
     //Selects the correct storage backend based on the connection string provided
     try {
       if (connectionString.startsWith("cassandra://")) {
-        new CassandraStorage(connectionString.substring(12))
+        throw new java.lang.IllegalArgumentException("Cassandra not supported in dynamic ModelarDB");
+        //new CassandraStorage(connectionString.substring(12))
       } else if (connectionString.startsWith("jdbc:")) {
         new JDBCStorage(connectionString)
       } else if (connectionString.startsWith("orc:")) {
-        new ORCStorage(connectionString.substring(4) + '/')
+        throw new java.lang.IllegalArgumentException("Orc not supported in dynamic ModelarDB");
+        //new ORCStorage(connectionString.substring(4) + '/')
       } else if (connectionString.startsWith("parquet:")) {
-        new ParquetStorage(connectionString.substring(8) + '/')
+        throw new java.lang.IllegalArgumentException("Parquet not supported in dynamic ModelarDB");
+        //new ParquetStorage(connectionString.substring(8) + '/')
       } else {
         throw new java.lang.IllegalArgumentException("ModelarDB: unknown value for modelardb.storage in the config file")
       }

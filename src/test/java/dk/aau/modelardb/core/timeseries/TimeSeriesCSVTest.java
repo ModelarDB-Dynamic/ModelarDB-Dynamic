@@ -3,9 +3,9 @@ package dk.aau.modelardb.core.timeseries;
 import MockData.CSVTimeSeriesProvider;
 import MockData.ConfigurationProvider;
 import dk.aau.modelardb.core.Configuration;
-import dk.aau.modelardb.core.Models.DataPoint;
-import dk.aau.modelardb.core.Models.SIConfigurationDataPoint;
-import dk.aau.modelardb.core.Models.ValueDataPoint;
+import dk.aau.modelardb.core.model.DataPoint;
+import dk.aau.modelardb.core.model.SIConfigurationDataPoint;
+import dk.aau.modelardb.core.model.ValueDataPoint;
 import org.junit.jupiter.api.*;
 
 import java.util.ArrayList;

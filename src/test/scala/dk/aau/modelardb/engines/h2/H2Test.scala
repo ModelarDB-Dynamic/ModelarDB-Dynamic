@@ -15,7 +15,7 @@
 package dk.aau.modelardb.engines.h2
 
 import dk.aau.modelardb.core.GroupBasedCompression.SegmentGroup
-import dk.aau.modelardb.core.Models.CompressionModels.ModelTypeFactory
+import dk.aau.modelardb.core.model.compression.ModelTypeFactory
 import dk.aau.modelardb.core.{Configuration, Dimensions}
 import dk.aau.modelardb.engines.EngineUtilities
 import dk.aau.modelardb.storage.JDBCStorage
@@ -63,7 +63,7 @@ class H2Test extends AnyFlatSpec with Matchers with MockFactory {
       val samplingInterval = 10
       val startTime = Instant.ofEpochMilli(100L)
       val endTime = Instant.ofEpochMilli(110L)
-      val sg = new SegmentGroup(gid, startTime.toEpochMilli, endTime.toEpochMilli, mtid, Array(0x42.toByte), Array(0x42.toByte))
+      val sg = new SegmentGroup(gid, startTime.toEpochMilli, samplingInterval, endTime.toEpochMilli, mtid, Array(0x42.toByte), Array(0x42.toByte))
       val model = ModelTypeFactory.getFallbackModelType(5.0f, 300)
       val dimensions = new Dimensions(Array())
       EngineUtilities.initialize(dimensions)

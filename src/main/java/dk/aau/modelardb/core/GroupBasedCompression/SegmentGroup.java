@@ -14,8 +14,8 @@
  */
 package dk.aau.modelardb.core.GroupBasedCompression;
 
-import dk.aau.modelardb.core.Models.CompressionModels.ModelType;
-import dk.aau.modelardb.core.Models.CompressionModels.Segment;
+import dk.aau.modelardb.core.model.compression.ModelType;
+import dk.aau.modelardb.core.model.compression.Segment;
 import dk.aau.modelardb.core.utility.Static;
 import dk.aau.modelardb.storage.Storage;
 import scala.collection.mutable.HashMap;

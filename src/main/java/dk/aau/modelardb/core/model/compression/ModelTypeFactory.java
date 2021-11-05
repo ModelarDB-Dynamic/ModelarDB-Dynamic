@@ -12,25 +12,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dk.aau.modelardb.core.Models.CompressionModels;
+package dk.aau.modelardb.core.model.compression;
 
 import java.lang.reflect.Constructor;
 import java.util.stream.IntStream;
 
 public class ModelTypeFactory {
+    public static final String COMPRESSION_PACKAGE_PATH = "dk.aau.modelardb.core.model.compression";
+
 
     /**
      * Public Methods
      **/
     public static ModelType getFallbackModelType(float errorBound, int lengthBound) {
         //Per definition the mtid of the fallback model is one
-        return getModel("dk.aau.modelardb.core.models.UncompressedModelType", 1, errorBound, lengthBound);
+        return getModel(COMPRESSION_PACKAGE_PATH + ".UncompressedModelType", 1, errorBound, lengthBound);
     }
 
     public static ModelType[] getModelTypes(String[] modelTypes, int[] mtids, float errorBound, int lengthBound) {
         for (String modelTypeName : modelTypes) {
             //The fallback model type is purposely designed without any limits to ensure that progress can always be made
-            if (modelTypeName.equals("dk.aau.modelardb.core.models.UncompressedModelType")) {
+            if (modelTypeName.equals(COMPRESSION_PACKAGE_PATH + ".UncompressedModelType")) {
                 throw new IllegalArgumentException("CORE: the fallback model type cannot be used as a normal model type");
             }
         }

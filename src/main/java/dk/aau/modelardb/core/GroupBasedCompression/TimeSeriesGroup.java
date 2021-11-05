@@ -14,16 +14,14 @@
  */
 package dk.aau.modelardb.core.GroupBasedCompression;
 
-import dk.aau.modelardb.core.Models.DataPoint;
-import dk.aau.modelardb.core.Models.DataSlice;
-import dk.aau.modelardb.core.Models.SIConfigurationDataPoint;
-import dk.aau.modelardb.core.Models.ValueDataPoint;
+import dk.aau.modelardb.core.model.DataPoint;
+import dk.aau.modelardb.core.model.DataSlice;
+import dk.aau.modelardb.core.model.SIConfigurationDataPoint;
+import dk.aau.modelardb.core.model.ValueDataPoint;
 import dk.aau.modelardb.core.timeseries.AsyncTimeSeries;
 import dk.aau.modelardb.core.timeseries.TimeSeries;
 
-import java.io.IOException;
 import java.io.Serializable;
-import java.nio.channels.Selector;
 import java.util.*;
 
 public class TimeSeriesGroup implements Serializable {
