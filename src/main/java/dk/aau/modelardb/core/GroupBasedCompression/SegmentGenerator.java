@@ -51,7 +51,7 @@ public class SegmentGenerator {
     Logger logger;
     //State variables for buffering data points
     private Set<Integer> gaps;
-    private ArrayList<ValueDataPoint[]> buffer;
+    private ArrayList<ValueDataPoint[]> buffer; // TODO: MAKE THIS CONTAIN A LIST OF SLICES INSTEAD
     private float dynamicSplitFraction;
     private long emittedFinalizedSegments;
     private double compressionRatioAverage;
@@ -60,7 +60,7 @@ public class SegmentGenerator {
     private ArrayList<SegmentGenerator> splitSegmentGenerators;
     //State variables for fitting the current model
     private int modelTypeIndex;
-    private int dataPointsYetEmitted;
+    private int slicesNotYetEmitted;
     private ModelType currentModelType;
     private ModelType lastEmittedModelType;
 
@@ -102,7 +102,7 @@ public class SegmentGenerator {
 
         //State variables for fitting the current model
         this.modelTypeIndex = 0;
-        this.dataPointsYetEmitted = 0;
+        this.slicesNotYetEmitted = 0;
         this.currentModelType = this.modelTypes[0];
         this.currentModelType.initialize(this.buffer);
 
@@ -161,6 +161,7 @@ public class SegmentGenerator {
             return;
         }
 
+        // Handle gap data points
         for (ValueDataPoint dataPoint : dataPoints) {
             if (dataPoint.isGapPoint()) {
                 if (!this.gaps.contains(dataPoint.getTid())) {
@@ -180,29 +181,34 @@ public class SegmentGenerator {
                 .filter(Predicate.not(ValueDataPoint::isGapPoint))
                 .toArray(ValueDataPoint[]::new);
 
-        this.buffer.add(gapFreeDatapoints);
-        this.dataPointsYetEmitted++;
+        tryToAppendDataPointsToModels(gapFreeDatapoints);
 
+        this.slicesNotYetEmitted++;
+        this.buffer.add(gapFreeDatapoints);
+
+        //Emits a temporary segment if latency data points have been added to the buffer without a finalized segment being
+        // emitted, if the current model does not represent all of the data points in the buffer the fallback model is used
+        if (this.maximumLatency > 0 && this.slicesNotYetEmitted == this.maximumLatency) {
+            emitTemporarySegment();
+            this.slicesNotYetEmitted = 0;
+        }
+    }
+
+    private void tryToAppendDataPointsToModels(ValueDataPoint[] gapFreeDatapoints) {
         //The current model type is given the data points and it verifies that the model can represent them and all prior,
         // it is assumed that append will fail if it failed in the past, so append(t,V) must fail if append(t-1,V) failed
-        if (!this.currentModelType.append(gapFreeDatapoints)) {
+        while(!this.currentModelType.append(Arrays.copyOf(gapFreeDatapoints, gapFreeDatapoints.length))) {
             this.modelTypeIndex += 1;
             if (this.modelTypeIndex == this.modelTypes.length) {
                 //If none of the model types can represent all of the buffered data points, the model type that provides
                 // the best compression is selected and a segment that store the values a model of the type is construct
                 emitFinalSegment();
                 resetModelTypeIndex();
+                break;
             } else {
                 this.currentModelType = this.modelTypes[this.modelTypeIndex];
                 this.currentModelType.initialize(this.buffer);
             }
-        }
-
-        //Emits a temporary segment if latency data points have been added to the buffer without a finalized segment being
-        // emitted, if the current model does not represent all of the data points in the buffer the fallback model is used
-        if (this.maximumLatency > 0 && this.dataPointsYetEmitted == this.maximumLatency) {
-            emitTemporarySegment();
-            this.dataPointsYetEmitted = 0;
         }
     }
 
@@ -285,7 +291,7 @@ public class SegmentGenerator {
 
         //If the number of data points in the buffer is less then the number of data points that has yet to be
         // emitted, then some of these data points have already been emitted as part of the finalized segment
-        this.dataPointsYetEmitted = Math.min(this.dataPointsYetEmitted, buffer.size());
+        this.slicesNotYetEmitted = Math.min(this.slicesNotYetEmitted, buffer.size());
 
         //The best model is stored as it's error function is used when computing the split/join heuristics
         this.lastEmittedModelType = mostEfficientModelType;
@@ -315,9 +321,12 @@ public class SegmentGenerator {
     }
 
     private void emitSegment(SegmentFunction stream, ModelType modelType, List<Integer> segmentGaps) {
-        int modelTypeLength = modelType.length();
+        if(slicesNotYetEmitted == 0) {
+            return;
+        }
+        int amtPointsInModel = modelType.length();
         long startTime = this.buffer.get(0)[0].timestamp;
-        long endTime = this.buffer.get(modelTypeLength - 1)[0].timestamp;
+        long endTime = this.buffer.get(amtPointsInModel - 1)[0].timestamp;
         int[] gaps = segmentGaps.stream().mapToInt(l -> l).toArray();
         byte[] model = modelType.getModel(startTime, endTime, samplingInterval, this.buffer);
         stream.emit(this.gid, startTime, this.samplingInterval, endTime, modelType.mtid, model, Static.intToBytes(gaps));
@@ -412,7 +421,7 @@ public class SegmentGenerator {
         //As the current temporary segment is shared with the parent SegmentGenerator, a new temporary segment is
         // emitted for each split generator so the temporary segment can be updated separately for each generator
         if (this.maximumLatency > 0) {
-            this.dataPointsYetEmitted = 0;
+            this.slicesNotYetEmitted = 0;
             sg.emitTemporarySegment();
         }
     }
