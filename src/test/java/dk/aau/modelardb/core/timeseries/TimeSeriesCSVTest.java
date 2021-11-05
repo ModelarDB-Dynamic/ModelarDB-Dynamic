@@ -98,7 +98,7 @@ class TimeSeriesCSVTest {
     void simpleTimeSeries() {
         List<DataPoint> expectedDataPoints = new ArrayList<>();
         int tid = ts.tid;
-        int si = ts.getCurrentSamplingInterval();
+        int si = Configuration.INSTANCE.getSamplingInterval();;
         expectedDataPoints.add(createDefaultConfigPoint(tid));
         expectedDataPoints.add(new ValueDataPoint(tid, 100, 1.0F, si));
         expectedDataPoints.add(new ValueDataPoint(tid, 200, 1.0F, si));
@@ -120,7 +120,7 @@ class TimeSeriesCSVTest {
         ts.open();
         List<DataPoint> expectedDataPoints = new ArrayList<>();
         int tid = ts.tid;
-        int si = ts.getCurrentSamplingInterval();
+        int si = Configuration.INSTANCE.getSamplingInterval();
         expectedDataPoints.add(createDefaultConfigPoint(tid));
         expectedDataPoints.add(new ValueDataPoint(tid, 100, 1.0F, si));
         expectedDataPoints.add(new ValueDataPoint(tid, 200, 1.0F, si));
@@ -145,7 +145,7 @@ class TimeSeriesCSVTest {
         int tid = ts.tid;
         int newSi = 50;
         expectedDataPoints.add(createDefaultConfigPoint(tid));
-        expectedDataPoints.add(new SIConfigurationDataPoint(tid, newSi, ts.getCurrentSamplingInterval()));
+        expectedDataPoints.add(new SIConfigurationDataPoint(tid, newSi, Configuration.INSTANCE.getSamplingInterval()));
         expectedDataPoints.add(new ValueDataPoint(tid, 0, 1.0F, newSi));
         expectedDataPoints.add(new ValueDataPoint(tid, 50, 1.0F, newSi));
         expectedDataPoints.add(new ValueDataPoint(tid, 100, 1.0F, newSi));
@@ -163,7 +163,7 @@ class TimeSeriesCSVTest {
 
         List<DataPoint> expectedDataPoints = new ArrayList<>();
         int tid = ts.tid;
-        int currSi = ts.getCurrentSamplingInterval();
+        int currSi = Configuration.INSTANCE.getSamplingInterval();
         expectedDataPoints.add(createDefaultConfigPoint(tid));
         expectedDataPoints.add(new ValueDataPoint(tid, 100, 1.0F, currSi));
         expectedDataPoints.add(new ValueDataPoint(tid, 200, 1.0F, currSi));

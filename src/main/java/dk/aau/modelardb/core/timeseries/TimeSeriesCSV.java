@@ -61,11 +61,13 @@ public class TimeSeriesCSV extends TimeSeries {
     /**
      * Public Methods
      **/
-    public TimeSeriesCSV(String stringPath, int tid, int initialSamplingInterval,
+    public TimeSeriesCSV(String stringPath, int tid,
                          String csvSeparator, boolean hasHeader,
                          int timestampColumnIndex, String dateFormat, String timeZone,
                          int valueColumnIndex, String localeString) {
-        super(stringPath.substring(stringPath.lastIndexOf('/') + 1), tid, initialSamplingInterval);
+        // Hack: that we send -1 as initial sampling interval as TimeSeriesCSV reads a default config point before reading
+        // the data itself, so this value does nothing.
+        super(stringPath.substring(stringPath.lastIndexOf('/') + 1), tid, -1);
         this.stringPath = stringPath;
 
         //A small buffer is used so more time series can be ingested in parallel
@@ -138,7 +140,9 @@ public class TimeSeriesCSV extends TimeSeries {
         try {
             if (! hasReturnedDefaultConfigPoint) {
                 hasReturnedDefaultConfigPoint = true;
-                return new SIConfigurationDataPoint(this.tid, Configuration.INSTANCE.getSamplingInterval(), Integer.MIN_VALUE);
+                var defaultConfigPoint = new SIConfigurationDataPoint(this.tid, Configuration.INSTANCE.getSamplingInterval(), Integer.MIN_VALUE);
+                processConfigDataPoint(defaultConfigPoint);
+                return defaultConfigPoint;
             }
 
             if (this.nextBuffer.length() == 0) {
@@ -232,7 +236,9 @@ public class TimeSeriesCSV extends TimeSeries {
 
             DataPoint result;
             if (SIConfigurationDataPoint.isAConfigurationDataPoint(split[0])) {
-                result = handleConfigDataPoint(nextDataPointIndex, hasNextDatapoint, split);
+                var configurationDataPoint = extractConfigDataPoint(nextDataPointIndex, hasNextDatapoint, split);
+                processConfigDataPoint(configurationDataPoint);
+                result = configurationDataPoint;
             } else {
                 result = handleValueDatapoint(nextDataPointIndex, hasNextDatapoint, split);
             }
@@ -266,26 +272,32 @@ public class TimeSeriesCSV extends TimeSeries {
         return valuePoint;
     }
 
-    private SIConfigurationDataPoint handleConfigDataPoint(int nextDataPointIndex, boolean hasNextDatapoint, String[] split) throws IOException, ParseException {
-        int previousSamplingInterval = this.currentSamplingInterval;
+    private void processConfigDataPoint(SIConfigurationDataPoint configurationDataPoint) {
+        int newSI = configurationDataPoint.getNewSamplingInterval();
+
+        if (this.expectedTimestampPointer != null) { // Readjust the expected time stamp
+            this.expectedTimestampPointer = this.expectedTimestampPointer - this.currentSamplingInterval; // revert to prev datapoint timestamp
+            // increment to point to expected value using new sampling interval
+            long difference = (long)(newSI - (this.expectedTimestampPointer % newSI));
+            this.expectedTimestampPointer += difference;
+        }
+        this.currentSamplingInterval = newSI;
+    }
+
+    private SIConfigurationDataPoint extractConfigDataPoint(int nextDataPointIndex, boolean hasNextDatapoint, String[] split) throws IOException, ParseException {
         try {
             String configurationKey = split[0];
             if ("SI".equals(configurationKey)) {
+                int prevSI = this.currentSamplingInterval;
                 int newSI = valueParser.parse(split[1]).intValue();
-                if (this.expectedTimestampPointer != null) { // Readjust the expected time stamp
-                    this.expectedTimestampPointer = this.expectedTimestampPointer - this.currentSamplingInterval; // revert to prev datapoint timestamp
-                    // increment to point to expected value using new sampling interval
-                    long difference = (long)(newSI - (this.expectedTimestampPointer % newSI));
-                    this.expectedTimestampPointer += difference;
-                }
-                this.currentSamplingInterval = newSI;
 
                 //delete the config datapoint that have been read from the buffer
                 this.nextBuffer.delete(0, nextDataPointIndex);
+
+                return new SIConfigurationDataPoint(this.tid, newSI, prevSI);
             } else {
                 throw new RuntimeException("config key not supported");
             }
-            return new SIConfigurationDataPoint(this.tid, this.currentSamplingInterval, previousSamplingInterval);
         } catch(NumberFormatException nfe) {
             throw new IOException(nfe);
         }

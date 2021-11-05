@@ -57,4 +57,12 @@ public class DataSlice {
 
      return tidsToSubDataSlice;
     }
+
+    @Override
+    public String toString() {
+        return "DataSlice{" +
+                "samplingInterval=" + samplingInterval +
+                ", valueDataPoints=" + valueDataPoints +
+                '}';
+    }
 }

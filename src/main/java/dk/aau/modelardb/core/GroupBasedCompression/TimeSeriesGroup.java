@@ -133,21 +133,28 @@ public class TimeSeriesGroup implements Serializable {
     public DataSlice getSlice() {
         //Prepares the data points for the next SI
         List<ValueDataPoint> valueDataPointList = new ArrayList<>();
-        do {
+        while (!nextValueDataPointPriorityQueue.isEmpty()) {
+            // Dequeue
             ValueDataPoint point = this.nextValueDataPointPriorityQueue.poll();
             valueDataPointList.add(point);
 
-            ValueDataPoint nextValueDatapoint = nextValueDatapoint(point.getTid());
-            this.nextValueDataPointPriorityQueue.add(nextValueDatapoint);
+            // Enqueue next point
+            Optional<ValueDataPoint> nextValueDatapoint = nextValueDatapoint(point.getTid());
+            if (nextValueDatapoint.isEmpty()) {
+                this.amountOfTimeSeriesWithNext--;
+            } else {
+                this.nextValueDataPointPriorityQueue.add(nextValueDatapoint.get());
+            }
 
-        } while (!nextValueDataPointPriorityQueue.isEmpty()
-                && sameSIAndSameTimestamp(valueDataPointList.get(0), this.nextValueDataPointPriorityQueue.peek()));
-
+            if (this.nextValueDataPointPriorityQueue.isEmpty() || !sameSIAndSameTimestamp(valueDataPointList.get(0), this.nextValueDataPointPriorityQueue.peek())) {
+                break;
+            }
+        }
 
         return new DataSlice(valueDataPointList, valueDataPointList.get(0).samplingInterval);
     }
 
-    private ValueDataPoint nextValueDatapoint(int tid) {
+    private Optional<ValueDataPoint> nextValueDatapoint(int tid) {
         int timeSeriesIndex = this.tidToTimeSeriesIndex.get(tid);
         TimeSeries currentTimeSeries = this.timeSeries[timeSeriesIndex];
 
@@ -156,21 +163,18 @@ public class TimeSeriesGroup implements Serializable {
             if (next.isConfigurationDataPoint()) {
                 this.configurationDataPoints.add((SIConfigurationDataPoint) next);
             } else {
-                return (ValueDataPoint) next;
+                return Optional.of((ValueDataPoint) next);
             }
         }
-        throw new RuntimeException("Last point of timeseries {" + tid + "} is config datapoint");
+        return Optional.empty();
     }
 
 
     private boolean sameSIAndSameTimestamp(ValueDataPoint first, ValueDataPoint second) {
+
         if (first.timestamp != second.timestamp)
             return false;
         return first.samplingInterval == second.samplingInterval;
-    }
-
-    public int getActiveTimeSeries() {
-        return this.amountOfTimeSeriesWithNext;
     }
 
     public void close() {

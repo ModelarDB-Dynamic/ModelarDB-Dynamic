@@ -67,7 +67,7 @@ public class Partitioner {
             } else {
 
             }*/
-            ts = new TimeSeriesCSV(source, cms, samplingInterval, separator, header,
+            ts = new TimeSeriesCSV(source, cms, separator, header,
                     timestampColumnIndex, dateFormat, timeZone, valueColumnIndex, locale);
 
             tss.add(ts);
