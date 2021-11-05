@@ -60,6 +60,8 @@ public class DataSlice {
 
     @Override
     public String toString() {
+        valueDataPoints.sort(Comparator.comparingInt(DataPoint::getTid));
+
         return "DataSlice{" +
                 "samplingInterval=" + samplingInterval +
                 ", valueDataPoints=" + valueDataPoints +

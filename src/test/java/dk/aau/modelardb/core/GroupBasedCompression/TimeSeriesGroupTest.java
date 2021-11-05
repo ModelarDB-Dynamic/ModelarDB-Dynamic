@@ -55,6 +55,73 @@ class TimeSeriesGroupTest {
     }
 
     @Test
+    void getSliceOneEndsEarly() {
+        TimeSeriesGroup group;
+        TimeSeriesCSV[] tsArray = new TimeSeriesCSV[2];
+        tsArray[0] = createTimeSeriesN(1);
+        tsArray[1] = createTimeSeriesN(4);
+
+        group = new TimeSeriesGroup(1, tsArray);
+        group.initialize();
+
+        printAllSlices(group);
+    }
+
+    @Test
+    void configPointInStart() {
+        TimeSeriesGroup group;
+        TimeSeriesCSV[] tsArray = new TimeSeriesCSV[2];
+        tsArray[0] = createTimeSeriesN(1);
+        tsArray[1] = createTimeSeriesN(5);
+
+        group = new TimeSeriesGroup(1, tsArray);
+        group.initialize();
+
+        printAllSlices(group);
+    }
+
+    @Test
+    void configInMiddle() {
+        TimeSeriesGroup group;
+        TimeSeriesCSV[] tsArray = new TimeSeriesCSV[2];
+        tsArray[0] = createTimeSeriesN(1);
+        tsArray[1] = createTimeSeriesN(6);
+
+        group = new TimeSeriesGroup(1, tsArray);
+        group.initialize();
+
+        printAllSlices(group);
+    }
+
+    @Test
+    void multipleConfigsInARow() {
+        TimeSeriesGroup group;
+        TimeSeriesCSV[] tsArray = new TimeSeriesCSV[2];
+        tsArray[0] = createTimeSeriesN(1);
+        tsArray[1] = createTimeSeriesN(7);
+
+        group = new TimeSeriesGroup(1, tsArray);
+        group.initialize();
+
+        printAllSlices(group);
+    }
+
+    @Test
+    void manyTimeSeries() {
+        TimeSeriesGroup group;
+        TimeSeriesCSV[] tsArray = new TimeSeriesCSV[3];
+        tsArray[0] = createTimeSeriesN(1);
+        tsArray[1] = createTimeSeriesN(2);
+        tsArray[2] = createTimeSeriesN(3);
+
+        group = new TimeSeriesGroup(1, tsArray);
+        group.initialize();
+
+        printAllSlices(group);
+    }
+
+
+    @Test
     void getConfigurationDataPoints() {
     }
 }
