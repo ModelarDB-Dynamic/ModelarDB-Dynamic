@@ -4,6 +4,7 @@ import MockData.CSVTimeSeriesProviderHelper;
 import MockData.ConfigurationProvider;
 import dk.aau.modelardb.core.model.DataSlice;
 import dk.aau.modelardb.core.timeseries.TimeSeriesCSV;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -12,6 +13,11 @@ class TimeSeriesGroupTest {
     @BeforeAll
     static void init() {
         ConfigurationProvider.setDefaultValuesForConfigurationInstance();
+    }
+
+    @AfterAll
+    static void cleanup(){
+        ConfigurationProvider.removeDefaultValues();
     }
 
     private static TimeSeriesCSV createTimeSeriesN(int n) {

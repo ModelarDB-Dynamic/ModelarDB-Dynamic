@@ -6,12 +6,16 @@ import java.util.stream.Collectors;
 
 public class DataSlice {
     private final int samplingInterval;
+    private long timeStamp;
     private final List<ValueDataPoint> valueDataPoints;
 
     public DataSlice(List<ValueDataPoint> valueDataPoints, int samplingInterval) {
         this.valueDataPoints = valueDataPoints;
         this.samplingInterval = samplingInterval;
+        this.timeStamp = valueDataPoints.get(0).timestamp;
+
         checkAllSamplingIntervalsTheSame(this.valueDataPoints, this.samplingInterval);
+        checkAllTimestampsAreTheSame(this.valueDataPoints, this.timeStamp);
     }
 
     private DataSlice(int samplingInterval) {
@@ -40,6 +44,13 @@ public class DataSlice {
         });
     }
 
+    private static void checkAllTimestampsAreTheSame(List<ValueDataPoint> valueDataPoints, long timeStamp) {
+        valueDataPoints.forEach( dataPoint -> {
+            if(dataPoint.timestamp != timeStamp)
+                throw new RuntimeException("Time stamp for all data points must be the same for data slice");
+        });
+    }
+
     public Map<Set<Integer>, DataSlice> getSubDataSlice(Set<Set<Integer>> tidss) {
         Map<Set<Integer>, DataSlice> tidsToSubDataSlice = tidss.stream().collect(Collectors.toMap(Function.identity(), item -> new DataSlice(this.samplingInterval)));
 
@@ -56,6 +67,10 @@ public class DataSlice {
         }
 
      return tidsToSubDataSlice;
+    }
+
+    public void addGapPointForTid(int tid) {
+        this.valueDataPoints.add(new ValueDataPoint(tid, this.timeStamp, Float.NaN, this.samplingInterval));
     }
 
     @Override

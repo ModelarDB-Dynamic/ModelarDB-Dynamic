@@ -45,6 +45,11 @@ class TimeSeriesCSVTest {
         ConfigurationProvider.setDefaultValuesForConfigurationInstance();
     }
 
+    @AfterAll
+    static void cleanup(){
+        ConfigurationProvider.removeDefaultValues();
+    }
+
     @BeforeEach
     void setup() {
         ts = createSimpleTimeSeries();
@@ -52,7 +57,7 @@ class TimeSeriesCSVTest {
     }
 
     @AfterEach
-    void cleanup() {
+    void closeTS() {
         ts.close();
     }
 

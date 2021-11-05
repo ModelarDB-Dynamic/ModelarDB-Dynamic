@@ -14,6 +14,7 @@
  */
 package dk.aau.modelardb.core.GroupBasedCompression;
 
+import dk.aau.modelardb.core.model.DataPoint;
 import dk.aau.modelardb.core.model.compression.ModelType;
 import dk.aau.modelardb.core.model.DataSlice;
 import dk.aau.modelardb.core.model.ValueDataPoint;
@@ -125,6 +126,7 @@ public class SegmentGenerator {
     }
 
     public void consumeSlice(DataSlice slice) {
+        addGapsForMissingPoints(slice);
         if (this.splitSegmentGenerators.isEmpty()) {
             // Consume
             consumeDataPoints(slice.getDataPoints());
@@ -141,6 +143,16 @@ public class SegmentGenerator {
             }
 
             joinGroupsIfTheirTimeSeriesAreCorrelated();
+        }
+    }
+
+    private void addGapsForMissingPoints(DataSlice slice) {
+        Set<Integer> tempTids = new HashSet<>(this.tids);
+        Set<Integer> tidsInSlice = Arrays.stream(slice.getDataPoints()).map(DataPoint::getTid).collect(Collectors.toSet());
+        tempTids.removeAll(tidsInSlice);
+
+        for (Integer tid : tempTids) {
+            slice.addGapPointForTid(tid);
         }
     }
 
@@ -164,11 +176,9 @@ public class SegmentGenerator {
             }
         }
 
-        // TODO: look at what happens here
         ValueDataPoint[] gapFreeDatapoints = Arrays.stream(dataPoints)
                 .filter(Predicate.not(ValueDataPoint::isGapPoint))
                 .toArray(ValueDataPoint[]::new);
-
 
         this.buffer.add(gapFreeDatapoints);
         this.dataPointsYetEmitted++;

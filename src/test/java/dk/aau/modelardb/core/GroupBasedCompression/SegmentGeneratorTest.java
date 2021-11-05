@@ -7,6 +7,7 @@ import dk.aau.modelardb.core.model.compression.ModelType;
 import dk.aau.modelardb.core.model.compression.ModelTypeFactory;
 import dk.aau.modelardb.core.timeseries.TimeSeriesCSV;
 import dk.aau.modelardb.core.utility.SegmentFunction;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -22,9 +23,14 @@ class SegmentGeneratorTest {
         ConfigurationProvider.setDefaultValuesForConfigurationInstance();
     }
 
+    @AfterAll
+    static void cleanup(){
+        ConfigurationProvider.removeDefaultValues();
+    }
+
     private static TimeSeriesCSV createTimeSeriesN(int n) {
         int tid = n + 100;
-        String relativePath = "src/test/java/dk/aau/modelardb/core/GroupBasedCompression/";
+        String relativePath = "src/test/java/dk/aau/modelardb/core/GroupBasedCompression/SegmentGeneratorTestData/";
         String path = relativePath + "time_series_" + n + ".csv";
         return CSVTimeSeriesProviderHelper.createTimeSeries(path);
     }
@@ -43,10 +49,11 @@ class SegmentGeneratorTest {
                 modelTypeInitializer, fallbackModelType, group.getTids(), maximumLatency, dynamicSplitFraction, temporarySegmentStream, finalizedSegmentStream);
     }
 
+    // We dont allow usage of GORILLA to simplify tests
     private Supplier<ModelType[]> createModelTypeInitializer(float errorBound, int lengthBound) {
         String[] modelTypeNames = {"dk.aau.modelardb.core.model.compression.PMC_MeanModelType",
-                "dk.aau.modelardb.core.model.compression.SwingFilterModelType", "dk.aau.modelardb.core.model.compression.FacebookGorillaModelType"};
-        int[] mtids = {2, 3, 4};
+                "dk.aau.modelardb.core.model.compression.SwingFilterModelType"}; // "dk.aau.modelardb.core.model.compression.FacebookGorillaModelType"
+        int[] mtids = {2, 3};
 
         return () -> ModelTypeFactory.getModelTypes(modelTypeNames, mtids, errorBound, lengthBound);
     }
@@ -77,28 +84,74 @@ class SegmentGeneratorTest {
     }
 
     @Test
-    void consumeSlice() {
+    void consumeSliceOneTimeSeriesConstantModel() {
+        int timeSeriesNo = 1;
+
         TimeSeriesGroup group;
         TimeSeriesCSV[] tsArray = new TimeSeriesCSV[1];
-        tsArray[0] = createTimeSeriesN(1);
+        tsArray[0] = createTimeSeriesN(timeSeriesNo);
         group = new TimeSeriesGroup(1, tsArray);
         group.initialize();
-
 
         MockSegmentFunction temporarySegmentStream = new MockSegmentFunction();
         MockSegmentFunction finalizedSegmentStream = new MockSegmentFunction();
         Set<Integer> permanentGaps = new HashSet<>();
-        permanentGaps.add(10);
 
         SegmentGenerator segmentGenerator = createSegmentGenerator(group, temporarySegmentStream, finalizedSegmentStream, permanentGaps);
+        consumeAllSlicesFromGroup(group, segmentGenerator);
 
+        printAllSegments(finalizedSegmentStream.getSegments());
+    }
+
+    @Test
+    void consumeSliceOneTimeSeriesLinearModel() {
+        int timeSeriesNo = 2;
+
+        TimeSeriesGroup group;
+        TimeSeriesCSV[] tsArray = new TimeSeriesCSV[1];
+        tsArray[0] = createTimeSeriesN(timeSeriesNo);
+        group = new TimeSeriesGroup(1, tsArray);
+        group.initialize();
+
+        MockSegmentFunction temporarySegmentStream = new MockSegmentFunction();
+        MockSegmentFunction finalizedSegmentStream = new MockSegmentFunction();
+        Set<Integer> permanentGaps = new HashSet<>();
+
+        SegmentGenerator segmentGenerator = createSegmentGenerator(group, temporarySegmentStream, finalizedSegmentStream, permanentGaps);
+        consumeAllSlicesFromGroup(group, segmentGenerator);
+
+        printAllSegments(finalizedSegmentStream.getSegments());
+    }
+
+
+    // TODO: seems like the two time series are not split out correctly.
+    @Test
+    void consumeSliceTwoUncorrelatedGetsJoined() {
+        int timeSeriesNoA = 1;
+        int timeSeriesNoB = 3;
+
+        TimeSeriesGroup group;
+        TimeSeriesCSV[] tsArray = new TimeSeriesCSV[2];
+        tsArray[0] = createTimeSeriesN(timeSeriesNoA);
+        tsArray[1] = createTimeSeriesN(timeSeriesNoB);
+        group = new TimeSeriesGroup(1, tsArray);
+        group.initialize();
+
+        MockSegmentFunction temporarySegmentStream = new MockSegmentFunction();
+        MockSegmentFunction finalizedSegmentStream = new MockSegmentFunction();
+        Set<Integer> permanentGaps = new HashSet<>();
+
+        SegmentGenerator segmentGenerator = createSegmentGenerator(group, temporarySegmentStream, finalizedSegmentStream, permanentGaps);
+        consumeAllSlicesFromGroup(group, segmentGenerator);
+
+        printAllSegments(finalizedSegmentStream.getSegments());
+    }
+
+
+    private void consumeAllSlicesFromGroup(TimeSeriesGroup group, SegmentGenerator segmentGenerator) {
         while (group.hasNext()) {
             segmentGenerator.consumeSlice(group.getSlice());
         }
         segmentGenerator.close();
-
-
-        printAllSegments(finalizedSegmentStream.getSegments());
-
     }
 }

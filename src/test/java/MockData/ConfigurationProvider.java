@@ -9,4 +9,8 @@ public class ConfigurationProvider {
     public static void setDefaultValuesForConfigurationInstance() {
         Configuration.INSTANCE.add("modelardb.sampling_interval", samplingInterval);
     }
+
+    public static void removeDefaultValues() {
+        Configuration.INSTANCE.remove("modelardb.sampling_interval");
+    }
 }

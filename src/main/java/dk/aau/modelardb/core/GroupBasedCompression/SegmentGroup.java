@@ -58,7 +58,7 @@ public class SegmentGroup {
         int[] gaps = Static.bytesToInts(this.gaps);
         StringBuilder sb = new StringBuilder();
         sb.append("Segment: [gid: ").append(this.gid).append(" | start: ").append(this.startTime).append(" | end: ")
-                .append(this.endTime).append(" | mtid: ").append(this.mtid);
+                .append(this.endTime).append("| si: ").append(this.samplingInterval).append(" | mtid: ").append(this.mtid);
         if(gaps.length > 0) {
             sb.append(" | gaps: ");
             sb.append(Arrays.toString(gaps));
