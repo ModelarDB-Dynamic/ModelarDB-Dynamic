@@ -42,7 +42,7 @@ public class ValueDataPoint extends DataPoint implements Comparable<ValueDataPoi
      * Public Methods
      **/
     public String toString() {
-        return "ValueDataPoint: [" + this.getTid() + " | " + new java.sql.Timestamp(this.timestamp) + " | " + this.value + " | " + this.samplingInterval + "]";
+        return "ValueDataPoint: [tid: " + this.getTid() + " | time: " + this.timestamp + " | val: " + this.value + " | si: " + this.samplingInterval + "]";
     }
 
     public boolean isGapPoint(){

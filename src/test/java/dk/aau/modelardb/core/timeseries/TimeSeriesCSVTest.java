@@ -1,6 +1,6 @@
 package dk.aau.modelardb.core.timeseries;
 
-import MockData.CSVTimeSeriesProvider;
+import MockData.CSVTimeSeriesProviderHelper;
 import MockData.ConfigurationProvider;
 import dk.aau.modelardb.core.Configuration;
 import dk.aau.modelardb.core.model.DataPoint;
@@ -13,6 +13,32 @@ import java.util.List;
 
 class TimeSeriesCSVTest {
     TimeSeriesCSV ts;
+    private static final String relativePath = "src/test/java/dk/aau/modelardb/core/timeseries/";
+
+    public static TimeSeriesCSV createSimpleTimeSeries() {
+        String fileName = "simple_time_series.csv";
+        return  CSVTimeSeriesProviderHelper.createTimeSeries(relativePath + fileName);
+    }
+
+    public static TimeSeriesCSV createTimeSeriesWithGaps() {
+        String fileName = "time_series_with_gaps.csv";
+        return  CSVTimeSeriesProviderHelper.createTimeSeries(relativePath + fileName);
+    }
+
+    public static TimeSeriesCSV createTimeSeriesStartsWithConfigPoints() {
+        String fileName = "time_series_starts_with_config.csv";
+        return CSVTimeSeriesProviderHelper.createTimeSeries(relativePath + fileName);
+    }
+
+    public static TimeSeriesCSV createTimeSeriesWithConfigPoints() {
+        String fileName = "time_series_with_config.csv";
+        return CSVTimeSeriesProviderHelper.createTimeSeries(relativePath + fileName);
+    }
+
+    public static TimeSeriesCSV createEmptyTimeSeries() {
+        String path = "empty_time_series.csv";
+        return CSVTimeSeriesProviderHelper.createTimeSeries(relativePath + path);
+    }
 
     @BeforeAll
     static void init() {
@@ -21,7 +47,7 @@ class TimeSeriesCSVTest {
 
     @BeforeEach
     void setup() {
-        ts = CSVTimeSeriesProvider.createSimpleTimeSeries();
+        ts = createSimpleTimeSeries();
         ts.open();
     }
 
@@ -43,7 +69,7 @@ class TimeSeriesCSVTest {
 
     @Test
     void hasNextOnEmptyTs() {
-        TimeSeriesCSV emptyTimeSeries = CSVTimeSeriesProvider.createEmptyTimeSeries();
+        TimeSeriesCSV emptyTimeSeries = createEmptyTimeSeries();
         emptyTimeSeries.open();
 
         Assertions.assertFalse(emptyTimeSeries.hasNext());
@@ -57,7 +83,7 @@ class TimeSeriesCSVTest {
         SIConfigurationDataPoint configPoint = (SIConfigurationDataPoint) point;
 
         Assertions.assertEquals("SI", configPoint.getConfigurationKey());
-        Assertions.assertEquals(1, point.getTid());
+        Assertions.assertEquals(ts.tid, point.getTid());
         Assertions.assertEquals(Configuration.INSTANCE.getSamplingInterval(), configPoint.getNewSamplingInterval());
         Assertions.assertFalse(configPoint.hasPreviousSamplingInterval());
     }
@@ -116,7 +142,7 @@ class TimeSeriesCSVTest {
 
     @Test
     void timeSeriesWithGaps() {
-        ts = CSVTimeSeriesProvider.createTimeSeriesWithGaps();
+        ts = createTimeSeriesWithGaps();
         ts.open();
         List<DataPoint> expectedDataPoints = new ArrayList<>();
         int tid = ts.tid;
@@ -138,7 +164,7 @@ class TimeSeriesCSVTest {
 
     @Test
     void timeSeriesStartsWithConfig() {
-        ts = CSVTimeSeriesProvider.createTimeSeriesStartsWithConfigPoints();
+        ts = createTimeSeriesStartsWithConfigPoints();
         ts.open();
 
         List<DataPoint> expectedDataPoints = new ArrayList<>();
@@ -158,7 +184,7 @@ class TimeSeriesCSVTest {
 
     @Test
     void timeSeriesWithConfigPoint() {
-        ts = CSVTimeSeriesProvider.createTimeSeriesWithConfigPoints();
+        ts = createTimeSeriesWithConfigPoints();
         ts.open();
 
         List<DataPoint> expectedDataPoints = new ArrayList<>();

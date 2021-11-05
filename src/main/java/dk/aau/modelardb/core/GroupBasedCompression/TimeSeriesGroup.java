@@ -73,7 +73,7 @@ public class TimeSeriesGroup implements Serializable {
             Comparator<ValueDataPoint> samplingIntervalComparator = Comparator.comparingInt(dp -> dp.samplingInterval);
 
             int comparedTimestamp = timestampComparator.compare(dp1, dp2);
-            return comparedTimestamp == 0 ? comparedTimestamp : samplingIntervalComparator.compare(dp1, dp2);
+            return comparedTimestamp != 0 ? comparedTimestamp : samplingIntervalComparator.compare(dp1, dp2);
         };
     }
 

@@ -1,68 +1,57 @@
 package dk.aau.modelardb.core.GroupBasedCompression;
 
-import MockData.CSVTimeSeriesProvider;
+import MockData.CSVTimeSeriesProviderHelper;
 import MockData.ConfigurationProvider;
 import dk.aau.modelardb.core.model.DataSlice;
 import dk.aau.modelardb.core.timeseries.TimeSeriesCSV;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 class TimeSeriesGroupTest {
-    TimeSeriesGroup group;
 
     @BeforeAll
     static void init() {
         ConfigurationProvider.setDefaultValuesForConfigurationInstance();
     }
 
-    @BeforeEach
-    void setup() {
-        TimeSeriesCSV[] tsArray = new TimeSeriesCSV[2];
-        tsArray[0] = CSVTimeSeriesProvider.createTimeSeries1();
-        tsArray[1] = CSVTimeSeriesProvider.createTimeSeries2();
-
-        group = new TimeSeriesGroup(1, tsArray);
-        group.initialize();
+    private static TimeSeriesCSV createTimeSeriesN(int n) {
+        int tid = n + 100;
+        String relativePath = "src/test/java/dk/aau/modelardb/core/GroupBasedCompression/";
+        String path = relativePath + "time_series_" + n + ".csv";
+        return CSVTimeSeriesProviderHelper.createTimeSeries(path);
     }
 
-
-
-
-    @Test
-    void getTimeSeries() {
-    }
-
-    @Test
-    void getTids() {
-    }
-
-    @Test
-    void getSources() {
-    }
-
-    @Test
-    void size() {
-    }
-
-    @Test
-    void hasNext() {
+    private void printAllSlices(TimeSeriesGroup group) {
+        while (group.hasNext()) {
+            DataSlice slice = group.getSlice();
+            System.out.println(slice);
+        }
     }
 
     @Test
     void getSlice() {
+        TimeSeriesGroup group;
+        TimeSeriesCSV[] tsArray = new TimeSeriesCSV[2];
+        tsArray[0] = createTimeSeriesN(1);
+        tsArray[1] = createTimeSeriesN(2);
 
-        while(group.hasNext()) {
-            DataSlice slice = group.getSlice();
-            System.out.println(slice);
-        }
+        group = new TimeSeriesGroup(1, tsArray);
+        group.initialize();
 
+        printAllSlices(group);
     }
 
     @Test
-    void getActiveTimeSeries() {
+    void getSliceOneStartsLater() {
+        TimeSeriesGroup group;
+        TimeSeriesCSV[] tsArray = new TimeSeriesCSV[2];
+        tsArray[0] = createTimeSeriesN(1);
+        tsArray[1] = createTimeSeriesN(3);
+
+        group = new TimeSeriesGroup(1, tsArray);
+        group.initialize();
+
+        printAllSlices(group);
     }
 
     @Test
