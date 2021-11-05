@@ -16,7 +16,7 @@ class TimeSeriesGroupTest {
 
     private static TimeSeriesCSV createTimeSeriesN(int n) {
         int tid = n + 100;
-        String relativePath = "src/test/java/dk/aau/modelardb/core/GroupBasedCompression/";
+        String relativePath = "src/test/java/dk/aau/modelardb/core/GroupBasedCompression/TimeSeriesGroupTestData/";
         String path = relativePath + "time_series_" + n + ".csv";
         return CSVTimeSeriesProviderHelper.createTimeSeries(path);
     }
