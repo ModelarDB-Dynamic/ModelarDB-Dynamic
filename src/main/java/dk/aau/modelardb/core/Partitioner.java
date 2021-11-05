@@ -246,10 +246,12 @@ public class Partitioner {
         }
 
         //The groups are sorted by the rate of data points produced so the most resource intensive groups are placed first
-        Arrays.sort(timeSeriesGroups, Comparator.comparingLong(tsg -> tsg.samplingInterval / tsg.size()));
+        // TODO consider if we can find a better way to load balance than using .size
+        Arrays.sort(timeSeriesGroups, Comparator.comparingLong(TimeSeriesGroup::size));
         for (TimeSeriesGroup tsg : timeSeriesGroups) {
             Pair<Long, ArrayList<TimeSeriesGroup>> min = sets.poll();
-            min._1 = min._1 + (60000 / (tsg.samplingInterval / tsg.size())); //Data Points per Minute
+            min._1 += tsg.size();
+            //min._1 = min._1 + (60000 / (tsg.samplingInterval / tsg.size())); //Data Points per Minute
             min._2.add(tsg);
             sets.add(min);
         }

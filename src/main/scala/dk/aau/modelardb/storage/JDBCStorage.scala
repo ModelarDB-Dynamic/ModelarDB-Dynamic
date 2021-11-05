@@ -167,7 +167,7 @@ class JDBCStorage(connectionStringAndTypes: String) extends Storage with H2Stora
         this.insertStmt.setLong(4, segmentGroup.endTime)
         this.insertStmt.setInt(5, segmentGroup.mtid)
         this.insertStmt.setBytes(6, segmentGroup.model)
-        this.insertStmt.setBytes(7, segmentGroup.offsets)
+        this.insertStmt.setBytes(7, segmentGroup.gaps)
         this.insertStmt.addBatch()
       }
       this.insertStmt.executeBatch()
@@ -199,7 +199,7 @@ class JDBCStorage(connectionStringAndTypes: String) extends Storage with H2Stora
   override def getSegmentGroups(sparkSession: SparkSession, filters: Array[Filter]): DataFrame = {
     Static.warn("ModelarDB: projection and predicate push-down is not yet implemented")
     val rows = getSegmentGroups("").map(sg => {
-      Row(sg.gid, new Timestamp(sg.startTime), new Timestamp(sg.endTime), sg.mtid, sg.model, sg.offsets)
+      Row(sg.gid, new Timestamp(sg.startTime), new Timestamp(sg.endTime), sg.mtid, sg.model, sg.gaps)
     })
     sparkSession.createDataFrame(sparkSession.sparkContext.parallelize(rows.toSeq), Spark.getStorageSegmentGroupsSchema)
   }

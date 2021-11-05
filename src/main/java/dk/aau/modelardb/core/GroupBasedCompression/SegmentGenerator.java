@@ -144,8 +144,7 @@ public class SegmentGenerator {
         }
     }
 
-    // TODO: implement this
-    public void consumeDataPoints(ValueDataPoint[] dataPoints) {
+    private void consumeDataPoints(ValueDataPoint[] dataPoints) {
         if (dataPoints.length == 0) {
             return;
         }
@@ -165,9 +164,11 @@ public class SegmentGenerator {
             }
         }
 
-        ValueDataPoint[] gapFreeDatapoints = (ValueDataPoint[]) Arrays.stream(dataPoints)
+        // TODO: look at what happens here
+        ValueDataPoint[] gapFreeDatapoints = Arrays.stream(dataPoints)
                 .filter(Predicate.not(ValueDataPoint::isGapPoint))
-                .toArray();
+                .toArray(ValueDataPoint[]::new);
+
 
         this.buffer.add(gapFreeDatapoints);
         this.dataPointsYetEmitted++;

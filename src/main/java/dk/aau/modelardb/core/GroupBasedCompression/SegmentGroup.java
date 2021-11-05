@@ -21,6 +21,7 @@ import dk.aau.modelardb.storage.Storage;
 import scala.collection.mutable.HashMap;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 public class SegmentGroup {
 
@@ -34,19 +35,19 @@ public class SegmentGroup {
     public final int samplingInterval;
     public final int mtid;
     public final byte[] model;
-    public final byte[] offsets;
+    public final byte[] gaps;
 
     /**
      * Constructors
      **/
-    public SegmentGroup(int gid, long startTime, int samplingInterval, long endTime, int mtid, byte[] model, byte[] offsets) {
+    public SegmentGroup(int gid, long startTime, int samplingInterval, long endTime, int mtid, byte[] model, byte[] gaps) {
         this.gid = gid;
         this.startTime = startTime;
         this.endTime = endTime;
         this.samplingInterval = samplingInterval;
         this.mtid = mtid;
         this.model = model;
-        this.offsets = offsets;
+        this.gaps = gaps;
     }
 
     /**
@@ -54,12 +55,13 @@ public class SegmentGroup {
      **/
     public String toString() {
         //The segments might not represent all time series in the time series group
-        int[] os = Static.bytesToInts(this.offsets);
+        int[] gaps = Static.bytesToInts(this.gaps);
         StringBuilder sb = new StringBuilder();
-        sb.append("Segment: [").append(this.gid).append(" | ").append(this.startTime).append(" | ")
-                .append(this.endTime).append(" | ").append(this.mtid);
-        for (int o : os) {
-            sb.append(" | ").append(o);
+        sb.append("Segment: [gid: ").append(this.gid).append(" | start: ").append(this.startTime).append(" | end: ")
+                .append(this.endTime).append(" | mtid: ").append(this.mtid);
+        if(gaps.length > 0) {
+            sb.append(" | gaps: ");
+            sb.append(Arrays.toString(gaps));
         }
         sb.append("]");
         return sb.toString();
@@ -69,7 +71,7 @@ public class SegmentGroup {
     public SegmentGroup[] explode(int[][] groupMetadataCache, HashMap<Integer, int[]> groupDerivedCache) {
         int[] gmc = groupMetadataCache[this.gid];
         int[] derivedTimeSeries = groupDerivedCache.getOrElse(this.gid, () -> SegmentGroup.defaultDerivedTimeSeries);
-        int[] timeSeriesInAGap = Static.bytesToInts(this.offsets);
+        int[] timeSeriesInAGap = Static.bytesToInts(this.gaps);
         int temporalOffset = 0;
         if (timeSeriesInAGap.length > 0 && timeSeriesInAGap[timeSeriesInAGap.length - 1] < 0) {
             //HACK: a temporal offset from START might be store at the end as a negative integer as tids are always positive
@@ -118,7 +120,7 @@ public class SegmentGroup {
         for (int i = 0, j = 0; i < derivedTimeSeries.length && j < segments.length; ) {
             if (derivedTimeSeries[i] == segments[j].gid) {
                 segments[nextSegment] = new SegmentGroup(derivedTimeSeries[i + 1], this.startTime,this.samplingInterval, this.endTime,
-                        this.mtid, this.model, segments[j].offsets);
+                        this.mtid, this.model, segments[j].gaps);
                 nextSegment++;
                 i += 2;
             } else {
@@ -136,7 +138,7 @@ public class SegmentGroup {
         ModelType m = storage.modelTypeCache()[mtid];
         int[] gmc = groupMetadataCache[this.gid];
         for (int i = 0; i < sgs.length; i++) {
-            segments[i] = m.get(sgs[i].gid, this.startTime, this.endTime, gmc[0], this.model, sgs[i].offsets);
+            segments[i] = m.get(sgs[i].gid, this.startTime, this.endTime, gmc[0], this.model, sgs[i].gaps);
         }
         return segments;
     }

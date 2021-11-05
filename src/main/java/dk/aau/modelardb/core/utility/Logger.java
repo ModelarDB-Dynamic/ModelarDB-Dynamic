@@ -115,7 +115,7 @@ public class Logger implements Serializable {
         StringBuilder sb = new StringBuilder(); //Used by multiple threads so a single print must be used
         //Prints information about the time series
         sb.append("Gid: ").append(tsg.gid).append('\n')
-                .append("Tids: ").append(tsg.getTids()).append('\n')
+                .append("Tids: ").append(tsg.getTidsAsString()).append('\n')
                 .append("Sources: ").append(tsg.getSources()).append('\n')
                 .append("Ingested: ").append(Static.getIPs()).append('\n');
 

@@ -66,7 +66,7 @@ object H2Projector {
           currentValues(2) = ValueTimestamp.fromMillis(segment.endTime, 0)
           currentValues(3) = ValueInt.get(segment.mtid)
           currentValues(4) = ValueBytes.get(segment.model)
-          currentValues(5) = ValueBytes.get(segment.offsets)
+          currentValues(5) = ValueBytes.get(segment.gaps)
           currentValues
         })
       //Static projections cannot be used for rows with dimensions

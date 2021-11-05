@@ -31,7 +31,6 @@ public class TimeSeriesGroup implements Serializable {
      **/
     public final int gid;
     public final boolean isAsync;
-    public final int samplingInterval;
     private final TimeSeries[] timeSeries;
     private Map<Integer, Integer> tidToTimeSeriesIndex;
     private int amountOfTimeSeriesWithNext;
@@ -48,7 +47,6 @@ public class TimeSeriesGroup implements Serializable {
 
         //Each time series is assumed to have the same boundness
         this.isAsync = timeSeries[0] instanceof AsyncTimeSeries;
-        this.samplingInterval = timeSeries[0].getCurrentSamplingInterval();
         for (TimeSeries ts : timeSeries) {
             if (this.isAsync != ts instanceof AsyncTimeSeries) {
                 throw new UnsupportedOperationException("CORE: All time series in a group must be bounded or unbounded");
@@ -106,12 +104,20 @@ public class TimeSeriesGroup implements Serializable {
         return this.timeSeries;
     }
 
-    public String getTids() {
+    public String getTidsAsString() {
         StringJoiner sj = new StringJoiner(",", "{", "}");
         for (TimeSeries ts : this.timeSeries) {
             sj.add(Integer.toString(ts.tid));
         }
         return sj.toString();
+    }
+
+    public List<Integer> getTids() {
+        List<Integer> tids = new ArrayList<>();
+        for (TimeSeries ts : this.timeSeries) {
+            tids.add(ts.tid);
+        }
+        return tids;
     }
 
     public String getSources() {

@@ -154,7 +154,7 @@ class H2(configuration: Configuration, h2storage: H2Storage) {
   private def updateTemporarySegment(cache: Array[SegmentGroup], inputSegmentGroup: SegmentGroup,
                                      isTemporary: Boolean): Array[SegmentGroup] = {
     //The gaps are extracted from the new finalized or temporary segment
-    val inputGaps = Static.bytesToInts(inputSegmentGroup.offsets)
+    val inputGaps = Static.bytesToInts(inputSegmentGroup.gaps)
 
     //Extracts the metadata for the group of time series being updated
     val groupMetadataCache = h2storage.groupMetadataCache
@@ -166,7 +166,7 @@ class H2(configuration: Configuration, h2storage: H2Storage) {
     for (i <- cache.indices) {
       //The gaps are extracted for each existing temporary row
       val cachedSegmentGroup = cache(i)
-      val cachedGap = Static.bytesToInts(cachedSegmentGroup.offsets)
+      val cachedGap = Static.bytesToInts(cachedSegmentGroup.gaps)
       val cachedIngested = group.toSet.diff(cachedGap.toSet)
 
       //Each existing temporary segment that contains values for the same time series as the new segment is updated
