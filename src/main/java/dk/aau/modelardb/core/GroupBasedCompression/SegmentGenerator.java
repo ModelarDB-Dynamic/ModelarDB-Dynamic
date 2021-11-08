@@ -126,8 +126,8 @@ public class SegmentGenerator {
     }
 
     public void consumeSlice(DataSlice slice) {
-        addGapsForMissingPoints(slice);
-        if (this.splitSegmentGenerators.isEmpty()) {
+//        addGapsForMissingPoints(slice);
+        if (this.splitSegmentGenerators.isEmpty() || this.splitSegmentGenerators.contains(this)) {
             // Consume
             consumeDataPoints(slice.getDataPoints());
         } else { // Delegate slices to children
@@ -181,10 +181,15 @@ public class SegmentGenerator {
                 .filter(Predicate.not(ValueDataPoint::isGapPoint))
                 .toArray(ValueDataPoint[]::new);
 
+        boolean couldAppendSlice = tryToAppendDataPointsToModels(gapFreeDatapoints);
+
         this.slicesNotYetEmitted++;
         this.buffer.add(gapFreeDatapoints);
 
-        tryToAppendDataPointsToModels(gapFreeDatapoints);
+        if (!couldAppendSlice) {
+            emitFinalSegment();
+            resetModelTypeIndex();
+        }
 
         //Emits a temporary segment if latency data points have been added to the buffer without a finalized segment being
         // emitted, if the current model does not represent all of the data points in the buffer the fallback model is used
@@ -194,7 +199,7 @@ public class SegmentGenerator {
         }
     }
 
-    private void tryToAppendDataPointsToModels(ValueDataPoint[] gapFreeDatapoints) {
+    private boolean tryToAppendDataPointsToModels(ValueDataPoint[] gapFreeDatapoints) {
         //The current model type is given the data points and it verifies that the model can represent them and all prior,
         // it is assumed that append will fail if it failed in the past, so append(t,V) must fail if append(t-1,V) failed
         while(!this.currentModelType.append(Arrays.copyOf(gapFreeDatapoints, gapFreeDatapoints.length))) {
@@ -202,14 +207,13 @@ public class SegmentGenerator {
             if (this.modelTypeIndex == this.modelTypes.length) {
                 //If none of the model types can represent all of the buffered data points, the model type that provides
                 // the best compression is selected and a segment that store the values a model of the type is construct
-                emitFinalSegment();
-                resetModelTypeIndex();
-                break;
+                return false;
             } else {
                 this.currentModelType = this.modelTypes[this.modelTypeIndex];
-                this.currentModelType.initialize(this.buffer);
+                this.currentModelType.initialize(new ArrayList<>(this.buffer));
             }
         }
+        return true;
     }
 
 
@@ -523,11 +527,9 @@ public class SegmentGenerator {
         } else {
             Set<Integer> allSgPermanentGaps = sgs.stream().flatMap(sg -> sg.permanentGapTids.stream()).collect(Collectors.toSet());
 
-            for (Integer tid : totalJoinIndexList) {
-                allSgPermanentGaps.remove(tid);
-            }
+            totalJoinIndexList.forEach(allSgPermanentGaps::remove);
 
-            nsg = new SegmentGenerator(this.gid, this.samplingInterval, allSgPermanentGaps, this.modelTypeInitializer, this.fallbackModelType, this.tids,
+            nsg = new SegmentGenerator(this.gid, this.samplingInterval, allSgPermanentGaps, this.modelTypeInitializer, this.fallbackModelType, totalJoinIndexList,
                     this.maximumLatency, this.dynamicSplitFraction, this.temporarySegmentStream, this.finalizedSegmentStream);
             nsg.logger = this.logger;
             nsg.splitSegmentGenerators = this.splitSegmentGenerators;
@@ -536,15 +538,13 @@ public class SegmentGenerator {
         }
         this.splitSegmentGenerators.removeAll(sgs);
 
-        //The remaining data points stored by each SegmentGenerator are flushed
+        nsg.gaps = new HashSet<>();
         for (SegmentGenerator sg : sgs) {
+            //The remaining data points stored by each SegmentGenerator are flushed
             sg.flushBuffer();
+            //add sub gap lists to gaps
+            nsg.gaps.addAll(sg.gaps);
         }
-
-        //Finally the set of time series currently in a gap and controlled by nsg is computed
-        Set<Integer> gaps = new HashSet<>(this.tids);
-        Arrays.stream(nsg.buffer.get(0)).forEach(dp -> gaps.remove(dp.getTid()));
-        nsg.gaps = gaps;
 
         //Initializes the first model with the content in the new combined buffer
         nsg.resetModelTypeIndex();

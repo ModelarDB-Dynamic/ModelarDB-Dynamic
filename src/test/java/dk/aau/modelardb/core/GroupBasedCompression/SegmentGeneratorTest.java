@@ -38,12 +38,12 @@ class SegmentGeneratorTest {
     private SegmentGenerator createSegmentGenerator(TimeSeriesGroup group, SegmentFunction temporarySegmentStream, SegmentFunction finalizedSegmentStream, Set<Integer> permanentGapTids) {
 
         float errorBound = 0;
-        int lengthBound = 50;
+        int lengthBound = 4;
         Supplier<ModelType[]> modelTypeInitializer = createModelTypeInitializer(errorBound, lengthBound);
         ModelType fallbackModelType = ModelTypeFactory.getFallbackModelType(errorBound, lengthBound);
 
         int maximumLatency = 0; // Taken from IngestionTest.scala
-        float dynamicSplitFraction = 1.0F / 10.0F; // Taken from IngestionTest.scala
+        float dynamicSplitFraction = 1.0F; // Taken from IngestionTest.scala
 
         return new SegmentGenerator(group.gid, Configuration.INSTANCE.getSamplingInterval(), permanentGapTids,
                 modelTypeInitializer, fallbackModelType, group.getTids(), maximumLatency, dynamicSplitFraction, temporarySegmentStream, finalizedSegmentStream);
@@ -52,8 +52,8 @@ class SegmentGeneratorTest {
     // We dont allow usage of GORILLA to simplify tests
     private Supplier<ModelType[]> createModelTypeInitializer(float errorBound, int lengthBound) {
         String[] modelTypeNames = {"dk.aau.modelardb.core.model.compression.PMC_MeanModelType",
-                "dk.aau.modelardb.core.model.compression.SwingFilterModelType"}; // "dk.aau.modelardb.core.model.compression.FacebookGorillaModelType"
-        int[] mtids = {2, 3};
+                "dk.aau.modelardb.core.model.compression.SwingFilterModelType", "dk.aau.modelardb.core.model.compression.FacebookGorillaModelType"};
+        int[] mtids = {2, 3, 4};
 
         return () -> ModelTypeFactory.getModelTypes(modelTypeNames, mtids, errorBound, lengthBound);
     }
@@ -124,9 +124,8 @@ class SegmentGeneratorTest {
     }
 
 
-    // TODO: seems like the two time series are not split out correctly.
     @Test
-    void consumeSliceTwoUncorrelatedGetsJoined() {
+    void consumeSliceSplitTwoTimeseries() {
         int timeSeriesNoA = 1;
         int timeSeriesNoB = 3;
 
@@ -147,6 +146,27 @@ class SegmentGeneratorTest {
         printAllSegments(finalizedSegmentStream.getSegments());
     }
 
+    @Test
+    void consumeSliceJoinTwoTimeseries() {
+        int timeSeriesNoA = 5;
+        int timeSeriesNoB = 4;
+
+        TimeSeriesGroup group;
+        TimeSeriesCSV[] tsArray = new TimeSeriesCSV[2];
+        tsArray[0] = createTimeSeriesN(timeSeriesNoA);
+        tsArray[1] = createTimeSeriesN(timeSeriesNoB);
+        group = new TimeSeriesGroup(1, tsArray);
+        group.initialize();
+
+        MockSegmentFunction temporarySegmentStream = new MockSegmentFunction();
+        MockSegmentFunction finalizedSegmentStream = new MockSegmentFunction();
+        Set<Integer> permanentGaps = new HashSet<>();
+
+        SegmentGenerator segmentGenerator = createSegmentGenerator(group, temporarySegmentStream, finalizedSegmentStream, permanentGaps);
+        consumeAllSlicesFromGroup(group, segmentGenerator);
+
+        printAllSegments(finalizedSegmentStream.getSegments());
+    }
 
     private void consumeAllSlicesFromGroup(TimeSeriesGroup group, SegmentGenerator segmentGenerator) {
         while (group.hasNext()) {
