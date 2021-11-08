@@ -156,12 +156,10 @@ public class TimeSeriesGroup implements Serializable {
             }
         }
 
-        DataSlice slice = new DataSlice(valueDataPointList, valueDataPointList.get(0).samplingInterval);
-        addGapsForMissingPoints(slice);
-
-        return slice;
+        return new DataSlice(valueDataPointList, valueDataPointList.get(0).samplingInterval);
     }
 
+    // TODO(EKN): MOVE THIS TO THE CORRECT PLACE
     private void addGapsForMissingPoints(DataSlice slice) {
         Set<Integer> tempTids = new HashSet<>(this.getTids());
         Set<Integer> tidsInSlice = Arrays.stream(slice.getDataPoints()).map(DataPoint::getTid).collect(Collectors.toSet());

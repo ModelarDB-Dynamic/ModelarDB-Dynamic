@@ -29,10 +29,9 @@ class SegmentGeneratorTest {
     }
 
     private static TimeSeriesCSV createTimeSeriesN(int n) {
-        int tid = n + 100;
         String relativePath = "src/test/java/dk/aau/modelardb/core/GroupBasedCompression/SegmentGeneratorTestData/";
         String path = relativePath + "time_series_" + n + ".csv";
-        return CSVTimeSeriesProviderHelper.createTimeSeries(path);
+        return CSVTimeSeriesProviderHelper.createTimeSeries(path, n);
     }
 
     private SegmentGenerator createSegmentGenerator(TimeSeriesGroup group, SegmentFunction temporarySegmentStream, SegmentFunction finalizedSegmentStream, Set<Integer> permanentGapTids) {
@@ -148,8 +147,8 @@ class SegmentGeneratorTest {
 
     @Test
     void consumeSliceJoinTwoTimeseries() {
-        int timeSeriesNoA = 5;
-        int timeSeriesNoB = 4;
+        int timeSeriesNoA = 4;
+        int timeSeriesNoB = 5;
 
         TimeSeriesGroup group;
         TimeSeriesCSV[] tsArray = new TimeSeriesCSV[2];

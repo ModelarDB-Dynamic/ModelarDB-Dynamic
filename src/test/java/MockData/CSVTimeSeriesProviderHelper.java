@@ -3,12 +3,11 @@ package MockData;
 import dk.aau.modelardb.core.timeseries.TimeSeriesCSV;
 
 public class CSVTimeSeriesProviderHelper {
-    static int tidCounter = 0;
 
     // Private constructor to ensure people cannot create instances of this class
     private CSVTimeSeriesProviderHelper() {}
 
-    public static TimeSeriesCSV createTimeSeries(String path) {
+    public static TimeSeriesCSV createTimeSeries(String path, int tid) {
         String csvSeparator = ",";
         boolean hasHeader = false;
         int timeStampColumnIndex = 0;
@@ -16,9 +15,8 @@ public class CSVTimeSeriesProviderHelper {
         String timeZone = "UTC";
         int valueColumnIndex = 1;
         String locale = "en";
-        tidCounter++;
 
-        return new TimeSeriesCSV(path, tidCounter, csvSeparator, hasHeader, timeStampColumnIndex, dateFormat,
+        return new TimeSeriesCSV(path, tid, csvSeparator, hasHeader, timeStampColumnIndex, dateFormat,
                                  timeZone, valueColumnIndex, locale);
     }
 }

@@ -17,27 +17,27 @@ class TimeSeriesCSVTest {
 
     public static TimeSeriesCSV createSimpleTimeSeries() {
         String fileName = "simple_time_series.csv";
-        return  CSVTimeSeriesProviderHelper.createTimeSeries(relativePath + fileName);
+        return  CSVTimeSeriesProviderHelper.createTimeSeries(relativePath + fileName, 1);
     }
 
     public static TimeSeriesCSV createTimeSeriesWithGaps() {
         String fileName = "time_series_with_gaps.csv";
-        return  CSVTimeSeriesProviderHelper.createTimeSeries(relativePath + fileName);
+        return  CSVTimeSeriesProviderHelper.createTimeSeries(relativePath + fileName, 2);
     }
 
     public static TimeSeriesCSV createTimeSeriesStartsWithConfigPoints() {
         String fileName = "time_series_starts_with_config.csv";
-        return CSVTimeSeriesProviderHelper.createTimeSeries(relativePath + fileName);
+        return CSVTimeSeriesProviderHelper.createTimeSeries(relativePath + fileName, 3);
     }
 
     public static TimeSeriesCSV createTimeSeriesWithConfigPoints() {
         String fileName = "time_series_with_config.csv";
-        return CSVTimeSeriesProviderHelper.createTimeSeries(relativePath + fileName);
+        return CSVTimeSeriesProviderHelper.createTimeSeries(relativePath + fileName, 4);
     }
 
     public static TimeSeriesCSV createEmptyTimeSeries() {
         String path = "empty_time_series.csv";
-        return CSVTimeSeriesProviderHelper.createTimeSeries(relativePath + path);
+        return CSVTimeSeriesProviderHelper.createTimeSeries(relativePath + path, 5);
     }
 
     @BeforeAll
