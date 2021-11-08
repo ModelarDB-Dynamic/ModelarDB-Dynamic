@@ -181,10 +181,10 @@ public class SegmentGenerator {
                 .filter(Predicate.not(ValueDataPoint::isGapPoint))
                 .toArray(ValueDataPoint[]::new);
 
-        tryToAppendDataPointsToModels(gapFreeDatapoints);
-
         this.slicesNotYetEmitted++;
         this.buffer.add(gapFreeDatapoints);
+
+        tryToAppendDataPointsToModels(gapFreeDatapoints);
 
         //Emits a temporary segment if latency data points have been added to the buffer without a finalized segment being
         // emitted, if the current model does not represent all of the data points in the buffer the fallback model is used
