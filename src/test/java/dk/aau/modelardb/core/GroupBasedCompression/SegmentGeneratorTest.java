@@ -46,7 +46,7 @@ class SegmentGeneratorTest {
         float dynamicSplitFraction = 1.0F; // Taken from IngestionTest.scala
 
         return new SegmentGenerator(group.gid, Configuration.INSTANCE.getSamplingInterval(), permanentGapTids,
-                modelTypeInitializer, fallbackModelType, group.getTids(), maximumLatency, dynamicSplitFraction, temporarySegmentStream, finalizedSegmentStream);
+                modelTypeInitializer, fallbackModelType, new ArrayList<>(group.getTids()), maximumLatency, dynamicSplitFraction, temporarySegmentStream, finalizedSegmentStream);
     }
 
     // We dont allow usage of GORILLA to simplify tests

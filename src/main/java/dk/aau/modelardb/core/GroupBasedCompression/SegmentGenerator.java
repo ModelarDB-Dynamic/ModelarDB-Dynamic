@@ -126,7 +126,6 @@ public class SegmentGenerator {
     }
 
     public void consumeSlice(DataSlice slice) {
-//        addGapsForMissingPoints(slice);
         if (this.splitSegmentGenerators.isEmpty() || this.splitSegmentGenerators.contains(this)) {
             // Consume
             consumeDataPoints(slice.getDataPoints());
@@ -143,16 +142,6 @@ public class SegmentGenerator {
             }
 
             joinGroupsIfTheirTimeSeriesAreCorrelated();
-        }
-    }
-
-    private void addGapsForMissingPoints(DataSlice slice) {
-        Set<Integer> tempTids = new HashSet<>(this.tids);
-        Set<Integer> tidsInSlice = Arrays.stream(slice.getDataPoints()).map(DataPoint::getTid).collect(Collectors.toSet());
-        tempTids.removeAll(tidsInSlice);
-
-        for (Integer tid : tempTids) {
-            slice.addGapPointForTid(tid);
         }
     }
 

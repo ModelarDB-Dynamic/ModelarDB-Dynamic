@@ -23,6 +23,7 @@ import dk.aau.modelardb.core.timeseries.TimeSeries;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class TimeSeriesGroup implements Serializable {
 
@@ -36,6 +37,7 @@ public class TimeSeriesGroup implements Serializable {
     private int amountOfTimeSeriesWithNext;
     private PriorityQueue<ValueDataPoint> nextValueDataPointPriorityQueue = new PriorityQueue<>(getDataPointComparator());
     private List<SIConfigurationDataPoint> configurationDataPoints;
+    private final Set<Integer> tids;
 
     /**
      * Constructors
@@ -63,6 +65,7 @@ public class TimeSeriesGroup implements Serializable {
         this.gid = gid;
         this.timeSeries = timeSeries;
         this.amountOfTimeSeriesWithNext = timeSeries.length;
+        this.tids = Collections.unmodifiableSet(Arrays.stream(this.timeSeries).map(ts -> ts.tid).collect(Collectors.toSet()));
     }
 
     private static Comparator<ValueDataPoint> getDataPointComparator() {
@@ -112,11 +115,7 @@ public class TimeSeriesGroup implements Serializable {
         return sj.toString();
     }
 
-    public List<Integer> getTids() {
-        List<Integer> tids = new ArrayList<>();
-        for (TimeSeries ts : this.timeSeries) {
-            tids.add(ts.tid);
-        }
+    public Set<Integer> getTids() {
         return tids;
     }
 
@@ -157,7 +156,20 @@ public class TimeSeriesGroup implements Serializable {
             }
         }
 
-        return new DataSlice(valueDataPointList, valueDataPointList.get(0).samplingInterval);
+        DataSlice slice = new DataSlice(valueDataPointList, valueDataPointList.get(0).samplingInterval);
+        addGapsForMissingPoints(slice);
+
+        return slice;
+    }
+
+    private void addGapsForMissingPoints(DataSlice slice) {
+        Set<Integer> tempTids = new HashSet<>(this.getTids());
+        Set<Integer> tidsInSlice = Arrays.stream(slice.getDataPoints()).map(DataPoint::getTid).collect(Collectors.toSet());
+        tempTids.removeAll(tidsInSlice);
+
+        for (Integer tid : tempTids) {
+            slice.addGapPointForTid(tid);
+        }
     }
 
     private Optional<ValueDataPoint> nextValueDatapoint(int tid) {
