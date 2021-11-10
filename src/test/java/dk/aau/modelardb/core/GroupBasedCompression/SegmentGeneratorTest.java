@@ -143,11 +143,60 @@ class SegmentGeneratorTest {
         assertOutputString(finalizedSegmentStream.getSegments(), expected);
     }
 
+    @Test
+    void consumeSliceOneTimeSeriesWithGaps() {
+        int timeSeriesNo = 3;
+
+        TimeSeriesGroup group;
+        TimeSeriesCSV[] tsArray = new TimeSeriesCSV[1];
+        tsArray[0] = createTimeSeriesN(timeSeriesNo);
+        group = new TimeSeriesGroup(1, tsArray);
+        group.initialize();
+
+        MockSegmentFunction temporarySegmentStream = new MockSegmentFunction();
+        MockSegmentFunction finalizedSegmentStream = new MockSegmentFunction();
+        Set<Integer> permanentGaps = new HashSet<>();
+
+        SegmentGenerator segmentGenerator = createSegmentGenerator(group, temporarySegmentStream, finalizedSegmentStream, permanentGaps);
+        consumeAllSlicesFromGroup(group, segmentGenerator);
+
+        // printAllSegments(finalizedSegmentStream.getSegments());
+        String expected =
+                "Segment: [gid: 1 | start: 100 | end: 500| si: 100 | mtid: 2]\n" +
+                "Segment: [gid: 1 | start: 1100 | end: 1500| si: 100 | mtid: 2]\n";
+        assertOutputString(finalizedSegmentStream.getSegments(), expected);
+    }
+
+    @Test
+    void consumeSliceTwoTimeSeriesOneEndsEarly() {
+        int timeSeriesNoA = 1;
+        int timeSeriesNoB = 4;
+
+        TimeSeriesGroup group;
+        TimeSeriesCSV[] tsArray = new TimeSeriesCSV[2];
+        tsArray[0] = createTimeSeriesN(timeSeriesNoA);
+        tsArray[1] = createTimeSeriesN(timeSeriesNoB);
+        group = new TimeSeriesGroup(1, tsArray);
+        group.initialize();
+
+        MockSegmentFunction temporarySegmentStream = new MockSegmentFunction();
+        MockSegmentFunction finalizedSegmentStream = new MockSegmentFunction();
+        Set<Integer> permanentGaps = new HashSet<>();
+
+        SegmentGenerator segmentGenerator = createSegmentGenerator(group, temporarySegmentStream, finalizedSegmentStream, permanentGaps);
+        consumeAllSlicesFromGroup(group, segmentGenerator);
+
+        String expected =
+                "Segment: [gid: 1 | start: 100 | end: 1000| si: 100 | mtid: 2]\n" +
+                        "Segment: [gid: 1 | start: 1100 | end: 1500| si: 100 | mtid: 2 | gaps: [4]]\n";
+        //printAllSegments(finalizedSegmentStream.getSegments());
+        assertOutputString(finalizedSegmentStream.getSegments(), expected);
+    }
 
     @Test
     void consumeSliceSplitTwoTimeSeries() {
         int timeSeriesNoA = 1;
-        int timeSeriesNoB = 3;
+        int timeSeriesNoB = 5;
 
         TimeSeriesGroup group;
         TimeSeriesCSV[] tsArray = new TimeSeriesCSV[2];
@@ -166,7 +215,7 @@ class SegmentGeneratorTest {
         String expected =
                 "Segment: [gid: 1 | start: 100 | end: 500| si: 100 | mtid: 2]\n" +
                 "Segment: [gid: 1 | start: 600 | end: 800| si: 100 | mtid: 4]\n" +
-                "Segment: [gid: 1 | start: 900 | end: 1500| si: 100 | mtid: 2 | gaps: [3]]\n" +
+                "Segment: [gid: 1 | start: 900 | end: 1500| si: 100 | mtid: 2 | gaps: [5]]\n" +
                 "Segment: [gid: 1 | start: 900 | end: 1500| si: 100 | mtid: 2 | gaps: [1]]\n";
 
         // printAllSegments(finalizedSegmentStream.getSegments());
@@ -176,7 +225,7 @@ class SegmentGeneratorTest {
     @Test
     void consumeSliceJoinTwoTimeSeries() {
         int timeSeriesNoA = 1;
-        int timeSeriesNoB = 4;
+        int timeSeriesNoB = 6;
 
         TimeSeriesGroup group;
         TimeSeriesCSV[] tsArray = new TimeSeriesCSV[2];
@@ -196,38 +245,11 @@ class SegmentGeneratorTest {
                 "Segment: [gid: 1 | start: 100 | end: 500| si: 100 | mtid: 2]\n" +
                 "Segment: [gid: 1 | start: 600 | end: 800| si: 100 | mtid: 4]\n" +
                 "Segment: [gid: 1 | start: 900 | end: 1100| si: 100 | mtid: 2 | gaps: [1]]\n" +
-                "Segment: [gid: 1 | start: 900 | end: 1200| si: 100 | mtid: 2 | gaps: [4]]\n" +
+                "Segment: [gid: 1 | start: 900 | end: 1200| si: 100 | mtid: 2 | gaps: [6]]\n" +
                 "Segment: [gid: 1 | start: 1200 | end: 1200| si: 100 | mtid: 4 | gaps: [1]]\n" +
                 "Segment: [gid: 1 | start: 1300 | end: 1500| si: 100 | mtid: 2]\n";
         //printAllSegments(finalizedSegmentStream.getSegments());
         assertOutputString(finalizedSegmentStream.getSegments(), expected);
     }
-
-    @Test
-    void consumeSliceTwoTimeSeriesOneEndsEarly() {
-        int timeSeriesNoA = 1;
-        int timeSeriesNoB = 5;
-
-        TimeSeriesGroup group;
-        TimeSeriesCSV[] tsArray = new TimeSeriesCSV[2];
-        tsArray[0] = createTimeSeriesN(timeSeriesNoA);
-        tsArray[1] = createTimeSeriesN(timeSeriesNoB);
-        group = new TimeSeriesGroup(1, tsArray);
-        group.initialize();
-
-        MockSegmentFunction temporarySegmentStream = new MockSegmentFunction();
-        MockSegmentFunction finalizedSegmentStream = new MockSegmentFunction();
-        Set<Integer> permanentGaps = new HashSet<>();
-
-        SegmentGenerator segmentGenerator = createSegmentGenerator(group, temporarySegmentStream, finalizedSegmentStream, permanentGaps);
-        consumeAllSlicesFromGroup(group, segmentGenerator);
-
-        String expected =
-                "Segment: [gid: 1 | start: 100 | end: 1000| si: 100 | mtid: 2]\n" +
-                "Segment: [gid: 1 | start: 1100 | end: 1500| si: 100 | mtid: 2 | gaps: [5]]\n";
-        //printAllSegments(finalizedSegmentStream.getSegments());
-        assertOutputString(finalizedSegmentStream.getSegments(), expected);
-    }
-
 
 }

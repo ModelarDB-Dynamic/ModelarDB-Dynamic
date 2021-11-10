@@ -171,7 +171,9 @@ public class SegmentGenerator {
         ValueDataPoint[] gapFreeDatapoints = Arrays.stream(dataPoints)
                 .filter(Predicate.not(ValueDataPoint::isGapPoint))
                 .toArray(ValueDataPoint[]::new);
-
+        if (gapFreeDatapoints.length == 0) {
+            return;
+        }
         boolean couldAppendSlice = tryToAppendDataPointsToModels(gapFreeDatapoints);
 
         this.slicesNotYetEmitted++;
@@ -191,6 +193,7 @@ public class SegmentGenerator {
     }
 
     private boolean tryToAppendDataPointsToModels(ValueDataPoint[] gapFreeDatapoints) {
+        //TODO(EKN): what to do when GAP_FREE_DATAPOINTS IS EMPTY?
         //The current model type is given the data points and it verifies that the model can represent them and all prior,
         // it is assumed that append will fail if it failed in the past, so append(t,V) must fail if append(t-1,V) failed
         while(!this.currentModelType.append(Arrays.copyOf(gapFreeDatapoints, gapFreeDatapoints.length))) {
