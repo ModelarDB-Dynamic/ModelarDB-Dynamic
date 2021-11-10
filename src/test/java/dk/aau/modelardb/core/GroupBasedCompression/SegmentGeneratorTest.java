@@ -276,7 +276,7 @@ class SegmentGeneratorTest {
                 "Segment: [gid: 1 | start: 600 | end: 800| si: 100 | mtid: 4]\n" +
                 "Segment: [gid: 1 | start: 900 | end: 1200| si: 100 | mtid: 2 | gaps: [1]]\n" +
                 "Segment: [gid: 1 | start: 900 | end: 1500| si: 100 | mtid: 2 | gaps: [7]]\n" +
-                "Segment: [gid: 1 | start: 1500 | end: 1500| si: 100 | mtid: 4 | gaps: [1]]\n";
+                "Segment: [gid: 1 | start: 1400 | end: 1500| si: 100 | mtid: 2 | gaps: [1]]\n";
         //printAllSegments(finalizedSegmentStream.getSegments());
         assertOutputString(finalizedSegmentStream.getSegments(), expected);
     }
