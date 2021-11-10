@@ -340,8 +340,10 @@ public class SegmentGenerator {
         //If only a subset of the time series in it are currently correlated the group is temporarily split into multiple groups
         ValueDataPoint[] bufferHead = this.buffer.get(0);
         float doubleErrorBound = 2 * this.fallbackModelType.errorBound;
-        int lengthOfDataPointsInBuffer = bufferHead.length;
-        Set<Integer> timeSeriesWithoutGaps = IntStream.range(0, lengthOfDataPointsInBuffer).boxed().collect(Collectors.toSet());
+        // TODO: this should be done in another
+        Set<Integer> timeSeriesWithoutGaps = IntStream.range(0, bufferHead.length).boxed().collect(Collectors.toSet());
+        timeSeriesWithoutGaps = timeSeriesWithoutGaps.stream().filter(tsIndex -> !bufferHead[tsIndex].isGapPoint()).collect(Collectors.toSet());
+        int amountOfTSNotCurrentlyInGap = timeSeriesWithoutGaps.size();
 
         while (!timeSeriesWithoutGaps.isEmpty()) {
             int i = timeSeriesWithoutGaps.iterator().next();
@@ -368,7 +370,7 @@ public class SegmentGenerator {
                 }
             }
             //If the size of the split is the number of the time series not currently in a gap, no split is required
-            if (bufferSplitIndexes.size() == lengthOfDataPointsInBuffer) {
+            if (bufferSplitIndexes.size() == amountOfTSNotCurrentlyInGap) {
                 return;
             }
 
@@ -381,7 +383,7 @@ public class SegmentGenerator {
 
         //If the number of time series with data points in the buffer is smaller than the size of the group, then some
         // of the time series in the group are in a gap and are grouped together as we have no knowledge about them
-        if (lengthOfDataPointsInBuffer != tids.size()) {
+        if (amountOfTSNotCurrentlyInGap != tids.size()) {
             int[] timeSeriesSplitIndex = //If a gap's tid is not in this group it is part of another split
                     this.gaps.stream().mapToInt(tid -> Collections.binarySearch(tids, tid)).filter(k -> k >= 0).toArray();
             Arrays.sort(timeSeriesSplitIndex); //This.gaps is a set so sorting is required
