@@ -174,7 +174,7 @@ class SegmentGeneratorTest {
     }
 
     @Test
-    void consumeSliceJoinTwoTimeseries() {
+    void consumeSliceJoinTwoTimeSeries() {
         int timeSeriesNoA = 4;
         int timeSeriesNoB = 5;
 
@@ -195,12 +195,12 @@ class SegmentGeneratorTest {
         String expected =
                 "Segment: [gid: 1 | start: 100 | end: 500| si: 100 | mtid: 2]\n" +
                 "Segment: [gid: 1 | start: 600 | end: 800| si: 100 | mtid: 4]\n" +
-                "Segment: [gid: 1 | start: 900 | end: 1400| si: 100 | mtid: 2 | gaps: [4]]\n" +
                 "Segment: [gid: 1 | start: 900 | end: 1400| si: 100 | mtid: 2 | gaps: [5]]\n" +
-                "Segment: [gid: 1 | start: 1500 | end: 1500| si: 100 | mtid: 4 | gaps: [4]]\n" +
+                "Segment: [gid: 1 | start: 900 | end: 1400| si: 100 | mtid: 2 | gaps: [4]]\n" +
                 "Segment: [gid: 1 | start: 1500 | end: 1500| si: 100 | mtid: 4 | gaps: [5]]\n" +
+                "Segment: [gid: 1 | start: 1500 | end: 1500| si: 100 | mtid: 4 | gaps: [4]]\n" +
                 "Segment: [gid: 1 | start: 1600 | end: 2000| si: 100 | mtid: 2]\n";
-        // printAllSegments(finalizedSegmentStream.getSegments());
+        //printAllSegments(finalizedSegmentStream.getSegments());
         assertOutputString(finalizedSegmentStream.getSegments(), expected);
     }
 

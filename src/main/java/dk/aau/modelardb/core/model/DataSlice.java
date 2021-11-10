@@ -51,7 +51,7 @@ public class DataSlice {
         });
     }
 
-    public Map<Set<Integer>, DataSlice> getSubDataSlice(Set<Set<Integer>> tidss) {
+    public Map<Set<Integer>, DataSlice> getSubDataSlices(Set<Set<Integer>> tidss) {
         Map<Set<Integer>, DataSlice> tidsToSubDataSlice = tidss.stream().collect(Collectors.toMap(Function.identity(), item -> new DataSlice(this.samplingInterval)));
 
         Map<Integer, Set<Integer>> tidToSetOfTids = new HashMap<>();
@@ -69,7 +69,17 @@ public class DataSlice {
      return tidsToSubDataSlice;
     }
 
-    public void addGapPointForTid(int tid) {
+    public void addGapsForTidsWithMissingPoints(Set<Integer> allTids) {
+        Set<Integer> tempTids = new HashSet<>(allTids);
+        Set<Integer> tidsInSlice = valueDataPoints.stream().map(DataPoint::getTid).collect(Collectors.toSet());
+        tempTids.removeAll(tidsInSlice);
+
+        for (Integer tid : tempTids) {
+            this.addGapPointForTid(tid);
+        }
+    }
+
+    private void addGapPointForTid(int tid) {
         this.valueDataPoints.add(new ValueDataPoint(tid, this.timeStamp, Float.NaN, this.samplingInterval));
     }
 

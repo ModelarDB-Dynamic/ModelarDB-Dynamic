@@ -102,7 +102,8 @@ class TimeSeriesGroupTest {
         group = new TimeSeriesGroup(1, tsArray);
         group.initialize();
 
-        String expected = "DataSlice{samplingInterval=100, valueDataPoints=[ValueDataPoint: [tid: 1 | time: 100 | val: 1.0 | si: 100], ValueDataPoint: [tid: 4 | time: 100 | val: 4.0 | si: 100]]}\n" +
+        String expected =
+                "DataSlice{samplingInterval=100, valueDataPoints=[ValueDataPoint: [tid: 1 | time: 100 | val: 1.0 | si: 100], ValueDataPoint: [tid: 4 | time: 100 | val: 4.0 | si: 100]]}\n" +
                 "DataSlice{samplingInterval=100, valueDataPoints=[ValueDataPoint: [tid: 1 | time: 200 | val: 1.0 | si: 100], ValueDataPoint: [tid: 4 | time: 200 | val: 4.0 | si: 100]]}\n" +
                 "DataSlice{samplingInterval=100, valueDataPoints=[ValueDataPoint: [tid: 1 | time: 300 | val: 1.0 | si: 100], ValueDataPoint: [tid: 4 | time: 300 | val: 4.0 | si: 100]]}\n" +
                 "DataSlice{samplingInterval=100, valueDataPoints=[ValueDataPoint: [tid: 1 | time: 400 | val: 1.0 | si: 100], ValueDataPoint: [tid: 4 | time: 400 | val: 4.0 | si: 100]]}\n" +

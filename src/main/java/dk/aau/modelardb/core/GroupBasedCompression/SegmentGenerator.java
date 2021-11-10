@@ -14,7 +14,6 @@
  */
 package dk.aau.modelardb.core.GroupBasedCompression;
 
-import dk.aau.modelardb.core.model.DataPoint;
 import dk.aau.modelardb.core.model.compression.ModelType;
 import dk.aau.modelardb.core.model.DataSlice;
 import dk.aau.modelardb.core.model.ValueDataPoint;
@@ -57,7 +56,7 @@ public class SegmentGenerator {
     private double compressionRatioAverage;
     private long finalizedSegmentsBeforeNextJoinCheck;
     private Set<SegmentGenerator> splitsToJoinIfCorrelated;
-    private ArrayList<SegmentGenerator> splitSegmentGenerators;
+    private List<SegmentGenerator> splitSegmentGenerators;
     //State variables for fitting the current model
     private int modelTypeIndex;
     private int slicesNotYetEmitted;
@@ -126,6 +125,9 @@ public class SegmentGenerator {
     }
 
     public void consumeSlice(DataSlice slice) {
+        // This is necessary in cases where for example one of the time series ends early
+        slice.addGapsForTidsWithMissingPoints(new HashSet<>(this.tids));
+
         if (this.splitSegmentGenerators.isEmpty() || this.splitSegmentGenerators.contains(this)) {
             // Consume
             consumeDataPoints(slice.getDataPoints());
@@ -134,7 +136,7 @@ public class SegmentGenerator {
                     .map(segmentGenerator -> Pair.of(segmentGenerator, new HashSet<>(segmentGenerator.tids)))
                     .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
 
-            Map<Set<Integer>, DataSlice> dataSliceByTids = slice.getSubDataSlice(new HashSet<>(segmentGeneratorToTids.values()));
+            Map<Set<Integer>, DataSlice> dataSliceByTids = slice.getSubDataSlices(new HashSet<>(segmentGeneratorToTids.values()));
 
             for (Map.Entry<SegmentGenerator, HashSet<Integer>> segmentGeneratorTidsPair : segmentGeneratorToTids.entrySet()) {
                 DataSlice dataSliceForSubGenerator = dataSliceByTids.get(segmentGeneratorTidsPair.getValue());
@@ -340,7 +342,6 @@ public class SegmentGenerator {
         //If only a subset of the time series in it are currently correlated the group is temporarily split into multiple groups
         ValueDataPoint[] bufferHead = this.buffer.get(0);
         float doubleErrorBound = 2 * this.fallbackModelType.errorBound;
-        // TODO: this should be done in another
         Set<Integer> timeSeriesWithoutGaps = IntStream.range(0, bufferHead.length).boxed().collect(Collectors.toSet());
         timeSeriesWithoutGaps = timeSeriesWithoutGaps.stream().filter(tsIndex -> !bufferHead[tsIndex].isGapPoint()).collect(Collectors.toSet());
         int amountOfTSNotCurrentlyInGap = timeSeriesWithoutGaps.size();
@@ -390,6 +391,8 @@ public class SegmentGenerator {
             //TODO(EKN): fix bufferSplitINDEX
             splitSegmentGenerator(new int[0], timeSeriesSplitIndex);
         }
+        // Sorting that is necessary for testing
+        this.splitSegmentGenerators.sort(Comparator.comparingInt(sg -> sg.tids.get(0)));
         this.buffer.clear();
     }
 

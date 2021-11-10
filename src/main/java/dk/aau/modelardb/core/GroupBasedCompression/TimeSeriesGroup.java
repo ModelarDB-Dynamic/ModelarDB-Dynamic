@@ -72,9 +72,17 @@ public class TimeSeriesGroup implements Serializable {
         return (ValueDataPoint dp1, ValueDataPoint dp2) -> {
             Comparator<ValueDataPoint> timestampComparator = Comparator.comparingLong(dp -> dp.timestamp);
             Comparator<ValueDataPoint> samplingIntervalComparator = Comparator.comparingInt(dp -> dp.samplingInterval);
+            Comparator<ValueDataPoint> tidComparator = Comparator.comparingInt(DataPoint::getTid);
 
             int comparedTimestamp = timestampComparator.compare(dp1, dp2);
-            return comparedTimestamp != 0 ? comparedTimestamp : samplingIntervalComparator.compare(dp1, dp2);
+            if (comparedTimestamp != 0) {
+                return comparedTimestamp;
+            }
+            int comparedSamplingInterval = samplingIntervalComparator.compare(dp1, dp2);
+            if (comparedSamplingInterval != 0) {
+                return comparedSamplingInterval;
+            }
+            return tidComparator.compare(dp1, dp2);
         };
     }
 
@@ -157,17 +165,6 @@ public class TimeSeriesGroup implements Serializable {
         }
 
         return new DataSlice(valueDataPointList, valueDataPointList.get(0).samplingInterval);
-    }
-
-    // TODO(EKN): MOVE THIS TO THE CORRECT PLACE
-    private void addGapsForMissingPoints(DataSlice slice) {
-        Set<Integer> tempTids = new HashSet<>(this.getTids());
-        Set<Integer> tidsInSlice = Arrays.stream(slice.getDataPoints()).map(DataPoint::getTid).collect(Collectors.toSet());
-        tempTids.removeAll(tidsInSlice);
-
-        for (Integer tid : tempTids) {
-            slice.addGapPointForTid(tid);
-        }
     }
 
     private Optional<ValueDataPoint> nextValueDatapoint(int tid) {
