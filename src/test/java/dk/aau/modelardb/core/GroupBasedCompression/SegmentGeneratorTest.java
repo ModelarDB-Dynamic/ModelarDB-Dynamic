@@ -439,4 +439,39 @@ class SegmentGeneratorTest {
         // printAllSegments(finalizedSegmentStream.getSegments());
         assertOutputString(finalizedSegmentStream.getSegments(), expected);
     }
+
+    @Test
+    void ThreeTimeSeriesOneJoinsAgain() {
+        int timeSeriesNoA = 10;
+        int timeSeriesNoB = 11;
+        int timeSeriesNoC = 16;
+
+        TimeSeriesGroup group;
+        TimeSeriesCSV[] tsArray = new TimeSeriesCSV[3];
+        tsArray[0] = createTimeSeriesN(timeSeriesNoA);
+        tsArray[1] = createTimeSeriesN(timeSeriesNoB);
+        tsArray[2] = createTimeSeriesN(timeSeriesNoC);
+        group = new TimeSeriesGroup(1, tsArray);
+        group.initialize();
+
+        MockSegmentFunction temporarySegmentStream = new MockSegmentFunction();
+        MockSegmentFunction finalizedSegmentStream = new MockSegmentFunction();
+        Set<Integer> permanentGaps = new HashSet<>();
+
+        SegmentGenerator segmentGenerator = createSegmentGenerator(group, temporarySegmentStream, finalizedSegmentStream, permanentGaps);
+        consumeAllSlicesFromGroup(group, segmentGenerator);
+
+        String expected =
+                "Segment: [gid: 1 | start: 100 | end: 500| si: 100 | mtid: 2]\n" +
+                "Segment: [gid: 1 | start: 600 | end: 800| si: 100 | mtid: 4]\n" +
+                "Segment: [gid: 1 | start: 900 | end: 1400| si: 100 | mtid: 2 | gaps: [10, 11]]\n" +
+                "Segment: [gid: 1 | start: 900 | end: 1500| si: 100 | mtid: 2 | gaps: [16, 11]]\n" +
+                "Segment: [gid: 1 | start: 1500 | end: 1500| si: 100 | mtid: 4 | gaps: [10, 11]]\n" +
+                "Segment: [gid: 1 | start: 900 | end: 2000| si: 100 | mtid: 2 | gaps: [16, 10]]\n" +
+                "Segment: [gid: 1 | start: 1600 | end: 2000| si: 100 | mtid: 2 | gaps: [11]]\n";
+        //printAllSegments(finalizedSegmentStream.getSegments());
+        assertOutputString(finalizedSegmentStream.getSegments(), expected);
+    }
+
+    // TODO ADD MISSING TESTS FOR JOINING WITH 3 TIME SERIES
 }
