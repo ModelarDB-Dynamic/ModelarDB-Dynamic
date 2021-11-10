@@ -419,7 +419,7 @@ public class SegmentGenerator {
         sg.splitsToJoinIfCorrelated = this.splitsToJoinIfCorrelated;
         int index = this.splitSegmentGenerators.indexOf(this);
         if (index != -1) {
-            this.splitSegmentGenerators.set(index, null);
+            this.splitSegmentGenerators.remove(index);
         }
         this.splitSegmentGenerators.add(sg);
 
