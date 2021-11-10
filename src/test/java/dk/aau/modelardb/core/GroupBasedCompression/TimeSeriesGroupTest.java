@@ -173,20 +173,6 @@ class TimeSeriesGroupTest {
         //printAllSlices(group);
     }
 
-    /*
-    @Test
-    void multipleConfigsInARow() {
-        TimeSeriesGroup group;
-        TimeSeriesCSV[] tsArray = new TimeSeriesCSV[2];
-        tsArray[0] = createTimeSeriesN(1);
-        tsArray[1] = createTimeSeriesN(7);
-
-        group = new TimeSeriesGroup(1, tsArray);
-        group.initialize();
-
-        printAllSlices(group);
-    }*/
-
     @Test
     void manyTimeSeries() {
         TimeSeriesGroup group;

@@ -293,6 +293,10 @@ public class SegmentGenerator {
         this.logger.updateFinalizedSegmentCounters(mostEfficientModelType, this.gaps.size());
 
         //If the time series have changed it might beneficial to split or join their groups
+        checkIfSplitOrJoinMakesSense(highestCompressionRatio);
+    }
+
+    private void checkIfSplitOrJoinMakesSense(float highestCompressionRatio) {
         boolean compressionRatioIsBelowAverage = checkIfCompressionRatioIsBelowAverageAndUpdateTheAverage(highestCompressionRatio);
         if (!this.buffer.isEmpty() && this.buffer.get(0).length > 1 && compressionRatioIsBelowAverage) {
             splitGroupIfItsTimeSeriesAreNoLongerCorrelated();
@@ -370,11 +374,9 @@ public class SegmentGenerator {
 
             //Only the time series that currently are not in a gap can be grouped together as they have data points buffered
             bufferSplitIndexes.forEach(timeSeriesWithoutGaps::remove);
-            HashSet<Integer> gaps = new HashSet<>(this.tids);
-            bufferSplitIndexes.forEach(index -> gaps.remove(this.buffer.get(0)[index].getTid()));
             int[] bufferSplitIndex = bufferSplitIndexes.stream().mapToInt(k -> k).toArray();
             int[] timeSeriesSplitIndex = timeSeriesSplitIndexes.stream().mapToInt(k -> k).toArray();
-            splitSegmentGenerator(bufferSplitIndex, timeSeriesSplitIndex, gaps);
+            splitSegmentGenerator(bufferSplitIndex, timeSeriesSplitIndex);
         }
 
         //If the number of time series with data points in the buffer is smaller than the size of the group, then some
@@ -383,16 +385,18 @@ public class SegmentGenerator {
             int[] timeSeriesSplitIndex = //If a gap's tid is not in this group it is part of another split
                     this.gaps.stream().mapToInt(tid -> Collections.binarySearch(tids, tid)).filter(k -> k >= 0).toArray();
             Arrays.sort(timeSeriesSplitIndex); //This.gaps is a set so sorting is required
-            splitSegmentGenerator(new int[0], timeSeriesSplitIndex, new HashSet<>(this.tids));
+            //TODO(EKN): fix bufferSplitINDEX
+            splitSegmentGenerator(new int[0], timeSeriesSplitIndex);
         }
         this.buffer.clear();
     }
 
-    private void splitSegmentGenerator(int[] bufferSplitIndex, int[] timeSeriesSplitIndexes, Set<Integer> gaps) {
+    private void splitSegmentGenerator(int[] bufferSplitIndex, int[] timeSeriesSplitIndexes) {
         ArrayList<Integer> tidsForChild = new ArrayList<>();
         for (int timeSeriesSplitIndex : timeSeriesSplitIndexes) {
             tidsForChild.add(this.tids.get(timeSeriesSplitIndex));
         }
+        // We figure out which TIDs the child should not handle
         HashSet<Integer> permGapsForChild = new HashSet<>(this.tids);
         permGapsForChild.removeAll(tidsForChild);
 
@@ -427,14 +431,14 @@ public class SegmentGenerator {
 
         //Copies all data points for the split time series to the new buffer
         ArrayList<ValueDataPoint[]> newBuffer = new ArrayList<>(buffer.size());
-        for (ValueDataPoint[] dps : buffer) {
-            ValueDataPoint[] newDps = new ValueDataPoint[bufferSplitIndex.length];
+        for (ValueDataPoint[] slice : buffer) {
+            ValueDataPoint[] newSlice = new ValueDataPoint[bufferSplitIndex.length];
             int j = 0;
             for (int i : bufferSplitIndex) {
-                newDps[j] = new ValueDataPoint(dps[i].getTid(), dps[i].timestamp, dps[i].value, samplingInterval);
+                newSlice[j] = new ValueDataPoint(slice[i].getTid(), slice[i].timestamp, slice[i].value, samplingInterval);
                 j++;
             }
-            newBuffer.add(newDps);
+            newBuffer.add(newSlice);
         }
         return newBuffer;
     }
@@ -444,14 +448,14 @@ public class SegmentGenerator {
         float doubleErrorBound = 2 * this.fallbackModelType.errorBound;
         HashSet<SegmentGenerator> markedForJoining = new HashSet<>();
         ArrayList<SegmentGenerator> joined = new ArrayList<>();
+        // Double loop where we try to join each segment generator with the other segment generators
         while (!this.splitsToJoinIfCorrelated.isEmpty()) {
             SegmentGenerator sgi = this.splitsToJoinIfCorrelated.iterator().next();
             HashSet<SegmentGenerator> toBeJoined = new HashSet<>();
-
+            // TODO MOVE THIS INTO A HELPER FUNCTION
             //If all data points with a shared time stamp is within the double error bound the groups are joined
-            int shortestSharedBufferLength = Integer.MAX_VALUE;
             for (SegmentGenerator sgj : this.splitSegmentGenerators) {
-                //Comparing the time series group to itself always return true
+                //Comparing the segment generator to itself always return true
                 if (sgi == sgj) {
                     toBeJoined.add(sgi);
                     markedForJoining.add(sgi);
@@ -475,8 +479,6 @@ public class SegmentGenerator {
                         new ReverseBufferIterator(sgi.buffer, 0), new ReverseBufferIterator(sgj.buffer, 0));
 
                 if (canBeJoined) {
-                    int shortestBufferLength = Math.min(sgi.buffer.size(), sgj.buffer.size());
-                    shortestSharedBufferLength = Math.min(shortestSharedBufferLength, shortestBufferLength);
                     toBeJoined.add(sgj);
                     markedForJoining.add(sgj);
                     this.splitsToJoinIfCorrelated.remove(sgj);
@@ -485,7 +487,7 @@ public class SegmentGenerator {
 
             //If the join set contains more than one SegmentGenerator they are joined together
             if (toBeJoined.size() > 1) {
-                joinSegmentGenerators(toBeJoined, shortestSharedBufferLength, joined);
+                joinSegmentGenerators(toBeJoined, joined);
                 //HACK: a SegmentGenerator might add itself to the splitsToJoinIfCorrelated list while being joined
                 this.splitsToJoinIfCorrelated.removeAll(toBeJoined);
             }
@@ -493,8 +495,7 @@ public class SegmentGenerator {
         this.splitSegmentGenerators.addAll(joined);
     }
 
-    private void joinSegmentGenerators(Set<SegmentGenerator> sgs, int shortestSharedBufferLength,
-                                       ArrayList<SegmentGenerator> joined) {
+    private void joinSegmentGenerators(Set<SegmentGenerator> sgs, ArrayList<SegmentGenerator> joined) {
         //The join index is build with the assumption that groups are numerically ordered by tid
         ArrayList<Integer> totalJoinIndexList = new ArrayList<>();
         ArrayList<Integer> activeJoinIndexList = new ArrayList<>();
@@ -510,38 +511,37 @@ public class SegmentGenerator {
         }
 
         //If the original group is recreated the master SegmentGenerator is used, otherwise a new one is created
-        SegmentGenerator nsg;
+        SegmentGenerator newSegmentGenerator;
         if (this.tids.size() == totalJoinIndexList.size()) {
-            nsg = this;
+            newSegmentGenerator = this;
         } else {
             Set<Integer> allSgPermanentGaps = sgs.stream().flatMap(sg -> sg.permanentGapTids.stream()).collect(Collectors.toSet());
-
             totalJoinIndexList.forEach(allSgPermanentGaps::remove);
 
-            nsg = new SegmentGenerator(this.gid, this.samplingInterval, allSgPermanentGaps, this.modelTypeInitializer, this.fallbackModelType, totalJoinIndexList,
+            newSegmentGenerator = new SegmentGenerator(this.gid, this.samplingInterval, allSgPermanentGaps, this.modelTypeInitializer, this.fallbackModelType, totalJoinIndexList,
                     this.maximumLatency, this.dynamicSplitFraction, this.temporarySegmentStream, this.finalizedSegmentStream);
-            nsg.logger = this.logger;
-            nsg.splitSegmentGenerators = this.splitSegmentGenerators;
-            nsg.splitsToJoinIfCorrelated = this.splitsToJoinIfCorrelated;
-            joined.add(nsg);
+            newSegmentGenerator.logger = this.logger;
+            newSegmentGenerator.splitSegmentGenerators = this.splitSegmentGenerators;
+            newSegmentGenerator.splitsToJoinIfCorrelated = this.splitsToJoinIfCorrelated;
+            joined.add(newSegmentGenerator);
         }
         this.splitSegmentGenerators.removeAll(sgs);
 
-        nsg.gaps = new HashSet<>();
+        newSegmentGenerator.gaps = new HashSet<>();
         for (SegmentGenerator sg : sgs) {
             //The remaining data points stored by each SegmentGenerator are flushed
-            sg.flushBuffer();
+            sg.flushBuffer(); // TODO: more testing needed if we can remove this instead and move the buffer down
             //add sub gap lists to gaps
-            nsg.gaps.addAll(sg.gaps);
+            newSegmentGenerator.gaps.addAll(sg.gaps);
         }
 
         //Initializes the first model with the content in the new combined buffer
-        nsg.resetModelTypeIndex();
+        newSegmentGenerator.resetModelTypeIndex();
 
         //As multiple temporary segments currently represent values for the new combined group, a new temporary segment
         // is emitted so the existing temporary segments can be overwritten by one temporary segment from nsg
         if (this.maximumLatency > 0) {
-            nsg.emitTemporarySegment();
+            newSegmentGenerator.emitTemporarySegment();
         }
     }
 }
