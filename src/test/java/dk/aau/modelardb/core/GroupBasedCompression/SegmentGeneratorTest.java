@@ -175,8 +175,8 @@ class SegmentGeneratorTest {
 
     @Test
     void consumeSliceJoinTwoTimeSeries() {
-        int timeSeriesNoA = 4;
-        int timeSeriesNoB = 5;
+        int timeSeriesNoA = 1;
+        int timeSeriesNoB = 4;
 
         TimeSeriesGroup group;
         TimeSeriesCSV[] tsArray = new TimeSeriesCSV[2];
@@ -195,11 +195,36 @@ class SegmentGeneratorTest {
         String expected =
                 "Segment: [gid: 1 | start: 100 | end: 500| si: 100 | mtid: 2]\n" +
                 "Segment: [gid: 1 | start: 600 | end: 800| si: 100 | mtid: 4]\n" +
-                "Segment: [gid: 1 | start: 900 | end: 1400| si: 100 | mtid: 2 | gaps: [5]]\n" +
-                "Segment: [gid: 1 | start: 900 | end: 1400| si: 100 | mtid: 2 | gaps: [4]]\n" +
-                "Segment: [gid: 1 | start: 1500 | end: 1500| si: 100 | mtid: 4 | gaps: [5]]\n" +
-                "Segment: [gid: 1 | start: 1500 | end: 1500| si: 100 | mtid: 4 | gaps: [4]]\n" +
-                "Segment: [gid: 1 | start: 1600 | end: 2000| si: 100 | mtid: 2]\n";
+                "Segment: [gid: 1 | start: 900 | end: 1100| si: 100 | mtid: 2 | gaps: [1]]\n" +
+                "Segment: [gid: 1 | start: 900 | end: 1200| si: 100 | mtid: 2 | gaps: [4]]\n" +
+                "Segment: [gid: 1 | start: 1200 | end: 1200| si: 100 | mtid: 4 | gaps: [1]]\n" +
+                "Segment: [gid: 1 | start: 1300 | end: 1500| si: 100 | mtid: 2]\n";
+        //printAllSegments(finalizedSegmentStream.getSegments());
+        assertOutputString(finalizedSegmentStream.getSegments(), expected);
+    }
+
+    @Test
+    void consumeSliceTwoTimeSeriesOneEndsEarly() {
+        int timeSeriesNoA = 1;
+        int timeSeriesNoB = 5;
+
+        TimeSeriesGroup group;
+        TimeSeriesCSV[] tsArray = new TimeSeriesCSV[2];
+        tsArray[0] = createTimeSeriesN(timeSeriesNoA);
+        tsArray[1] = createTimeSeriesN(timeSeriesNoB);
+        group = new TimeSeriesGroup(1, tsArray);
+        group.initialize();
+
+        MockSegmentFunction temporarySegmentStream = new MockSegmentFunction();
+        MockSegmentFunction finalizedSegmentStream = new MockSegmentFunction();
+        Set<Integer> permanentGaps = new HashSet<>();
+
+        SegmentGenerator segmentGenerator = createSegmentGenerator(group, temporarySegmentStream, finalizedSegmentStream, permanentGaps);
+        consumeAllSlicesFromGroup(group, segmentGenerator);
+
+        String expected =
+                "Segment: [gid: 1 | start: 100 | end: 1000| si: 100 | mtid: 2]\n" +
+                "Segment: [gid: 1 | start: 1100 | end: 1500| si: 100 | mtid: 2 | gaps: [5]]\n";
         //printAllSegments(finalizedSegmentStream.getSegments());
         assertOutputString(finalizedSegmentStream.getSegments(), expected);
     }
