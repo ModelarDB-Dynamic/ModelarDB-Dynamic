@@ -40,13 +40,12 @@ class SegmentGeneratorTest {
         ModelType fallbackModelType = ModelTypeFactory.getFallbackModelType(errorBound, lengthBound);
 
         int maximumLatency = 0; // Taken from IngestionTest.scala
-        float dynamicSplitFraction = 1.0F; // Taken from IngestionTest.scala
+        float dynamicSplitFraction = 1.0F;
 
         return new SegmentGenerator(group.gid, Configuration.INSTANCE.getSamplingInterval(), permanentGapTids,
                 modelTypeInitializer, fallbackModelType, new ArrayList<>(group.getTids()), maximumLatency, dynamicSplitFraction, temporarySegmentStream, finalizedSegmentStream);
     }
 
-    // We dont allow usage of GORILLA to simplify tests
     private Supplier<ModelType[]> createModelTypeInitializer(float errorBound, int lengthBound) {
         String[] modelTypeNames = {"dk.aau.modelardb.core.model.compression.PMC_MeanModelType",
                 "dk.aau.modelardb.core.model.compression.SwingFilterModelType", "dk.aau.modelardb.core.model.compression.FacebookGorillaModelType"};
