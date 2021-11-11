@@ -55,9 +55,14 @@ class SegmentGeneratorControllerTest {
 
     private void printOutput(MockSegmentGeneratorSupplier segmentGeneratorSupplier) {
         for (MockSegmentGenerator createdSegmentGenerator : segmentGeneratorSupplier.createdSegmentGenerators) {
-            System.out.println("Data received by segment generator where: {tids: " + createdSegmentGenerator.tids +" | si: " + createdSegmentGenerator.si + "}");
-            for (String s : createdSegmentGenerator.getOutput()) {
-                System.out.println(s);
+            var output = createdSegmentGenerator.getOutput();
+            if(output.size() == 1) {
+                System.out.println("SG: (SI:" + createdSegmentGenerator.si + " -> " + createdSegmentGenerator.tids + ") closed before receiving data.");
+            } else {
+                System.out.println("SG: (SI:" + createdSegmentGenerator.si + " -> " + createdSegmentGenerator.tids + ")'s data:");
+                for (String s : createdSegmentGenerator.getOutput()) {
+                    System.out.println(s);
+                }
             }
         }
     }
@@ -66,6 +71,37 @@ class SegmentGeneratorControllerTest {
     void OneTimeSeriesWhereSIChanges() {
         List<Integer> timeSeriesNos = new ArrayList<>();
         timeSeriesNos.add(1);
+        TimeSeriesGroup timeSeriesGroup = createTimeSeriesGroup(timeSeriesNos);
+        MockSegmentGeneratorSupplier segmentGeneratorSupplier = new MockSegmentGeneratorSupplier(timeSeriesGroup);
+        SegmentGeneratorController controller = new SegmentGeneratorController(timeSeriesGroup, segmentGeneratorSupplier);
+
+        controller.start();
+
+        printOutput(segmentGeneratorSupplier);
+    }
+
+    @Test
+    void TwoTimeSerieOneStartsAtDifferentSIThenJoins() {
+        List<Integer> timeSeriesNos = new ArrayList<>();
+        timeSeriesNos.add(2);
+        timeSeriesNos.add(3);
+
+        TimeSeriesGroup timeSeriesGroup = createTimeSeriesGroup(timeSeriesNos);
+        MockSegmentGeneratorSupplier segmentGeneratorSupplier = new MockSegmentGeneratorSupplier(timeSeriesGroup);
+        SegmentGeneratorController controller = new SegmentGeneratorController(timeSeriesGroup, segmentGeneratorSupplier);
+
+        controller.start();
+
+        printOutput(segmentGeneratorSupplier);
+    }
+
+    @Test
+    void ThreeTimeSeriesSplitIntoThreeGenerators() {
+        List<Integer> timeSeriesNos = new ArrayList<>();
+        timeSeriesNos.add(4);
+        timeSeriesNos.add(5);
+        timeSeriesNos.add(6);
+
         TimeSeriesGroup timeSeriesGroup = createTimeSeriesGroup(timeSeriesNos);
         MockSegmentGeneratorSupplier segmentGeneratorSupplier = new MockSegmentGeneratorSupplier(timeSeriesGroup);
         SegmentGeneratorController controller = new SegmentGeneratorController(timeSeriesGroup, segmentGeneratorSupplier);

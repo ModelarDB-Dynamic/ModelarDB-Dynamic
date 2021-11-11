@@ -36,6 +36,10 @@ public class SegmentGeneratorController {
                 handleConfigDataPoints(configurationDataPoints);
             }
         }
+
+        for (SegmentGenerator segmentGenerator : SIToSegmentGenerator.values()) {
+            segmentGenerator.close();
+        }
     }
 
     private SegmentGenerator createSegmentGenerator(List<Integer> tids, int samplingInterval) {
@@ -52,13 +56,13 @@ public class SegmentGeneratorController {
             if (newSi == prevSi) {
                 break; // Do nothing
             }
-            // Handle new SI
-            addTidToSegmentGenerator(newSi, tid);
-
             // Handle previous SI
             if (configDataPoint.hasPreviousSamplingInterval()) {
                 removeTidFromSegmentGenerator(prevSi, tid);
             }
+
+            // Handle new SI
+            addTidToSegmentGenerator(newSi, tid);
         }
     }
 
