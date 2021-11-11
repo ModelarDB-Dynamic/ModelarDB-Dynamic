@@ -194,12 +194,10 @@ public class WorkingSet implements Serializable {
         Supplier<ModelType[]> modelTypeInitializer = () -> ModelTypeFactory.getModelTypes(
                 this.modelTypeNames, this.mtids, this.errorBound, this.lengthBound);
         ModelType fallbackModelType = ModelTypeFactory.getFallbackModelType(this.errorBound, this.lengthBound);
-        List<Integer> tids = null;
-        if (this.dynamicSplitFraction != 0.0F) {
-            tids = Arrays.stream(tsg.getTimeSeries()).map(ts -> ts.tid).collect(Collectors.toList());
-        }
-        assert tids != null;
-        return new SegmentGeneratorController(tsg, modelTypeInitializer, fallbackModelType, new HashSet<>(tids), this.maximumLatency,
-                this.dynamicSplitFraction, this.consumeTemporarySegment, this.consumeFinalizedSegment);
+        assert this.dynamicSplitFraction != 0.0F;
+
+        SegmentGeneratorSupplier segmentGeneratorSupplier = new SegmentGeneratorSupplier(tsg, modelTypeInitializer,
+                fallbackModelType, maximumLatency, this.consumeTemporarySegment, this.consumeFinalizedSegment, this.dynamicSplitFraction);
+        return new SegmentGeneratorController(tsg, segmentGeneratorSupplier);
     }
 }

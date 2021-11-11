@@ -12,30 +12,15 @@ public class SegmentGeneratorController {
     /**
      * Fields from WorkingSet used to instantiate SegmentGenerator
      */
-    private final Supplier<ModelType[]> modelTypeInitializer;
-    private final ModelType fallbackModelType;
-    private final int maximumLatency;
-    private final SegmentFunction temporarySegmentStream;
-    private final SegmentFunction finalizedSegmentStream;
-    private TimeSeriesGroup timeSeriesGroup;
-    private Set<Integer> allTids;
-    private float dynamicSplitFraction;
+    private final TimeSeriesGroup timeSeriesGroup;
+    private final SegmentGeneratorSupplier segmentGeneratorSupplier;
 
-    private Map<Integer, SegmentGenerator> SIToSegmentGenerator;
-    private Map<Integer, Set<Integer>> SItoTids;
+    private final Map<Integer, SegmentGenerator> SIToSegmentGenerator;
+    private final Map<Integer, Set<Integer>> SItoTids;
 
-    public SegmentGeneratorController(TimeSeriesGroup timeSeriesGroup, Supplier<ModelType[]> modelTypeInitializer,
-                                      ModelType fallbackModelType, Set<Integer> allTids, int maximumLatency, float dynamicSplitFraction,
-                                      SegmentFunction temporarySegmentStream, SegmentFunction finalizedSegmentStream) {
+    public SegmentGeneratorController(TimeSeriesGroup timeSeriesGroup, SegmentGeneratorSupplier segmentGeneratorSupplier) {
         this.timeSeriesGroup = timeSeriesGroup;
-        this.modelTypeInitializer = modelTypeInitializer;
-        this.fallbackModelType = fallbackModelType;
-        this.allTids = allTids;
-        this.maximumLatency = maximumLatency;
-        this.dynamicSplitFraction = dynamicSplitFraction;
-        this.temporarySegmentStream = temporarySegmentStream;
-        this.finalizedSegmentStream = finalizedSegmentStream;
-
+        this.segmentGeneratorSupplier = segmentGeneratorSupplier;
         this.SIToSegmentGenerator = new HashMap<>();
         this.SItoTids = new HashMap<>();
     }
@@ -54,12 +39,7 @@ public class SegmentGeneratorController {
     }
 
     private SegmentGenerator createSegmentGenerator(List<Integer> tids, int samplingInterval) {
-        HashSet<Integer> tidSet = new HashSet<>(tids);
-
-        HashSet<Integer> permanentGapTids = new HashSet<>(this.allTids);
-        permanentGapTids.removeAll(tidSet);
-
-        return new SegmentGenerator(this.timeSeriesGroup.gid, samplingInterval, permanentGapTids, modelTypeInitializer, fallbackModelType, tids, maximumLatency, dynamicSplitFraction, temporarySegmentStream, finalizedSegmentStream);
+        return segmentGeneratorSupplier.get(tids, samplingInterval);
     }
 
     private void handleConfigDataPoints(List<SIConfigurationDataPoint> configurationDataPoints) {
@@ -72,7 +52,6 @@ public class SegmentGeneratorController {
             if (newSi == prevSi) {
                 break; // Do nothing
             }
-
             // Handle new SI
             addTidToSegmentGenerator(newSi, tid);
 
@@ -89,7 +68,6 @@ public class SegmentGeneratorController {
         if (!this.SItoTids.containsKey(samplingInterval)) {
             this.SItoTids.put(samplingInterval, new HashSet<>());
         }
-
         Set<Integer> tids = this.SItoTids.get(samplingInterval);
         tids.add(tid);
 
@@ -102,7 +80,7 @@ public class SegmentGeneratorController {
         Set<Integer> tids = this.SItoTids.get(samplingInterval);
         tids.remove(tid);
 
-        if (tids.size() > 0) { // Create a new segment generator if there still exists some time series with previous SI
+        if (tids.size() > 0) { // Create a new segment generator if there still exists some time series with the SI
             SIToSegmentGenerator.put(samplingInterval, createSegmentGenerator(new ArrayList<>(tids), samplingInterval));
         } else {
             SItoTids.remove(samplingInterval);

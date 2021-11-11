@@ -394,7 +394,7 @@ public class SegmentGenerator {
             //TODO(EKN): fix bufferSplitINDEX
             splitSegmentGenerator(new int[0], timeSeriesSplitIndex);
         }
-        // Sorting that is necessary for testing
+        // EKN: Sorting that is necessary for testing
         this.splitSegmentGenerators.sort(Comparator.comparingInt(sg -> sg.tids.get(0)));
         this.buffer.clear();
     }
@@ -443,7 +443,7 @@ public class SegmentGenerator {
             ValueDataPoint[] newSlice = new ValueDataPoint[bufferSplitIndex.length];
             int j = 0;
             for (int i : bufferSplitIndex) {
-                newSlice[j] = new ValueDataPoint(slice[i].getTid(), slice[i].timestamp, slice[i].value, samplingInterval);
+                newSlice[j] = new ValueDataPoint(slice[i].getTid(), slice[i].timestamp, slice[i].value, slice[i].samplingInterval);
                 j++;
             }
             newBuffer.add(newSlice);
@@ -496,6 +496,7 @@ public class SegmentGenerator {
             //If the join set contains more than one SegmentGenerator they are joined together
             if (toBeJoined.size() > 1) {
                 List<SegmentGenerator> toBeJoinedList = new ArrayList<>(toBeJoined);
+                // EKN: this sorting is done to make the tests deterministic
                 toBeJoinedList.sort(Comparator.comparingInt(sg -> sg.tids.get(0)));
                 newSegmentGenerators.add(joinSegmentGenerators(toBeJoinedList));
                 //HACK: a SegmentGenerator might add itself to the splitsToJoinIfCorrelated list while being joined

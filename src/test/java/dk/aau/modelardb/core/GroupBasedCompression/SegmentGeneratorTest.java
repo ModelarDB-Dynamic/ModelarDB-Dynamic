@@ -2,6 +2,7 @@ package dk.aau.modelardb.core.GroupBasedCompression;
 
 import MockData.CSVTimeSeriesProviderHelper;
 import MockData.ConfigurationProvider;
+import MockData.MockSegmentFunction;
 import dk.aau.modelardb.core.Configuration;
 import dk.aau.modelardb.core.model.compression.ModelType;
 import dk.aau.modelardb.core.model.compression.ModelTypeFactory;
@@ -52,24 +53,6 @@ class SegmentGeneratorTest {
         int[] mtids = {2, 3, 4};
 
         return () -> ModelTypeFactory.getModelTypes(modelTypeNames, mtids, errorBound, lengthBound);
-    }
-
-    static class MockSegmentFunction implements SegmentFunction {
-        private final List<SegmentGroup> segments;
-
-        public MockSegmentFunction() {
-            this.segments = new ArrayList<>();
-        }
-
-        @Override
-        public void emit(int gid, long startTime, int samplingInterval, long endTime, int mtid, byte[] model, byte[] gaps) {
-            SegmentGroup segmentGroup = new SegmentGroup(gid, startTime, samplingInterval, endTime, mtid, model, gaps);
-            segments.add(segmentGroup);
-        }
-
-        public List<SegmentGroup> getSegments() {
-            return segments;
-        }
     }
 
     private void consumeAllSlicesFromGroup(TimeSeriesGroup group, SegmentGenerator segmentGenerator) {
