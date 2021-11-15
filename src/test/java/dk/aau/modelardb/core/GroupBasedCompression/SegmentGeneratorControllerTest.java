@@ -9,6 +9,7 @@ import dk.aau.modelardb.core.model.compression.ModelTypeFactory;
 import dk.aau.modelardb.core.timeseries.TimeSeriesCSV;
 import dk.aau.modelardb.core.utility.SegmentFunction;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -60,12 +61,34 @@ class SegmentGeneratorControllerTest {
                 System.out.println("SG: (SI:" + createdSegmentGenerator.si + " -> " + createdSegmentGenerator.tids + ") closed before receiving data.");
             } else {
                 System.out.println("SG: (SI:" + createdSegmentGenerator.si + " -> " + createdSegmentGenerator.tids + ")'s data:");
-                for (String s : createdSegmentGenerator.getOutput()) {
+                for (String s : output) {
                     System.out.println(s);
                 }
             }
         }
     }
+
+    private void assertOutputString(MockSegmentGeneratorSupplier segmentGeneratorSupplier, String expectedOutput) {
+        StringBuilder actualOutput = new StringBuilder();
+
+        for (MockSegmentGenerator createdSegmentGenerator : segmentGeneratorSupplier.createdSegmentGenerators) {
+            var outputList  = createdSegmentGenerator.getOutput();
+            if(outputList.size() == 1) {
+                actualOutput.append("SG: (SI:").append(createdSegmentGenerator.si).append(" -> ").append(createdSegmentGenerator.tids).append(") closed before receiving data.");
+                actualOutput.append("\n");
+            } else {
+                actualOutput.append("SG: (SI:").append(createdSegmentGenerator.si).append(" -> ").append(createdSegmentGenerator.tids).append(")'s data:");
+                actualOutput.append("\n");
+                for (String s : outputList) {
+                    actualOutput.append(s);
+                    actualOutput.append("\n");
+                }
+            }
+        }
+        var temp = actualOutput.toString();
+        Assertions.assertEquals(expectedOutput, temp);
+    }
+
 
     @Test
     void OneTimeSeriesWhereSIChanges() {
@@ -77,7 +100,21 @@ class SegmentGeneratorControllerTest {
 
         controller.start();
 
-        printOutput(segmentGeneratorSupplier);
+        //printOutput(segmentGeneratorSupplier);
+        String expected =
+                "SG: (SI:100 -> [1])'s data:\n" +
+                "[ValueDataPoint: [tid: 1 | time: 100 | val: 1.0 | si: 100]]\n" +
+                "[ValueDataPoint: [tid: 1 | time: 200 | val: 1.0 | si: 100]]\n" +
+                "[ValueDataPoint: [tid: 1 | time: 300 | val: 1.0 | si: 100]]\n" +
+                "[ValueDataPoint: [tid: 1 | time: 400 | val: 1.0 | si: 100]]\n" +
+                "[ValueDataPoint: [tid: 1 | time: 500 | val: 1.0 | si: 100]]\n" +
+                "Closed Segment Generator for tids:[1]\n" +
+                "SG: (SI:200 -> [1])'s data:\n" +
+                "[ValueDataPoint: [tid: 1 | time: 600 | val: 1.0 | si: 200]]\n" +
+                "[ValueDataPoint: [tid: 1 | time: 800 | val: 1.0 | si: 200]]\n" +
+                "[ValueDataPoint: [tid: 1 | time: 1000 | val: 1.0 | si: 200]]\n" +
+                "Closed Segment Generator for tids:[1]\n";
+        assertOutputString(segmentGeneratorSupplier, expected);
     }
 
     @Test
@@ -92,7 +129,30 @@ class SegmentGeneratorControllerTest {
 
         controller.start();
 
-        printOutput(segmentGeneratorSupplier);
+        //printOutput(segmentGeneratorSupplier);
+        String expected =
+                "SG: (SI:100 -> [2]) closed before receiving data.\n" +
+                "SG: (SI:100 -> [2, 3]) closed before receiving data.\n" +
+                "SG: (SI:100 -> [2])'s data:\n" +
+                "[ValueDataPoint: [tid: 2 | time: 100 | val: 2.0 | si: 100]]\n" +
+                "[ValueDataPoint: [tid: 2 | time: 200 | val: 2.0 | si: 100]]\n" +
+                "[ValueDataPoint: [tid: 2 | time: 300 | val: 2.0 | si: 100]]\n" +
+                "[ValueDataPoint: [tid: 2 | time: 400 | val: 2.0 | si: 100]]\n" +
+                "[ValueDataPoint: [tid: 2 | time: 500 | val: 2.0 | si: 100]]\n" +
+                "[ValueDataPoint: [tid: 2 | time: 600 | val: 2.0 | si: 100]]\n" +
+                "Closed Segment Generator for tids:[2]\n" +
+                "SG: (SI:200 -> [3])'s data:\n" +
+                "[ValueDataPoint: [tid: 3 | time: 200 | val: 3.0 | si: 200]]\n" +
+                "[ValueDataPoint: [tid: 3 | time: 400 | val: 3.0 | si: 200]]\n" +
+                "[ValueDataPoint: [tid: 3 | time: 600 | val: 3.0 | si: 200]]\n" +
+                "Closed Segment Generator for tids:[3]\n" +
+                "SG: (SI:100 -> [2, 3])'s data:\n" +
+                "[ValueDataPoint: [tid: 2 | time: 700 | val: 2.0 | si: 100], ValueDataPoint: [tid: 3 | time: 700 | val: 3.0 | si: 100]]\n" +
+                "[ValueDataPoint: [tid: 2 | time: 800 | val: 2.0 | si: 100], ValueDataPoint: [tid: 3 | time: 800 | val: 3.0 | si: 100]]\n" +
+                "[ValueDataPoint: [tid: 2 | time: 900 | val: 2.0 | si: 100], ValueDataPoint: [tid: 3 | time: 900 | val: 3.0 | si: 100]]\n" +
+                "[ValueDataPoint: [tid: 2 | time: 1000 | val: 2.0 | si: 100], ValueDataPoint: [tid: 3 | time: 1000 | val: 3.0 | si: 100]]\n" +
+                "Closed Segment Generator for tids:[2, 3]\n";
+        assertOutputString(segmentGeneratorSupplier, expected);
     }
 
     @Test
@@ -108,8 +168,46 @@ class SegmentGeneratorControllerTest {
 
         controller.start();
 
-        printOutput(segmentGeneratorSupplier);
+        //printOutput(segmentGeneratorSupplier);
+        String expected =
+                "SG: (SI:100 -> [4]) closed before receiving data.\n" +
+                "SG: (SI:100 -> [4, 5]) closed before receiving data.\n" +
+                "SG: (SI:100 -> [4, 5, 6])'s data:\n" +
+                "[ValueDataPoint: [tid: 4 | time: 100 | val: 4.0 | si: 100], ValueDataPoint: [tid: 5 | time: 100 | val: 5.0 | si: 100], ValueDataPoint: [tid: 6 | time: 100 | val: 6.0 | si: 100]]\n" +
+                "[ValueDataPoint: [tid: 4 | time: 200 | val: 4.0 | si: 100], ValueDataPoint: [tid: 5 | time: 200 | val: 5.0 | si: 100], ValueDataPoint: [tid: 6 | time: 200 | val: 6.0 | si: 100]]\n" +
+                "[ValueDataPoint: [tid: 4 | time: 300 | val: 4.0 | si: 100], ValueDataPoint: [tid: 5 | time: 300 | val: 5.0 | si: 100], ValueDataPoint: [tid: 6 | time: 300 | val: 6.0 | si: 100]]\n" +
+                "[ValueDataPoint: [tid: 4 | time: 400 | val: 4.0 | si: 100], ValueDataPoint: [tid: 5 | time: 400 | val: 5.0 | si: 100], ValueDataPoint: [tid: 6 | time: 400 | val: 6.0 | si: 100]]\n" +
+                "[ValueDataPoint: [tid: 4 | time: 500 | val: 4.0 | si: 100], ValueDataPoint: [tid: 5 | time: 500 | val: 5.0 | si: 100], ValueDataPoint: [tid: 6 | time: 500 | val: 6.0 | si: 100]]\n" +
+                "Closed Segment Generator for tids:[4, 5, 6]\n" +
+                "SG: (SI:100 -> [4, 6]) closed before receiving data.\n" +
+                "SG: (SI:200 -> [5])'s data:\n" +
+                "[ValueDataPoint: [tid: 5 | time: 600 | val: 5.0 | si: 200]]\n" +
+                "[ValueDataPoint: [tid: 5 | time: 800 | val: 5.0 | si: 200]]\n" +
+                "[ValueDataPoint: [tid: 5 | time: 1000 | val: 5.0 | si: 200]]\n" +
+                "Closed Segment Generator for tids:[5]\n" +
+                "SG: (SI:100 -> [4])'s data:\n" +
+                "[ValueDataPoint: [tid: 4 | time: 600 | val: 4.0 | si: 100]]\n" +
+                "[ValueDataPoint: [tid: 4 | time: 700 | val: 4.0 | si: 100]]\n" +
+                "[ValueDataPoint: [tid: 4 | time: 800 | val: 4.0 | si: 100]]\n" +
+                "[ValueDataPoint: [tid: 4 | time: 900 | val: 4.0 | si: 100]]\n" +
+                "[ValueDataPoint: [tid: 4 | time: 1000 | val: 4.0 | si: 100]]\n" +
+                "Closed Segment Generator for tids:[4]\n" +
+                "SG: (SI:50 -> [6])'s data:\n" +
+                "[ValueDataPoint: [tid: 6 | time: 550 | val: 6.0 | si: 50]]\n" +
+                "[ValueDataPoint: [tid: 6 | time: 600 | val: 6.0 | si: 50]]\n" +
+                "[ValueDataPoint: [tid: 6 | time: 650 | val: 6.0 | si: 50]]\n" +
+                "[ValueDataPoint: [tid: 6 | time: 700 | val: 6.0 | si: 50]]\n" +
+                "[ValueDataPoint: [tid: 6 | time: 750 | val: 6.0 | si: 50]]\n" +
+                "[ValueDataPoint: [tid: 6 | time: 800 | val: 6.0 | si: 50]]\n" +
+                "[ValueDataPoint: [tid: 6 | time: 850 | val: 6.0 | si: 50]]\n" +
+                "[ValueDataPoint: [tid: 6 | time: 900 | val: 6.0 | si: 50]]\n" +
+                "[ValueDataPoint: [tid: 6 | time: 950 | val: 6.0 | si: 50]]\n" +
+                "[ValueDataPoint: [tid: 6 | time: 1000 | val: 6.0 | si: 50]]\n" +
+                "Closed Segment Generator for tids:[6]\n";
+        assertOutputString(segmentGeneratorSupplier, expected);
     }
+
+
 
     static class MockSegmentGenerator extends SegmentGenerator {
         private boolean isFinalized;
