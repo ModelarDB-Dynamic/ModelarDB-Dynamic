@@ -130,6 +130,7 @@ object CodeGenerator {
       val variableName = column.getName match {
         case "TID" => "segment.gid" //Exploded so .gid is the tid
         case "START_TIME" => "segment.startTime"
+        case "SAMPLINGINTERVAL" => "segment.samplingInterval"
         case "END_TIME" => "segment.endTime"
         case "MTID" => "segment.mtid"
         case "MODEL" => "segment.model"

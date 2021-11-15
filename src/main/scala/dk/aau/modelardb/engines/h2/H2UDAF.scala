@@ -78,8 +78,8 @@ class MinS extends AggregateFunction {
   def rowToSegment(row: Any): Segment = {
     val values = row.asInstanceOf[Array[Object]]
     this.mtc(values(4).asInstanceOf[Int]).get(
-      values(0).asInstanceOf[Int], values(1).asInstanceOf[Timestamp].getTime, values(3).asInstanceOf[Int],
-      values(2).asInstanceOf[Timestamp].getTime, values(5).asInstanceOf[Array[Byte]], values(6).asInstanceOf[Array[Byte]])
+      values(0).asInstanceOf[Int], values(1).asInstanceOf[Timestamp].getTime, values(2).asInstanceOf[Int],
+      values(3).asInstanceOf[Timestamp].getTime, values(5).asInstanceOf[Array[Byte]], values(6).asInstanceOf[Array[Byte]])
   }
 
   override def getResult: AnyRef = {

@@ -48,7 +48,7 @@ object H2Projector {
     val currentValues = new Array[Value](EngineUtilities.segmentViewNameToIndex.size)
     val requiredColumns = tableFilterToColumns(filter)
     val columnNames = requiredColumns.map(_.getName.toLowerCase)
-    val target = EngineUtilities.computeJumpTarget(columnNames, EngineUtilities.segmentViewNameToIndex, 6)
+    val target = EngineUtilities.computeJumpTarget(columnNames, EngineUtilities.segmentViewNameToIndex, 7)
     (target: @switch) match {
       case 0 => //COUNT(*)
         segments.map(_ => null)
@@ -59,14 +59,15 @@ object H2Projector {
           currentValues(2) = ValueTimestamp.fromMillis(segment.endTime, 0)
           currentValues
         })
-      case 123456 => //Data Point View and UDAFs
+      case 1234567 => //Data Point View and UDAFs
         segments.map(segment => {
           currentValues(0) = ValueInt.get(segment.gid) //Exploded so .gid is the tid
           currentValues(1) = ValueTimestamp.fromMillis(segment.startTime, 0)
-          currentValues(2) = ValueTimestamp.fromMillis(segment.endTime, 0)
-          currentValues(3) = ValueInt.get(segment.mtid)
-          currentValues(4) = ValueBytes.get(segment.model)
-          currentValues(5) = ValueBytes.get(segment.gaps)
+          currentValues(2) = ValueInt.get(segment.samplingInterval)
+          currentValues(3) = ValueTimestamp.fromMillis(segment.endTime, 0)
+          currentValues(4) = ValueInt.get(segment.mtid)
+          currentValues(5) = ValueBytes.get(segment.model)
+          currentValues(6) = ValueBytes.get(segment.gaps)
           currentValues
         })
       //Static projections cannot be used for rows with dimensions

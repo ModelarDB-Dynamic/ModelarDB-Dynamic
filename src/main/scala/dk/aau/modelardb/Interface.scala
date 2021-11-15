@@ -139,7 +139,7 @@ object Interface {
     try {
       val query_rewritten =
         query.replace("COUNT_S(#)", "COUNT_S(tid, start_time, end_time)")
-          .replace("#", "tid, start_time, end_time, mtid, model, gaps")
+          .replace("#", "tid, start_time, samplingInterval, end_time, mtid, model, gaps")
       result = this.sql(query_rewritten)
     } catch {
       case e: Exception =>
