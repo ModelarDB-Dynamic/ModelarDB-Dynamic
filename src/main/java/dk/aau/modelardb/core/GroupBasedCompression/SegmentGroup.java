@@ -31,8 +31,8 @@ public class SegmentGroup {
      **/
     public final int gid;
     public final long startTime;
-    public final long endTime;
     public final int samplingInterval;
+    public final long endTime;
     public final int mtid;
     public final byte[] model;
     public final byte[] gaps;
@@ -43,8 +43,8 @@ public class SegmentGroup {
     public SegmentGroup(int gid, long startTime, int samplingInterval, long endTime, int mtid, byte[] model, byte[] gaps) {
         this.gid = gid;
         this.startTime = startTime;
-        this.endTime = endTime;
         this.samplingInterval = samplingInterval;
+        this.endTime = endTime;
         this.mtid = mtid;
         this.model = model;
         this.gaps = gaps;
@@ -138,7 +138,7 @@ public class SegmentGroup {
         ModelType m = storage.modelTypeCache()[mtid];
         int[] gmc = groupMetadataCache[this.gid];
         for (int i = 0; i < sgs.length; i++) {
-            segments[i] = m.get(sgs[i].gid, this.startTime, this.endTime, gmc[0], this.model, sgs[i].gaps);
+            segments[i] = m.get(sgs[i].gid, this.startTime, this.samplingInterval, this.endTime, this.model, sgs[i].gaps);
         }
         return segments;
     }

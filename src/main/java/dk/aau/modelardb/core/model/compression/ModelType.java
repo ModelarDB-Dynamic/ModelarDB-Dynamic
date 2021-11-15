@@ -48,7 +48,7 @@ public abstract class ModelType implements Serializable {
 
     abstract public byte[] getModel(long startTime, long endTime, int samplingInterval, List<ValueDataPoint[]> dps);
 
-    abstract public Segment get(int tid, long startTime, long endTime, int samplingInterval, byte[] model, byte[] offsets);
+    abstract public Segment get(int gid, long startTime, int samplingInterval, long endTime, byte[] model, byte[] offsets);
 
     abstract public int length();
 

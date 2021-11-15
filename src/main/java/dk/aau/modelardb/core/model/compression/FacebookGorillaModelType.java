@@ -81,8 +81,8 @@ class FacebookGorillaModelType extends ModelType {
     }
 
     @Override
-    public Segment get(int tid, long startTime, long endTime, int samplingInterval, byte[] model, byte[] offsets) {
-        return new FacebookGorillaSegment(tid, startTime, endTime, samplingInterval, model, offsets);
+    public Segment get(int gid, long startTime, int samplingInterval, long endTime,  byte[] model, byte[] offsets) {
+        return new FacebookGorillaSegment(gid, startTime, samplingInterval, endTime, model, offsets);
     }
 
     @Override
@@ -151,9 +151,9 @@ class FacebookGorillaSegment extends Segment {
     /**
      * Constructors
      **/
-    FacebookGorillaSegment(int tid, long startTime, long endTime, int samplingInterval, byte[] model, byte[] offsets) {
+    FacebookGorillaSegment(int tid, long startTime, int samplingInterval, long endTime, byte[] model, byte[] offsets) {
         //Unlike length(), capacity() is not impacted by changes to the segment's start time
-        super(tid, startTime, endTime, samplingInterval, offsets);
+        super(tid, startTime, samplingInterval, endTime, offsets);
         this.values = decompress(model, super.capacity());
     }
 

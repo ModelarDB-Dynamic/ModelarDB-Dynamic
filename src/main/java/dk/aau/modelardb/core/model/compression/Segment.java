@@ -29,15 +29,15 @@ public abstract class Segment {
      * Instance Variables
      **/
     public final int tid;
-    public final int samplingInterval;
     private final int[] offsets;
     private long startTime;
+    public final int samplingInterval;
     private long endTime;
 
     /**
      * Constructors
      **/
-    public Segment(int tid, long startTime, long endTime, int samplingInterval, int[] offsets) {
+    public Segment(int tid, long startTime, int samplingInterval, long endTime, int[] offsets) {
         this.tid = tid;
         this.startTime = startTime;
         this.endTime = endTime;
@@ -45,7 +45,7 @@ public abstract class Segment {
         this.offsets = offsets;
     }
 
-    public Segment(int tid, long startTime, long endTime, int samplingInterval, byte[] offsets) {
+    public Segment(int tid, long startTime, int samplingInterval, long endTime, byte[] offsets) {
         this.tid = tid;
         this.startTime = startTime;
         this.endTime = endTime;

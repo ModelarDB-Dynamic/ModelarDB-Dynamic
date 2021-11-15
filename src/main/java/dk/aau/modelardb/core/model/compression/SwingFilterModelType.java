@@ -143,8 +143,8 @@ class SwingFilterModelType extends ModelType {
     }
 
     @Override
-    public Segment get(int tid, long startTime, long endTime, int samplingInterval, byte[] model, byte[] offsets) {
-        return new SwingFilterSegment(tid, startTime, endTime, samplingInterval, model, offsets);
+    public Segment get(int gid, long startTime, int samplingInterval, long endTime, byte[] model, byte[] offsets) {
+        return new SwingFilterSegment(gid, startTime, samplingInterval, endTime, model, offsets);
     }
 
     @Override
@@ -197,8 +197,8 @@ class SwingFilterSegment extends Segment {
     /**
      * Constructors
      **/
-    SwingFilterSegment(int tid, long startTime, long endTime, int samplingInterval, byte[] model, byte[] offsets) {
-        super(tid, startTime, endTime, samplingInterval, offsets);
+    SwingFilterSegment(int tid, long startTime, int samplingInterval, long endTime, byte[] model, byte[] offsets) {
+        super(tid, startTime, samplingInterval, endTime, offsets);
         ByteBuffer arguments = ByteBuffer.wrap(model);
 
         //Depending on the data being encoded, the linear function might have required double precision floating-point
