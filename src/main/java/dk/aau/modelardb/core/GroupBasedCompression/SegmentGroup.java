@@ -67,7 +67,6 @@ public class SegmentGroup {
         return sb.toString();
     }
 
-    //TODO use sampling interval
     public SegmentGroup[] explode(int[][] groupMetadataCache, HashMap<Integer, int[]> groupDerivedCache) {
         int[] gmc = groupMetadataCache[this.gid];
         int[] derivedTimeSeries = groupDerivedCache.getOrElse(this.gid, () -> SegmentGroup.defaultDerivedTimeSeries);

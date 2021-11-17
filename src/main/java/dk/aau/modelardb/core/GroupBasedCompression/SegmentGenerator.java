@@ -20,8 +20,6 @@ import dk.aau.modelardb.core.model.ValueDataPoint;
 import dk.aau.modelardb.core.utility.Logger;
 import dk.aau.modelardb.core.utility.ReverseBufferIterator;
 import dk.aau.modelardb.core.utility.SegmentFunction;
-import dk.aau.modelardb.core.utility.Static;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -198,7 +196,7 @@ public class SegmentGenerator {
                 return false;
             } else {
                 this.currentModelType = this.modelTypes[this.modelTypeIndex];
-                this.currentModelType.initialize(new ArrayList<>(this.buffer));
+                this.currentModelType.initialize(this.buffer);
             }
         }
         return true;
@@ -217,7 +215,7 @@ public class SegmentGenerator {
             modelTypes[this.modelTypeIndex].initialize(this.buffer);
         }
 
-        //Finalized segments are emitted until the buffer is empty, dynamic splitting is disabled as flushing can
+        // Finalized segments are emitted until the buffer is empty, dynamic splitting is disabled as flushing can
         // create models with a poor compression ratio despite the time series in the group still being correlated
         float previousDynamicSplitFraction = this.dynamicSplitFraction;
         this.dynamicSplitFraction = 0;
@@ -252,7 +250,7 @@ public class SegmentGenerator {
         gapsAndPermGaps.addAll(this.permanentGapTids);
 
         //A segment containing the current model type is constructed and emitted
-        emitSegment(this.temporarySegmentStream, modelTypeToBeEmitted, gapsAndPermGaps);
+        this.temporarySegmentStream.emit(buffer, modelTypeToBeEmitted, gapsAndPermGaps, samplingInterval, gid);
 
         //DEBUG: all the debug counters can be updated as we have emitted a temporary segment
         this.logger.updateTemporarySegmentCounters(modelTypeToBeEmitted, gapsAndPermGaps.size());
@@ -278,14 +276,14 @@ public class SegmentGenerator {
         //A segment containing the model with the best compression ratio is constructed and emitted
         List<Integer> gapsAndPermGaps = new ArrayList<>(this.gaps);
         gapsAndPermGaps.addAll(this.permanentGapTids);
-        emitSegment(this.finalizedSegmentStream, mostEfficientModelType, gapsAndPermGaps);
+        this.finalizedSegmentStream.emit(buffer, mostEfficientModelType, gapsAndPermGaps, samplingInterval, gid);
         this.buffer.subList(0, mostEfficientModelTypeLength).clear();
 
         //The best model is stored as it's error function is used when computing the split/join heuristics
         this.lastEmittedModelType = mostEfficientModelType;
 
         //DEBUG: all the debug counters are updated based on the emitted finalized segment
-        this.logger.updateFinalizedSegmentCounters(mostEfficientModelType, this.tids.size() - this.gaps.size(), this.gaps.size() + this.permanentGapTids.size());
+        this.logger.updateFinalizedSegmentCounters(mostEfficientModelType, this.tids.size() - this.gaps.size(), gapsAndPermGaps.size());
 
         //If the time series have changed it might beneficial to split or join their groups
         checkIfSplitOrJoinMakesSense(highestCompressionRatio);
@@ -314,18 +312,6 @@ public class SegmentGenerator {
         long startTime = this.buffer.get(0)[0].timestamp;
         long endTime = this.buffer.get(modelTypeLength - 1)[0].timestamp;
         return modelType.compressionRatio(startTime, endTime, samplingInterval, this.buffer, this.gaps.size() + this.permanentGapTids.size());
-    }
-
-    private void emitSegment(SegmentFunction stream, ModelType modelType, List<Integer> segmentGaps) {
-        if(slicesNotYetEmitted == 0) {
-            return;
-        }
-        int amtPointsInModel = modelType.length();
-        long startTime = this.buffer.get(0)[0].timestamp;
-        long endTime = this.buffer.get(amtPointsInModel - 1)[0].timestamp;
-        int[] gaps = segmentGaps.stream().mapToInt(l -> l).toArray();
-        byte[] model = modelType.getModel(startTime, endTime, samplingInterval, this.buffer);
-        stream.emit(this.gid, startTime, this.samplingInterval, endTime, modelType.mtid, model, Static.intToBytes(gaps));
     }
 
     private boolean checkIfCompressionRatioIsBelowAverageAndUpdateTheAverage(double compressionRatio) {
@@ -385,7 +371,6 @@ public class SegmentGenerator {
             int[] timeSeriesSplitIndex = //If a gap's tid is not in this group it is part of another split
                     this.gaps.stream().mapToInt(tid -> Collections.binarySearch(tids, tid)).filter(k -> k >= 0).toArray();
             Arrays.sort(timeSeriesSplitIndex); //This.gaps is a set so sorting is required
-            //TODO(EKN): fix bufferSplitINDEX
             splitSegmentGenerator(new int[0], timeSeriesSplitIndex);
         }
         // EKN: Sorting that is necessary for testing
@@ -452,52 +437,64 @@ public class SegmentGenerator {
         // Double loop where we try to join each segment generator with the other segment generators
         while (!this.splitsToJoinIfCorrelated.isEmpty()) {
             SegmentGenerator sgi = this.splitsToJoinIfCorrelated.iterator().next();
-            HashSet<SegmentGenerator> toBeJoined = new HashSet<>();
-            // TODO MOVE THIS INTO A HELPER FUNCTION
-            //If all data points with a shared time stamp is within the double error bound the groups are joined
-            for (SegmentGenerator sgj : this.splitSegmentGenerators) {
-                //Comparing the segment generator to itself always return true
-                if (sgi == sgj) {
-                    toBeJoined.add(sgi);
-                    markedForJoining.add(sgi);
-                    this.splitsToJoinIfCorrelated.remove(sgi);
-                    continue;
-                }
 
-                //A time series group cannot be joined with another group more than once
-                if (markedForJoining.contains(sgj)) {
-                    continue;
-                }
-
-                //If no data points are buffered it is not possible to check if the time series should be joined
-                int is = sgi.buffer.size();
-                int js = sgj.buffer.size();
-                boolean canBeJoined = is > 0 && js > 0 &&
-                        sgi.buffer.get(is - 1)[0].timestamp == sgj.buffer.get(js - 1)[0].timestamp;
-
-                //The time series are joined if their data points with equal time stamps are within twice the error bound
-                canBeJoined &= lastEmittedModelType.withinErrorBound(doubleErrorBound,
-                        new ReverseBufferIterator(sgi.buffer, 0), new ReverseBufferIterator(sgj.buffer, 0));
-
-                if (canBeJoined) {
-                    toBeJoined.add(sgj);
-                    markedForJoining.add(sgj);
-                    this.splitsToJoinIfCorrelated.remove(sgj);
-                }
-            }
+            Set<SegmentGenerator> toBeJoined = findSGstoBeJoinedWithSGi(doubleErrorBound, markedForJoining, sgi);
 
             //If the join set contains more than one SegmentGenerator they are joined together
             if (toBeJoined.size() > 1) {
                 List<SegmentGenerator> toBeJoinedList = new ArrayList<>(toBeJoined);
                 // EKN: this sorting is done to make the tests deterministic
                 toBeJoinedList.sort(Comparator.comparingInt(sg -> sg.tids.get(0)));
-                newSegmentGenerators.add(joinSegmentGenerators(toBeJoinedList));
+                SegmentGenerator joinedSegmentGenerator = joinSegmentGenerators(toBeJoinedList);
+                newSegmentGenerators.add(joinedSegmentGenerator);
                 //HACK: a SegmentGenerator might add itself to the splitsToJoinIfCorrelated list while being joined
                 this.splitsToJoinIfCorrelated.removeAll(toBeJoined);
                 this.splitSegmentGenerators.removeAll(toBeJoined);
             }
         }
         this.splitSegmentGenerators.addAll(newSegmentGenerators);
+    }
+
+    private Set<SegmentGenerator>  findSGstoBeJoinedWithSGi(float doubleErrorBound, HashSet<SegmentGenerator> markedForJoining, SegmentGenerator currSegmentGenerator) {
+        Set<SegmentGenerator> toBeJoined = new HashSet<>();
+
+        for (SegmentGenerator otherSegmentGenerator : this.splitSegmentGenerators) {
+            //Comparing the segment generator to itself always return true
+            if (currSegmentGenerator == otherSegmentGenerator) {
+                toBeJoined.add(currSegmentGenerator);
+                markedForJoining.add(currSegmentGenerator);
+                this.splitsToJoinIfCorrelated.remove(currSegmentGenerator);
+                continue;
+            }
+
+            //A time series group cannot be joined with another group more than once
+            if (markedForJoining.contains(otherSegmentGenerator)) {
+                continue;
+            }
+
+            boolean canBeJoined = checkIfCanBeJoined(doubleErrorBound, currSegmentGenerator, otherSegmentGenerator);
+
+            if (canBeJoined) {
+                toBeJoined.add(otherSegmentGenerator);
+                markedForJoining.add(otherSegmentGenerator);
+                this.splitsToJoinIfCorrelated.remove(otherSegmentGenerator);
+            }
+        }
+
+        return toBeJoined;
+    }
+
+    private boolean checkIfCanBeJoined(float doubleErrorBound, SegmentGenerator currSegmentGenerator, SegmentGenerator otherSegmentGenerator) {
+        //If no data points are buffered it is not possible to check if the time series should be joined
+        int is = currSegmentGenerator.buffer.size();
+        int js = otherSegmentGenerator.buffer.size();
+        boolean canBeJoined = is > 0 && js > 0 &&
+                currSegmentGenerator.buffer.get(is - 1)[0].timestamp == otherSegmentGenerator.buffer.get(js - 1)[0].timestamp;
+
+        //If all data points with a shared time stamp is within the double error bound the groups are joined
+        canBeJoined &= lastEmittedModelType.withinErrorBound(doubleErrorBound,
+                new ReverseBufferIterator(currSegmentGenerator.buffer, 0), new ReverseBufferIterator(otherSegmentGenerator.buffer, 0));
+        return canBeJoined;
     }
 
     private SegmentGenerator joinSegmentGenerators(List<SegmentGenerator> toBeJoined) {

@@ -70,11 +70,11 @@ public class DataSlice {
     }
 
     public void addGapsForTidsWithMissingPoints(Set<Integer> allTids) {
-        Set<Integer> tempTids = new HashSet<>(allTids);
+        Set<Integer> tidsNotInSlice = new HashSet<>(allTids);
         Set<Integer> tidsInSlice = valueDataPoints.stream().map(DataPoint::getTid).collect(Collectors.toSet());
-        tempTids.removeAll(tidsInSlice);
+        tidsNotInSlice.removeAll(tidsInSlice);
 
-        for (Integer tid : tempTids) {
+        for (Integer tid : tidsNotInSlice) {
             this.addGapPointForTid(tid);
         }
     }
