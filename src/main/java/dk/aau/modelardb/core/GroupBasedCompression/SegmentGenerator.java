@@ -106,7 +106,7 @@ public class SegmentGenerator {
         this.currentModelType.initialize(this.buffer);
 
         //DEBUG: logger instance for counting segments used for this generator
-        this.logger = new Logger(new Random().nextInt(1000));
+        this.logger = new Logger(this.tids.size());
     }
 
     public boolean isFinalized() {

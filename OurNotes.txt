@@ -5,10 +5,13 @@
 
 # 3. Then start another terminal and send your queries in a manner simlar to:
   curl -d "select * from datapoint limit 10" localhost:9999
-  curl -d "select AVG_S(#) from Segment" localhost:9999
   curl -d "select START_TIME, AVG_S(#) from Segment group by TID, START_TIME" localhost:9999
+  curl -d "SELECT tid, start_time, model, mtid FROM Segment WHERE MTID = 2 LIMIT 50" localhost:9999'
+  curl -d "select START_TIME, samplinginterval from Segment limit 10" localhost:9999
+  curl -d "select START_TIME, AVG_S(#) from Segment group by TID, START_TIME limit 10" localhost:9999
+  curl -d "select START_TIME, AVG_S(#) from Segment group by START_TIME order by start_time" localhost:9999 -o output_new.txt
   
-  
+
 # Until furhter notice don't test it on spark just use h2. 
 
 #TODOs:
