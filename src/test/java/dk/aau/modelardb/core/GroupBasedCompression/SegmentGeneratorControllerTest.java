@@ -7,6 +7,7 @@ import dk.aau.modelardb.core.model.DataSlice;
 import dk.aau.modelardb.core.model.compression.ModelType;
 import dk.aau.modelardb.core.model.compression.ModelTypeFactory;
 import dk.aau.modelardb.core.timeseries.TimeSeriesCSV;
+import dk.aau.modelardb.core.utility.Logger;
 import dk.aau.modelardb.core.utility.SegmentFunction;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
@@ -300,7 +301,7 @@ class SegmentGeneratorControllerTest {
         private int si;
 
         MockSegmentGenerator(List<Integer> tids, int si, Supplier<ModelType[]> modelTypeInitializer) {
-            super(-1, -1, null, modelTypeInitializer, null, tids, -1, -1, null, null);
+            super(-1, -1, null, modelTypeInitializer, null, tids, -1, -1, null, null, new Logger());
             this.isFinalized = false;
             this.output = new ArrayList<>();
             this.tids = tids;
@@ -335,7 +336,7 @@ class SegmentGeneratorControllerTest {
 
 
         public MockSegmentGeneratorSupplier(TimeSeriesGroup timeSeriesGroup) {
-            super(timeSeriesGroup, null, null, -1, null, null, -1);
+            super(timeSeriesGroup, null, null, -1, null, null, -1, new Logger());
             this.timeSeriesGroup = timeSeriesGroup;
             this.createdSegmentGenerators = new ArrayList<>();
             this.modelTypeInitializer = createModelTypeInitializer();

@@ -71,7 +71,7 @@ public class SegmentGenerator {
      **/
     SegmentGenerator(int gid, int samplingInterval, Set<Integer> permenentGapTids, Supplier<ModelType[]> modelTypeInitializer,
                      ModelType fallbackModelType, List<Integer> tids, int maximumLatency, float dynamicSplitFraction,
-                     SegmentFunction temporarySegmentStream, SegmentFunction finalizedSegmentStream) {
+                     SegmentFunction temporarySegmentStream, SegmentFunction finalizedSegmentStream, Logger logger) {
 
         //Variables from the constructor
         this.gid = gid;
@@ -106,7 +106,7 @@ public class SegmentGenerator {
         this.currentModelType.initialize(this.buffer);
 
         //DEBUG: logger instance for counting segments used for this generator
-        this.logger = new Logger(this.tids.size());
+        this.logger = logger;
     }
 
     public boolean isFinalized() {
@@ -295,7 +295,7 @@ public class SegmentGenerator {
         this.lastEmittedModelType = mostEfficientModelType;
 
         //DEBUG: all the debug counters are updated based on the emitted finalized segment
-        this.logger.updateFinalizedSegmentCounters(mostEfficientModelType, this.gaps.size());
+        this.logger.updateFinalizedSegmentCounters(mostEfficientModelType, this.tids.size() - this.gaps.size(), this.gaps.size() + this.permanentGapTids.size());
 
         //If the time series have changed it might beneficial to split or join their groups
         checkIfSplitOrJoinMakesSense(highestCompressionRatio);
@@ -411,9 +411,8 @@ public class SegmentGenerator {
         permGapsForChild.addAll(this.permanentGapTids);
 
         SegmentGenerator sg = new SegmentGenerator(this.gid, this.samplingInterval, permGapsForChild, this.modelTypeInitializer, this.fallbackModelType,
-                tidsForChild, this.maximumLatency, this.dynamicSplitFraction, this.temporarySegmentStream, this.finalizedSegmentStream);
+                tidsForChild, this.maximumLatency, this.dynamicSplitFraction, this.temporarySegmentStream, this.finalizedSegmentStream, this.logger);
         sg.buffer = copyBuffer(this.buffer, bufferSplitIndex);
-        sg.logger = this.logger;
         sg.resetModelTypeIndex();
         sg.splitSegmentGenerators = this.splitSegmentGenerators;
         sg.splitsToJoinIfCorrelated = this.splitsToJoinIfCorrelated;
@@ -525,7 +524,7 @@ public class SegmentGenerator {
             totalJoinTidList.forEach(allSgPermanentGaps::remove);
 
             newSegmentGenerator = new SegmentGenerator(this.gid, this.samplingInterval, allSgPermanentGaps, this.modelTypeInitializer, this.fallbackModelType, totalJoinTidList,
-                    this.maximumLatency, this.dynamicSplitFraction, this.temporarySegmentStream, this.finalizedSegmentStream);
+                    this.maximumLatency, this.dynamicSplitFraction, this.temporarySegmentStream, this.finalizedSegmentStream, this.logger);
             newSegmentGenerator.logger = this.logger;
             newSegmentGenerator.splitSegmentGenerators = this.splitSegmentGenerators;
             newSegmentGenerator.splitsToJoinIfCorrelated = this.splitsToJoinIfCorrelated;

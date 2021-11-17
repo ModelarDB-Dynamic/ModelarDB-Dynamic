@@ -30,7 +30,6 @@ public class Logger implements Serializable {
      * Instance Variables
      **/
     private long processingTime = 0L;
-    private int groupSize = 0;
     private long temporarySegmentCounter = 0L;
     private long temporaryDataPointCounter = 0L;
     private float finalizedMetadataSize = 0.0F;
@@ -42,10 +41,6 @@ public class Logger implements Serializable {
      **/
     public Logger() {
         //An empty Logger object can be used to aggregate data from multiple Logger objects
-    }
-
-    public Logger(int groupSize) {
-        this.groupSize = groupSize;
     }
 
     /**
@@ -88,12 +83,12 @@ public class Logger implements Serializable {
         }
     }
 
-    public void updateTemporarySegmentCounters(ModelType temporaryModelType, int segmentGapsSize) {
+    public void updateTemporarySegmentCounters(ModelType temporaryModelType, int activeTidSize) {
         this.temporarySegmentCounter += 1;
-        this.temporaryDataPointCounter += (long) (this.groupSize - segmentGapsSize) * temporaryModelType.length();
+        this.temporaryDataPointCounter += (long) activeTidSize * temporaryModelType.length();
     }
 
-    public void updateFinalizedSegmentCounters(ModelType finalizedModelType, int segmentGapsSize) {
+    public void updateFinalizedSegmentCounters(ModelType finalizedModelType, int activeTidSize, int amtOfGaps) {
         //     DPs tid: int, ts: long, v: float
         // Segment gid: int, start_time: long, end_time: long, mtid: int, model: bytes[], gaps: byte[]
         //4 + 8 + 4 = 16 * data points is reduced to 4 + 8 + 8 + 4 + sizeof model + sizeof gaps
@@ -105,10 +100,10 @@ public class Logger implements Serializable {
         this.finalizedSegmentCounter.put(modelType, count + 1);
 
         count = this.finalizedDataPointCounter.getOrDefault(modelType, 0L);
-        long dataPoints = (long) (this.groupSize - segmentGapsSize) * finalizedModelType.length();
+        long dataPoints = (long) activeTidSize * finalizedModelType.length();
         this.finalizedDataPointCounter.put(modelType, count + dataPoints);
 
-        this.finalizedGapsSize += segmentGapsSize * 4;
+        this.finalizedGapsSize += amtOfGaps * 4;
     }
 
     public void printGeneratorResult(TimeSeriesGroup tsg) {

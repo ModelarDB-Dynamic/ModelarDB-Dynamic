@@ -120,8 +120,10 @@ public class WorkingSet implements Serializable {
             if (this.haveExecutionBeenTerminated.getAsBoolean()) {
                 return;
             }
-            SegmentGeneratorController sgc = getNextSegmentGeneratorController();
+            Logger segmentGeneratorControllerLogger = new Logger();
+            SegmentGeneratorController sgc = getNextSegmentGeneratorController(segmentGeneratorControllerLogger);
             sgc.start();
+            this.logger.add(segmentGeneratorControllerLogger);
             // Don't know what close is on controller
             // sgc.close();
             // sgc.logger.printGeneratorResult(sgc.getTimeSeriesGroup());
@@ -187,7 +189,7 @@ public class WorkingSet implements Serializable {
         }
     }*/
 
-    private SegmentGeneratorController getNextSegmentGeneratorController() {
+    private SegmentGeneratorController getNextSegmentGeneratorController(Logger logger) {
         int index = this.currentTimeSeriesGroup++;
         TimeSeriesGroup tsg = this.timeSeriesGroups[index];
         tsg.initialize();
@@ -197,7 +199,7 @@ public class WorkingSet implements Serializable {
         assert this.dynamicSplitFraction != 0.0F;
 
         SegmentGeneratorSupplier segmentGeneratorSupplier = new SegmentGeneratorSupplier(tsg, modelTypeInitializer,
-                fallbackModelType, maximumLatency, this.consumeTemporarySegment, this.consumeFinalizedSegment, this.dynamicSplitFraction);
+                fallbackModelType, maximumLatency, this.consumeTemporarySegment, this.consumeFinalizedSegment, this.dynamicSplitFraction, logger);
         return new SegmentGeneratorController(tsg, segmentGeneratorSupplier);
     }
 }

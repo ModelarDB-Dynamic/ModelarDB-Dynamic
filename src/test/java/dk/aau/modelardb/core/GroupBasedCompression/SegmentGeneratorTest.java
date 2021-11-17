@@ -7,6 +7,7 @@ import dk.aau.modelardb.core.Configuration;
 import dk.aau.modelardb.core.model.compression.ModelType;
 import dk.aau.modelardb.core.model.compression.ModelTypeFactory;
 import dk.aau.modelardb.core.timeseries.TimeSeriesCSV;
+import dk.aau.modelardb.core.utility.Logger;
 import dk.aau.modelardb.core.utility.SegmentFunction;
 import org.junit.jupiter.api.*;
 
@@ -43,7 +44,7 @@ class SegmentGeneratorTest {
         float dynamicSplitFraction = 1.0F;
 
         return new SegmentGenerator(group.gid, Configuration.INSTANCE.getSamplingInterval(), permanentGapTids,
-                modelTypeInitializer, fallbackModelType, new ArrayList<>(group.getTids()), maximumLatency, dynamicSplitFraction, temporarySegmentStream, finalizedSegmentStream);
+                modelTypeInitializer, fallbackModelType, new ArrayList<>(group.getTids()), maximumLatency, dynamicSplitFraction, temporarySegmentStream, finalizedSegmentStream, new Logger());
     }
 
     private Supplier<ModelType[]> createModelTypeInitializer(float errorBound, int lengthBound) {

@@ -1,6 +1,7 @@
 package dk.aau.modelardb.core.GroupBasedCompression;
 
 import dk.aau.modelardb.core.model.compression.ModelType;
+import dk.aau.modelardb.core.utility.Logger;
 import dk.aau.modelardb.core.utility.SegmentFunction;
 
 import java.util.HashSet;
@@ -17,10 +18,11 @@ public class SegmentGeneratorSupplier {
     private final SegmentFunction finalizedSegmentStream;
     private final Set<Integer> allTids;
     private final float dynamicSplitFraction;
+    private final Logger segmentGeneratorLogger;
 
     public SegmentGeneratorSupplier(TimeSeriesGroup timeSeriesGroup, Supplier<ModelType[]> modelTypeInitializer,
                                     ModelType fallbackModelType, int maximumLatency, SegmentFunction temporarySegmentStream,
-                                    SegmentFunction finalizedSegmentStream, float dynamicSplitFraction) {
+                                    SegmentFunction finalizedSegmentStream, float dynamicSplitFraction, Logger logger) {
         this.timeSeriesGroup = timeSeriesGroup;
         this.modelTypeInitializer = modelTypeInitializer;
         this.fallbackModelType = fallbackModelType;
@@ -29,6 +31,7 @@ public class SegmentGeneratorSupplier {
         this.dynamicSplitFraction = dynamicSplitFraction;
         this.temporarySegmentStream = temporarySegmentStream;
         this.finalizedSegmentStream = finalizedSegmentStream;
+        this.segmentGeneratorLogger = logger;
     }
 
     public SegmentGenerator get(List<Integer> tids, int si) {
@@ -36,6 +39,6 @@ public class SegmentGeneratorSupplier {
         Set<Integer> permanentGapTids = new HashSet<>(this.allTids);
         permanentGapTids.removeAll(tidSet);
 
-        return new SegmentGenerator(this.timeSeriesGroup.gid, si, permanentGapTids, modelTypeInitializer, fallbackModelType, tids, maximumLatency, dynamicSplitFraction, temporarySegmentStream, finalizedSegmentStream);
+        return new SegmentGenerator(this.timeSeriesGroup.gid, si, permanentGapTids, modelTypeInitializer, fallbackModelType, tids, maximumLatency, dynamicSplitFraction, temporarySegmentStream, finalizedSegmentStream, segmentGeneratorLogger);
     }
 }
