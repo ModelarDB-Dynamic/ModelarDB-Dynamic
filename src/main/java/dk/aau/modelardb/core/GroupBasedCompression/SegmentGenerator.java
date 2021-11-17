@@ -131,7 +131,7 @@ public class SegmentGenerator {
             Set<Set<Integer>> setOfSegmentGeneratorTids = this.splitSegmentGenerators.stream().map(childSG -> new HashSet<>(childSG.tids)).collect(Collectors.toSet());
             Map<Set<Integer>, DataSlice> tidsToSubDataSlice = slice.getSubDataSlices(setOfSegmentGeneratorTids);
 
-            for (SegmentGenerator childSegmentGenerator : this.splitSegmentGenerators) {
+            for (SegmentGenerator childSegmentGenerator : new ArrayList<>(this.splitSegmentGenerators)) {
                 var tids = new HashSet<>(childSegmentGenerator.tids);
 
                 DataSlice dataSliceForSubGenerator = tidsToSubDataSlice.get(tids);
@@ -313,7 +313,7 @@ public class SegmentGenerator {
         }
         long startTime = this.buffer.get(0)[0].timestamp;
         long endTime = this.buffer.get(modelTypeLength - 1)[0].timestamp;
-        return modelType.compressionRatio(startTime, endTime, samplingInterval, this.buffer, this.gaps.size());
+        return modelType.compressionRatio(startTime, endTime, samplingInterval, this.buffer, this.gaps.size() + this.permanentGapTids.size());
     }
 
     private void emitSegment(SegmentFunction stream, ModelType modelType, List<Integer> segmentGaps) {

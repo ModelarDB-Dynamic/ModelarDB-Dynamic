@@ -64,9 +64,9 @@ public abstract class ModelType implements Serializable {
 
     final public float compressionRatio(long startTime, long endTime, int samplingInterval, List<ValueDataPoint[]> dps, int gaps) {
         //     DPs tid: int, ts: long, v: float
-        // Segment tid: int, start_time: long, end_time: long, mtid: int, model: bytes[], gaps: bytes[]
-        //4 + 8 + 4 = 16 * data points is reduced to 4 + 8 + 8 + 4 + sizeof model + sizeof gaps
-        return (16.0F * this.length()) / (24.0F + this.size(startTime, endTime, samplingInterval, dps) + (4.0F * gaps));
+        // Segment tid: int, start_time: long, si: int, end_time: long, mtid: int, model: bytes[], gaps: bytes[]
+        //4 + 8 + 4 = 16 * data points is reduced to 4 + 8 + 4 + 8 + 4 + sizeof model + sizeof gaps
+        return (16.0F * this.length()) / (28.0F + this.size(startTime, endTime, samplingInterval, dps) + (4.0F * gaps));
     }
 
     final public float unsafeSize() {

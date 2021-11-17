@@ -91,9 +91,13 @@ public class Logger implements Serializable {
     public void updateFinalizedSegmentCounters(ModelType finalizedModelType, int activeTidSize, int amtOfGaps) {
         //     DPs tid: int, ts: long, v: float
         // Segment gid: int, start_time: long, end_time: long, mtid: int, model: bytes[], gaps: byte[]
-        //4 + 8 + 4 = 16 * data points is reduced to 4 + 8 + 8 + 4 + sizeof model + sizeof gaps
-        this.finalizedMetadataSize += 24.0F;
+        //4 + 8 + 4 = 16 * data points is reduced to meta data (4 + 8 + 8 + 4 + 4) + sizeof model + sizeof gaps
+        float siAmountBytes = 4.0F;
+        this.finalizedMetadataSize += 24.0F + siAmountBytes;
+        // TODO(EKN): ask SØREN what exacty the purpose of using unsafeSize here instead of size is.
         this.finalizedModelsSize += finalizedModelType.unsafeSize();
+        this.finalizedGapsSize += amtOfGaps * 4;
+
 
         String modelType = finalizedModelType.getClass().getName();
         long count = this.finalizedSegmentCounter.getOrDefault(modelType, 0L);
@@ -102,8 +106,6 @@ public class Logger implements Serializable {
         count = this.finalizedDataPointCounter.getOrDefault(modelType, 0L);
         long dataPoints = (long) activeTidSize * finalizedModelType.length();
         this.finalizedDataPointCounter.put(modelType, count + dataPoints);
-
-        this.finalizedGapsSize += amtOfGaps * 4;
     }
 
     public void printGeneratorResult(TimeSeriesGroup tsg) {

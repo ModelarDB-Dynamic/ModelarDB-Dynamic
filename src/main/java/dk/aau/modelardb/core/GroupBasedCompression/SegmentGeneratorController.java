@@ -113,5 +113,7 @@ public class SegmentGeneratorController {
         segmentGenerator.consumeSlice(slice);
     }
 
-
+    public TimeSeriesGroup getTimeSeriesGroup() {
+        return timeSeriesGroup;
+    }
 }
