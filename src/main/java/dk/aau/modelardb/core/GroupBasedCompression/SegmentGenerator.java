@@ -62,8 +62,7 @@ public class SegmentGenerator {
     private int slicesNotYetEmitted;
     private ModelType currentModelType;
     private ModelType lastEmittedModelType;
-
-    private boolean finalized = false;
+    private boolean isClosed;
 
 
     /**
@@ -107,17 +106,14 @@ public class SegmentGenerator {
 
         //DEBUG: logger instance for counting segments used for this generator
         this.logger = logger;
-    }
-
-    public boolean isFinalized() {
-        return finalized;
+        this.isClosed = false;
     }
 
     void close() {
-        if (finalized) {
+        if (isClosed) {
             return;
         }
-        this.finalized = true;
+        this.isClosed = true;
         for (SegmentGenerator sg : this.splitSegmentGenerators) {
             sg.flushBuffer();
         }
