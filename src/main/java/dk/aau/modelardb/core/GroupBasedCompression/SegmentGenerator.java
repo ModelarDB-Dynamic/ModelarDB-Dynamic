@@ -50,7 +50,7 @@ public class SegmentGenerator {
     Logger logger;
     //State variables for buffering data points
     private Set<Integer> gaps;
-    private ArrayList<ValueDataPoint[]> buffer; // TODO: MAKE THIS CONTAIN A LIST OF SLICES INSTEAD
+    private ArrayList<ValueDataPoint[]> buffer; // TODO(EKN): MAKE THIS CONTAIN A LIST OF SLICES INSTEAD
     private float dynamicSplitFraction;
     private long emittedFinalizedSegments;
     private double compressionRatioAverage;
@@ -128,15 +128,14 @@ public class SegmentGenerator {
             // Consume
             consumeDataPoints(slice.getDataPoints());
         } else { // Delegate slices to children
-            Map<SegmentGenerator, HashSet<Integer>> segmentGeneratorToTids = this.splitSegmentGenerators.stream()
-                    .map(segmentGenerator -> Pair.of(segmentGenerator, new HashSet<>(segmentGenerator.tids)))
-                    .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
+            Set<Set<Integer>> setOfSegmentGeneratorTids = this.splitSegmentGenerators.stream().map(childSG -> new HashSet<>(childSG.tids)).collect(Collectors.toSet());
+            Map<Set<Integer>, DataSlice> tidsToSubDataSlice = slice.getSubDataSlices(setOfSegmentGeneratorTids);
 
-            Map<Set<Integer>, DataSlice> dataSliceByTids = slice.getSubDataSlices(new HashSet<>(segmentGeneratorToTids.values()));
+            for (SegmentGenerator childSegmentGenerator : this.splitSegmentGenerators) {
+                var tids = new HashSet<>(childSegmentGenerator.tids);
 
-            for (Map.Entry<SegmentGenerator, HashSet<Integer>> segmentGeneratorTidsPair : segmentGeneratorToTids.entrySet()) {
-                DataSlice dataSliceForSubGenerator = dataSliceByTids.get(segmentGeneratorTidsPair.getValue());
-                segmentGeneratorTidsPair.getKey().consumeSlice(dataSliceForSubGenerator);
+                DataSlice dataSliceForSubGenerator = tidsToSubDataSlice.get(tids);
+                childSegmentGenerator.consumeSlice(dataSliceForSubGenerator);
             }
 
             joinGroupsIfTheirTimeSeriesAreCorrelated();
@@ -189,7 +188,6 @@ public class SegmentGenerator {
     }
 
     private boolean tryToAppendDataPointsToModels(ValueDataPoint[] gapFreeDatapoints) {
-        //TODO(EKN): what to do when GAP_FREE_DATAPOINTS IS EMPTY?
         //The current model type is given the data points and it verifies that the model can represent them and all prior,
         // it is assumed that append will fail if it failed in the past, so append(t,V) must fail if append(t-1,V) failed
         while(!this.currentModelType.append(Arrays.copyOf(gapFreeDatapoints, gapFreeDatapoints.length))) {
@@ -283,10 +281,6 @@ public class SegmentGenerator {
         emitSegment(this.finalizedSegmentStream, mostEfficientModelType, gapsAndPermGaps);
         this.buffer.subList(0, mostEfficientModelTypeLength).clear();
 
-        //If the number of data points in the buffer is less then the number of data points that has yet to be
-        // emitted, then some of these data points have already been emitted as part of the finalized segment
-        this.slicesNotYetEmitted = Math.min(this.slicesNotYetEmitted, buffer.size());
-
         //The best model is stored as it's error function is used when computing the split/join heuristics
         this.lastEmittedModelType = mostEfficientModelType;
 
@@ -295,6 +289,10 @@ public class SegmentGenerator {
 
         //If the time series have changed it might beneficial to split or join their groups
         checkIfSplitOrJoinMakesSense(highestCompressionRatio);
+
+        // If the number of data points in the buffer is less then the number of data points that has yet to be
+        // emitted, then some of these data points have already been emitted as part of the finalized segment
+        this.slicesNotYetEmitted = Math.min(this.slicesNotYetEmitted, buffer.size());
     }
 
     private void checkIfSplitOrJoinMakesSense(float highestCompressionRatio) {
