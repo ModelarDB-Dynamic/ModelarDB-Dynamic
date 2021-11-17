@@ -291,25 +291,16 @@ class SegmentGeneratorControllerTest {
         assertOutputString(segmentGeneratorSupplier, expected);
     }
 
-
-
     static class MockSegmentGenerator extends SegmentGenerator {
-        private boolean isFinalized;
         private List<String> output;
         private List<Integer> tids;
         private int si;
 
         MockSegmentGenerator(List<Integer> tids, int si, Supplier<ModelType[]> modelTypeInitializer) {
             super(-1, -1, null, modelTypeInitializer, null, tids, -1, -1, null, null);
-            this.isFinalized = false;
             this.output = new ArrayList<>();
             this.tids = tids;
             this.si = si;
-        }
-
-        @Override
-        public boolean isFinalized() {
-            return isFinalized;
         }
 
         @Override
