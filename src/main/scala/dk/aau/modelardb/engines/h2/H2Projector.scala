@@ -14,8 +14,9 @@
  */
 package dk.aau.modelardb.engines.h2
 
+import dk.aau.modelardb.core.GroupBasedCompression.SegmentGroup
+import dk.aau.modelardb.core.model.ValueDataPoint
 import dk.aau.modelardb.core.utility.Static
-import dk.aau.modelardb.core.{DataPoint, SegmentGroup}
 import dk.aau.modelardb.engines.{CodeGenerator, EngineUtilities, H2DataPointProjector, H2SegmentProjector}
 import org.h2.expression.aggregate.AbstractAggregate
 import org.h2.expression.condition.{Comparison, ConditionAndOr}
@@ -47,7 +48,7 @@ object H2Projector {
     val currentValues = new Array[Value](EngineUtilities.segmentViewNameToIndex.size)
     val requiredColumns = tableFilterToColumns(filter)
     val columnNames = requiredColumns.map(_.getName.toLowerCase)
-    val target = EngineUtilities.computeJumpTarget(columnNames, EngineUtilities.segmentViewNameToIndex, 6)
+    val target = EngineUtilities.computeJumpTarget(columnNames, EngineUtilities.segmentViewNameToIndex, 7)
     (target: @switch) match {
       case 0 => //COUNT(*)
         segments.map(_ => null)
@@ -58,14 +59,15 @@ object H2Projector {
           currentValues(2) = ValueTimestamp.fromMillis(segment.endTime, 0)
           currentValues
         })
-      case 123456 => //Data Point View and UDAFs
+      case 1234567 => //Data Point View and UDAFs
         segments.map(segment => {
           currentValues(0) = ValueInt.get(segment.gid) //Exploded so .gid is the tid
           currentValues(1) = ValueTimestamp.fromMillis(segment.startTime, 0)
-          currentValues(2) = ValueTimestamp.fromMillis(segment.endTime, 0)
-          currentValues(3) = ValueInt.get(segment.mtid)
-          currentValues(4) = ValueBytes.get(segment.model)
-          currentValues(5) = ValueBytes.get(segment.offsets)
+          currentValues(2) = ValueInt.get(segment.samplingInterval)
+          currentValues(3) = ValueTimestamp.fromMillis(segment.endTime, 0)
+          currentValues(4) = ValueInt.get(segment.mtid)
+          currentValues(5) = ValueBytes.get(segment.model)
+          currentValues(6) = ValueBytes.get(segment.gaps)
           currentValues
         })
       //Static projections cannot be used for rows with dimensions
@@ -81,7 +83,7 @@ object H2Projector {
     }
   }
 
-  def dataPointProjection(dataPoints: Iterator[DataPoint], filter: TableFilter): Iterator[Array[Value]] = {
+  def dataPointProjection(dataPoints: Iterator[ValueDataPoint], filter: TableFilter): Iterator[Array[Value]] = {
     val currentValues = new Array[Value](EngineUtilities.dataPointViewNameToIndex.size)
     val requiredColumns = tableFilterToColumns(filter)
     val columnNames = requiredColumns.map(_.getName.toLowerCase)
@@ -89,7 +91,7 @@ object H2Projector {
     (target: @switch) match {
       case 0 => dataPoints.map(_ => null)
       case 1 => dataPoints.map(dataPoint => {
-        currentValues(0) = ValueInt.get(dataPoint.tid)
+        currentValues(0) = ValueInt.get(dataPoint.getTid)
         currentValues
       })
       case 2 => dataPoints.map(dataPoint => {
@@ -97,32 +99,32 @@ object H2Projector {
         currentValues
       })
       case 3 => dataPoints.map(dataPoint => {
-        currentValues(2) = ValueFloat.get(H2.h2storage.timeSeriesTransformationCache(dataPoint.tid)
-          .transform(dataPoint.value, H2.h2storage.timeSeriesScalingFactorCache(dataPoint.tid)))
+        currentValues(2) = ValueFloat.get(H2.h2storage.timeSeriesTransformationCache(dataPoint.getTid)
+          .transform(dataPoint.value, H2.h2storage.timeSeriesScalingFactorCache(dataPoint.getTid)))
         currentValues
       })
       case 12 => dataPoints.map(dataPoint => {
-        currentValues(0) = ValueInt.get(dataPoint.tid)
+        currentValues(0) = ValueInt.get(dataPoint.getTid)
         currentValues(1) = ValueTimestamp.fromMillis(dataPoint.timestamp, 0)
         currentValues
       })
       case 13 => dataPoints.map(dataPoint => {
-        currentValues(0) = ValueInt.get(dataPoint.tid)
-        currentValues(2) = ValueFloat.get(H2.h2storage.timeSeriesTransformationCache(dataPoint.tid)
-          .transform(dataPoint.value, H2.h2storage.timeSeriesScalingFactorCache(dataPoint.tid)))
+        currentValues(0) = ValueInt.get(dataPoint.getTid)
+        currentValues(2) = ValueFloat.get(H2.h2storage.timeSeriesTransformationCache(dataPoint.getTid)
+          .transform(dataPoint.value, H2.h2storage.timeSeriesScalingFactorCache(dataPoint.getTid)))
         currentValues
       })
       case 23 => dataPoints.map(dataPoint => {
         currentValues(1) = ValueTimestamp.fromMillis(dataPoint.timestamp, 0)
-        currentValues(2) = ValueFloat.get(H2.h2storage.timeSeriesTransformationCache(dataPoint.tid)
-          .transform(dataPoint.value, H2.h2storage.timeSeriesScalingFactorCache(dataPoint.tid)))
+        currentValues(2) = ValueFloat.get(H2.h2storage.timeSeriesTransformationCache(dataPoint.getTid)
+          .transform(dataPoint.value, H2.h2storage.timeSeriesScalingFactorCache(dataPoint.getTid)))
         currentValues
       })
       case 123 => dataPoints.map(dataPoint => {
-        currentValues(0) = ValueInt.get(dataPoint.tid)
+        currentValues(0) = ValueInt.get(dataPoint.getTid)
         currentValues(1) = ValueTimestamp.fromMillis(dataPoint.timestamp, 0)
-        currentValues(2) = ValueFloat.get(H2.h2storage.timeSeriesTransformationCache(dataPoint.tid)
-          .transform(dataPoint.value, H2.h2storage.timeSeriesScalingFactorCache(dataPoint.tid)))
+        currentValues(2) = ValueFloat.get(H2.h2storage.timeSeriesTransformationCache(dataPoint.getTid)
+          .transform(dataPoint.value, H2.h2storage.timeSeriesScalingFactorCache(dataPoint.getTid)))
         currentValues
       })
       //Static projections cannot be used for rows with dimensions

@@ -48,11 +48,11 @@ class DimensionsTest extends AnyWordSpec {
       assert(dimensions.getSources.length == 10)
     }
 
-    val timeSeries: Array[TimeSeries] = dimensions.getSources.map(source => new TimeSeriesCSV(source, 1, 1000, " ", false,
+    val timeSeries: Array[TimeSeries] = dimensions.getSources.map(source => new TimeSeriesCSV(source, 1, " ", false,
       0, "unix", "UTC", 1, "en"))
 
     "create nine time series groups based on correlation by source" in {
-      val configuration = new Configuration()
+      val configuration = Configuration.INSTANCE
       configuration.add("modelardb.batch_size", 500)
       configuration.add("modelardb.dimensions", dimensions)
       val correlation = new Correlation()
@@ -63,7 +63,7 @@ class DimensionsTest extends AnyWordSpec {
     }
 
     "create five time series groups based on correlation by dimensions" in {
-      val configuration = new Configuration()
+      val configuration = Configuration.INSTANCE
       configuration.add("modelardb.batch_size", 500)
       configuration.add("modelardb.dimensions", dimensions)
       val correlation = new Correlation()
@@ -75,7 +75,7 @@ class DimensionsTest extends AnyWordSpec {
     }
 
     "create five time series groups based on correlation by distance" in {
-      val configuration = new Configuration()
+      val configuration = Configuration.INSTANCE
       configuration.add("modelardb.batch_size", 500)
       configuration.add("modelardb.dimensions", dimensions)
       val correlation = new Correlation()

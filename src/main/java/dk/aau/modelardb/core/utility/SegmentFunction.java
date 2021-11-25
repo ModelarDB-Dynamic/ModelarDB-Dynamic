@@ -14,6 +14,25 @@
  */
 package dk.aau.modelardb.core.utility;
 
+import dk.aau.modelardb.core.model.ValueDataPoint;
+import dk.aau.modelardb.core.model.compression.ModelType;
+
+import java.util.ArrayList;
+import java.util.List;
+
 public interface SegmentFunction {
-    void emit(int gid, long startTime, long endTime, int mtid, byte[] model, byte[] gaps);
+
+    default void emit(ArrayList<ValueDataPoint[]> buffer, ModelType modelType, List<Integer> segmentGaps, int samplingInterval, int gid) {
+        if(buffer.size() == 0) {
+            return;
+        }
+        int amtPointsInModel = modelType.length();
+        long startTime = buffer.get(0)[0].timestamp;
+        long endTime = buffer.get(amtPointsInModel - 1)[0].timestamp;
+        int[] gaps = segmentGaps.stream().mapToInt(l -> l).toArray();
+        byte[] model = modelType.getModel(startTime, endTime, samplingInterval, buffer);
+        emit(gid, startTime, samplingInterval, endTime, modelType.mtid, model, Static.intToBytes(gaps));
+    }
+
+    void emit(int gid, long startTime, int samplingInterval, long endTime, int mtid, byte[] model, byte[] gaps);
 }

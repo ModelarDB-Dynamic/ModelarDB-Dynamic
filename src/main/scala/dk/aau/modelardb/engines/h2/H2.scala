@@ -16,6 +16,7 @@ package dk.aau.modelardb.engines.h2
 
 import dk.aau.modelardb.Interface
 import dk.aau.modelardb.core.Dimensions.Types
+import dk.aau.modelardb.core.GroupBasedCompression.{SegmentGroup, WorkingSet}
 import dk.aau.modelardb.core._
 import dk.aau.modelardb.core.utility.{Logger, SegmentFunction, Static}
 import dk.aau.modelardb.engines.EngineUtilities
@@ -102,9 +103,9 @@ class H2(configuration: Configuration, h2storage: H2Storage) {
   private def ingest(workingSet: WorkingSet): Unit = {
     //Creates a method that stores temporary segments in memory and finalized segments in batches to be written to disk
     val consumeTemporary = new SegmentFunction {
-      override def emit(gid: Int, startTime: Long, endTime: Long, mtid: Int, model: Array[Byte], gaps: Array[Byte]): Unit = {
+      override def emit(gid: Int, startTime: Long, samplingInterval: Int, endTime: Long, mtid: Int, model: Array[Byte], gaps: Array[Byte]): Unit = {
         cacheLock.writeLock().lock()
-        val newTemporarySegment = new SegmentGroup(gid, startTime, endTime, mtid, model, gaps)
+        val newTemporarySegment = new SegmentGroup(gid, startTime, samplingInterval, endTime, mtid, model, gaps)
         val currentTemporarySegments = temporarySegments.getOrElse(gid, Array())
         temporarySegments(gid) = updateTemporarySegment(currentTemporarySegments, newTemporarySegment, isTemporary = true)
         cacheLock.writeLock().unlock()
@@ -112,10 +113,10 @@ class H2(configuration: Configuration, h2storage: H2Storage) {
     }
 
     val consumeFinalized = new SegmentFunction {
-      override def emit(gid: Int, startTime: Long, endTime: Long, mtid: Int, model: Array[Byte], gaps: Array[Byte]): Unit = {
+      override def emit(gid: Int, startTime: Long, samplingInterval: Int, endTime: Long, mtid: Int, model: Array[Byte], gaps: Array[Byte]): Unit = {
         cacheLock.writeLock().lock()
         //Update the current temporary segments
-        val newFinalizedSegment = new SegmentGroup(gid, startTime, endTime, mtid, model, gaps)
+        val newFinalizedSegment = new SegmentGroup(gid, startTime, samplingInterval, endTime, mtid, model, gaps)
         val currentTemporarySegments = temporarySegments.getOrElse(gid, Array())
         temporarySegments(gid) = updateTemporarySegment(currentTemporarySegments, newFinalizedSegment, isTemporary = false)
 
@@ -153,7 +154,7 @@ class H2(configuration: Configuration, h2storage: H2Storage) {
   private def updateTemporarySegment(cache: Array[SegmentGroup], inputSegmentGroup: SegmentGroup,
                                      isTemporary: Boolean): Array[SegmentGroup] = {
     //The gaps are extracted from the new finalized or temporary segment
-    val inputGaps = Static.bytesToInts(inputSegmentGroup.offsets)
+    val inputGaps = Static.bytesToInts(inputSegmentGroup.gaps)
 
     //Extracts the metadata for the group of time series being updated
     val groupMetadataCache = h2storage.groupMetadataCache
@@ -165,7 +166,7 @@ class H2(configuration: Configuration, h2storage: H2Storage) {
     for (i <- cache.indices) {
       //The gaps are extracted for each existing temporary row
       val cachedSegmentGroup = cache(i)
-      val cachedGap = Static.bytesToInts(cachedSegmentGroup.offsets)
+      val cachedGap = Static.bytesToInts(cachedSegmentGroup.gaps)
       val cachedIngested = group.toSet.diff(cachedGap.toSet)
 
       //Each existing temporary segment that contains values for the same time series as the new segment is updated
@@ -180,7 +181,7 @@ class H2(configuration: Configuration, h2storage: H2Storage) {
           val startTime = inputSegmentGroup.endTime + samplingInterval
           if (startTime <= cachedSegmentGroup.endTime) {
             val newGaps = Static.intToBytes(cachedGap :+ -((startTime - cachedSegmentGroup.startTime) / samplingInterval).toInt)
-            cache(i) = new SegmentGroup(cachedSegmentGroup.gid, startTime, cachedSegmentGroup.endTime,
+            cache(i) = new SegmentGroup(cachedSegmentGroup.gid, startTime, samplingInterval, cachedSegmentGroup.endTime,
               cachedSegmentGroup.mtid, cachedSegmentGroup.model, newGaps)
           }
         }
@@ -307,10 +308,10 @@ object H2 {
     }
   }
 
-  //Segment View
+  //Segment View (FUCK THIS SHIT SOMETHING IS FUCKY HERE) EKN
   def getCreateSegmentViewSQL(dimensions: Dimensions): String = {
     s"""CREATE TABLE Segment
-       |(tid INT, start_time TIMESTAMP, end_time TIMESTAMP, mtid INT, model BINARY, gaps BINARY${H2.getDimensionColumns(dimensions)})
+       |(tid INT, start_time TIMESTAMP, samplingInterval INT, end_time TIMESTAMP, mtid INT, model BINARY, gaps BINARY${H2.getDimensionColumns(dimensions)})
        |ENGINE "dk.aau.modelardb.engines.h2.ViewSegment";
        |""".stripMargin
   }

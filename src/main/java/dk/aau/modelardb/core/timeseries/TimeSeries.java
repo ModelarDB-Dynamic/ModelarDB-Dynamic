@@ -14,7 +14,7 @@
  */
 package dk.aau.modelardb.core.timeseries;
 
-import dk.aau.modelardb.core.DataPoint;
+import dk.aau.modelardb.core.model.DataPoint;
 
 import java.io.Serializable;
 import java.util.Iterator;
@@ -25,15 +25,21 @@ public abstract class TimeSeries implements Serializable, Iterator<DataPoint> {
      **/
     public final String source;
     public final int tid;
-    public final int samplingInterval;
+    protected int currentSamplingInterval;
+
+    public int getCurrentSamplingInterval() {
+        return currentSamplingInterval;
+    }
+
+
     public float scalingFactor;
     /**
      * Public Methods
      **/
-    public TimeSeries(String source, int tid, int samplingInterval) {
+    public TimeSeries(String source, int tid, int initialSamplingInterval) {
         this.source = source;
         this.tid = tid;
-        this.samplingInterval = samplingInterval;
+        this.currentSamplingInterval = initialSamplingInterval;
         this.scalingFactor = 1.0F;
     }
 

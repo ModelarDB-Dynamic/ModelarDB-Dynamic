@@ -26,7 +26,7 @@ object EngineFactory {
     //Extracts the name of the system from the engine connection string
     configuration.getString("modelardb.engine").takeWhile(_ != ':') match {
       case "h2" => new dk.aau.modelardb.engines.h2.H2(configuration, storage.asInstanceOf[H2Storage]).start()
-      case "spark" => new dk.aau.modelardb.engines.spark.Spark(configuration, storage.asInstanceOf[SparkStorage]).start()
+      // case "spark" => new dk.aau.modelardb.engines.spark.Spark(configuration, storage.asInstanceOf[SparkStorage]).start()
       case _ =>
         throw new java.lang.UnsupportedOperationException("ModelarDB: unknown value for modelardb.engine in the config file")
     }

@@ -14,8 +14,9 @@
  */
 package dk.aau.modelardb.engines
 
+import dk.aau.modelardb.core.GroupBasedCompression.SegmentGroup
+import dk.aau.modelardb.core.model.ValueDataPoint
 import dk.aau.modelardb.core.utility.ValueFunction
-import dk.aau.modelardb.core.{DataPoint, SegmentGroup}
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.sql.Row
 import org.h2.table.Column
@@ -27,7 +28,7 @@ abstract class SparkSegmentProjector {
 }
 
 abstract class SparkDataPointProjector {
-  def project(dp: DataPoint, tsmc: Array[Array[Object]], sc: Array[Float], btc: Broadcast[Array[ValueFunction]]): Row
+  def project(dp: ValueDataPoint, tsmc: Array[Array[Object]], sc: Array[Float], btc: Broadcast[Array[ValueFunction]]): Row
 }
 
 abstract class H2SegmentProjector {
@@ -35,7 +36,7 @@ abstract class H2SegmentProjector {
 }
 
 abstract class H2DataPointProjector {
-  def project(dp: DataPoint, currentRow: Array[Value], tsmc: Array[Array[Object]], sc: Array[Float], tc: Array[ValueFunction]): Array[Value]
+  def project(dp: ValueDataPoint, currentRow: Array[Value], tsmc: Array[Array[Object]], sc: Array[Float], tc: Array[ValueFunction]): Array[Value]
 }
 
 //CodeGenerator
@@ -90,7 +91,7 @@ object CodeGenerator {
     val code =
       s"""
         import dk.aau.modelardb.engines.SparkDataPointProjector
-        import dk.aau.modelardb.core.DataPoint
+        import dk.aau.modelardb.core.model.DataPoint
         import java.sql.Timestamp
         import dk.aau.modelardb.core.utility.ValueFunction
         import org.apache.spark.broadcast.Broadcast
@@ -129,6 +130,7 @@ object CodeGenerator {
       val variableName = column.getName match {
         case "TID" => "segment.gid" //Exploded so .gid is the tid
         case "START_TIME" => "segment.startTime"
+        case "SAMPLINGINTERVAL" => "segment.samplingInterval"
         case "END_TIME" => "segment.endTime"
         case "MTID" => "segment.mtid"
         case "MODEL" => "segment.model"
@@ -141,7 +143,7 @@ object CodeGenerator {
     val code =
       s"""
         import dk.aau.modelardb.engines.H2SegmentProjector
-        import dk.aau.modelardb.core.SegmentGroup
+        import dk.aau.modelardb.core.GroupBasedCompression.SegmentGroup
         import org.h2.value._
 
         new H2SegmentProjector {
@@ -169,7 +171,7 @@ object CodeGenerator {
     val code =
       s"""
         import dk.aau.modelardb.engines.H2DataPointProjector
-        import dk.aau.modelardb.core.DataPoint
+        import dk.aau.modelardb.core.Models.DataPoint
         import dk.aau.modelardb.core.utility.ValueFunction
         import org.h2.value._
 

@@ -14,8 +14,9 @@
  */
 package dk.aau.modelardb.engines.h2
 
-import dk.aau.modelardb.core.models.ModelTypeFactory
-import dk.aau.modelardb.core.{Configuration, Dimensions, SegmentGroup}
+import dk.aau.modelardb.core.GroupBasedCompression.SegmentGroup
+import dk.aau.modelardb.core.model.compression.ModelTypeFactory
+import dk.aau.modelardb.core.{Configuration, Dimensions}
 import dk.aau.modelardb.engines.EngineUtilities
 import dk.aau.modelardb.storage.JDBCStorage
 import org.h2.expression.condition.{Comparison, ConditionAndOr}
@@ -62,7 +63,7 @@ class H2Test extends AnyFlatSpec with Matchers with MockFactory {
       val samplingInterval = 10
       val startTime = Instant.ofEpochMilli(100L)
       val endTime = Instant.ofEpochMilli(110L)
-      val sg = new SegmentGroup(gid, startTime.toEpochMilli, endTime.toEpochMilli, mtid, Array(0x42.toByte), Array(0x42.toByte))
+      val sg = new SegmentGroup(gid, startTime.toEpochMilli, samplingInterval, endTime.toEpochMilli, mtid, Array(0x42.toByte), Array(0x42.toByte))
       val model = ModelTypeFactory.getFallbackModelType(5.0f, 300)
       val dimensions = new Dimensions(Array())
       EngineUtilities.initialize(dimensions)
@@ -78,7 +79,7 @@ class H2Test extends AnyFlatSpec with Matchers with MockFactory {
       storage.modelTypeCache = Array(model, model)
       storage.timeSeriesMembersCache = Array(null, Array())
 
-      val configuration = new Configuration()
+      val configuration = Configuration.INSTANCE
       configuration.add("modelardb.batch_size", 500)
       val h2 = new H2(configuration, storage)
       H2.initialize(h2, storage)

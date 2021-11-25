@@ -14,24 +14,24 @@
  */
 package dk.aau.modelardb.core.utility;
 
-import dk.aau.modelardb.core.DataPoint;
+import dk.aau.modelardb.core.model.ValueDataPoint;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 
-public class ReverseBufferIterator implements Iterator<DataPoint> {
+public class ReverseBufferIterator implements Iterator<ValueDataPoint> {
 
     /**
      * Instance Variables
      **/
     private final int source;
-    private final ArrayList<DataPoint[]> list;
+    private final ArrayList<ValueDataPoint[]> list;
     private int index;
 
     /**
      * Constructors
      **/
-    public ReverseBufferIterator(ArrayList<DataPoint[]> list, int source) {
+    public ReverseBufferIterator(ArrayList<ValueDataPoint[]> list, int source) {
         this.index = list.size();
         this.list = list;
         this.source = source;
@@ -43,7 +43,7 @@ public class ReverseBufferIterator implements Iterator<DataPoint> {
     }
 
     @Override
-    public DataPoint next() {
+    public ValueDataPoint next() {
         this.index -= 1;
         return this.list.get(this.index)[source];
     }

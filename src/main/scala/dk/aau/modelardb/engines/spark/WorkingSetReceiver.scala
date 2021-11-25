@@ -14,7 +14,7 @@
  */
 package dk.aau.modelardb.engines.spark
 
-import dk.aau.modelardb.core.WorkingSet
+import dk.aau.modelardb.core.GroupBasedCompression.WorkingSet
 import dk.aau.modelardb.core.utility.SegmentFunction
 import org.apache.spark.sql.Row
 import org.apache.spark.storage.StorageLevel
@@ -43,14 +43,14 @@ class WorkingSetReceiver(workingSet: WorkingSet)
   private def receive(): Unit = {
     //Creates methods that emit both segment types to Spark Streaming
     val consumeTemporary = new SegmentFunction {
-      override def emit(gid: Int, startTime: Long, endTime: Long, mtid: Int, model: Array[Byte], gaps: Array[Byte]): Unit = {
-        store(Row(gid, new Timestamp(startTime), new Timestamp(endTime), mtid, model, gaps, false))
+      override def emit(gid: Int, startTime: Long, samplingInterval: Int, endTime: Long, mtid: Int, model: Array[Byte], gaps: Array[Byte]): Unit = {
+        store(Row(gid, new Timestamp(startTime), samplingInterval, new Timestamp(endTime), mtid, model, gaps, false))
       }
     }
 
     val consumeFinalized = new SegmentFunction {
-      override def emit(gid: Int, startTime: Long, endTime: Long, mtid: Int, model: Array[Byte], gaps: Array[Byte]): Unit = {
-        store(Row(gid, new Timestamp(startTime), new Timestamp(endTime), mtid, model, gaps, true))
+      override def emit(gid: Int, startTime: Long, samplingInterval: Int, endTime: Long, mtid: Int, model: Array[Byte], gaps: Array[Byte]): Unit = {
+        store(Row(gid, new Timestamp(startTime), samplingInterval, new Timestamp(endTime), mtid, model, gaps, true))
       }
     }
 

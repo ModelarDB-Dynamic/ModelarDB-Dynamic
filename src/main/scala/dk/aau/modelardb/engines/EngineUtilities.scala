@@ -31,10 +31,11 @@ object EngineUtilities {
     this.segmentViewNameToIndex = Map(
       "tid" -> 1,
       "start_time" -> 2,
-      "end_time" -> 3,
-      "mtid" -> 4,
-      "model" -> 5,
-      "gaps" -> 6) ++
+      "samplinginterval" -> 3,
+      "end_time" -> 4,
+      "mtid" -> 5,
+      "model" -> 6,
+      "gaps" -> 7) ++
       dimensions.getColumns.zipWithIndex.map(p => (p._1, p._2 + 7)).toMap
 
     //Data Point View

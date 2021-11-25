@@ -14,9 +14,9 @@
  */
 package dk.aau.modelardb.core.utility;
 
-import dk.aau.modelardb.core.DataPoint;
-import dk.aau.modelardb.core.TimeSeriesGroup;
-import dk.aau.modelardb.core.models.ModelType;
+import dk.aau.modelardb.core.model.ValueDataPoint;
+import dk.aau.modelardb.core.GroupBasedCompression.TimeSeriesGroup;
+import dk.aau.modelardb.core.model.compression.ModelType;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -30,7 +30,6 @@ public class Logger implements Serializable {
      * Instance Variables
      **/
     private long processingTime = 0L;
-    private int groupSize = 0;
     private long temporarySegmentCounter = 0L;
     private long temporaryDataPointCounter = 0L;
     private float finalizedMetadataSize = 0.0F;
@@ -42,10 +41,6 @@ public class Logger implements Serializable {
      **/
     public Logger() {
         //An empty Logger object can be used to aggregate data from multiple Logger objects
-    }
-
-    public Logger(int groupSize) {
-        this.groupSize = groupSize;
     }
 
     /**
@@ -70,52 +65,54 @@ public class Logger implements Serializable {
         return java.time.Duration.ofMillis(this.processingTime - oldTime).toString();
     }
 
-    public void pauseAndPrint(DataPoint[] dataPoints) {
+    public void pauseAndPrint(ValueDataPoint[] valueDataPoints) {
         try {
-            print(dataPoints);
+            print(valueDataPoints);
             System.in.read();
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
     }
 
-    public void sleepAndPrint(DataPoint[] dataPoints, long sleepTime) {
+    public void sleepAndPrint(ValueDataPoint[] valueDataPoints, long sleepTime) {
         try {
-            print(dataPoints);
+            print(valueDataPoints);
             Thread.sleep(sleepTime);
         } catch (InterruptedException ie) {
             throw new RuntimeException(ie);
         }
     }
 
-    public void updateTemporarySegmentCounters(ModelType temporaryModelType, int segmentGapsSize) {
+    public void updateTemporarySegmentCounters(ModelType temporaryModelType, int activeTidSize) {
         this.temporarySegmentCounter += 1;
-        this.temporaryDataPointCounter += (long) (this.groupSize - segmentGapsSize) * temporaryModelType.length();
+        this.temporaryDataPointCounter += (long) activeTidSize * temporaryModelType.length();
     }
 
-    public void updateFinalizedSegmentCounters(ModelType finalizedModelType, int segmentGapsSize) {
+    public void updateFinalizedSegmentCounters(ModelType finalizedModelType, int activeTidSize, int amtOfGaps) {
         //     DPs tid: int, ts: long, v: float
         // Segment gid: int, start_time: long, end_time: long, mtid: int, model: bytes[], gaps: byte[]
-        //4 + 8 + 4 = 16 * data points is reduced to 4 + 8 + 8 + 4 + sizeof model + sizeof gaps
-        this.finalizedMetadataSize += 24.0F;
+        //4 + 8 + 4 = 16 * data points is reduced to meta data (4 + 8 + 8 + 4 + 4) + sizeof model + sizeof gaps
+        float siAmountBytes = 4.0F;
+        this.finalizedMetadataSize += 24.0F + siAmountBytes;
+        // TODO(EKN): ask SØREN what exacty the purpose of using unsafeSize here instead of size is.
         this.finalizedModelsSize += finalizedModelType.unsafeSize();
+        this.finalizedGapsSize += amtOfGaps * 4;
+
 
         String modelType = finalizedModelType.getClass().getName();
         long count = this.finalizedSegmentCounter.getOrDefault(modelType, 0L);
         this.finalizedSegmentCounter.put(modelType, count + 1);
 
         count = this.finalizedDataPointCounter.getOrDefault(modelType, 0L);
-        long dataPoints = (long) (this.groupSize - segmentGapsSize) * finalizedModelType.length();
+        long dataPoints = (long) activeTidSize * finalizedModelType.length();
         this.finalizedDataPointCounter.put(modelType, count + dataPoints);
-
-        this.finalizedGapsSize += segmentGapsSize * 4;
     }
 
     public void printGeneratorResult(TimeSeriesGroup tsg) {
         StringBuilder sb = new StringBuilder(); //Used by multiple threads so a single print must be used
         //Prints information about the time series
         sb.append("Gid: ").append(tsg.gid).append('\n')
-                .append("Tids: ").append(tsg.getTids()).append('\n')
+                .append("Tids: ").append(tsg.getTidsAsString()).append('\n')
                 .append("Sources: ").append(tsg.getSources()).append('\n')
                 .append("Ingested: ").append(Static.getIPs()).append('\n');
 
@@ -173,8 +170,8 @@ public class Logger implements Serializable {
                 sizeInBytes / 1024.0F / 1024.0F);
     }
 
-    private void print(DataPoint[] dataPoints) {
-        for (DataPoint dp : dataPoints) {
+    private void print(ValueDataPoint[] valueDataPoints) {
+        for (ValueDataPoint dp : valueDataPoints) {
             System.out.println(dp);
         }
         System.out.println("------------------------------------------");

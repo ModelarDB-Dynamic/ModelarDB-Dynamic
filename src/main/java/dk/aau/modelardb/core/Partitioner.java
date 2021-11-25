@@ -14,6 +14,8 @@
  */
 package dk.aau.modelardb.core;
 
+import dk.aau.modelardb.core.GroupBasedCompression.TimeSeriesGroup;
+import dk.aau.modelardb.core.GroupBasedCompression.WorkingSet;
 import dk.aau.modelardb.core.timeseries.*;
 import dk.aau.modelardb.core.utility.Pair;
 import dk.aau.modelardb.core.utility.Static;
@@ -40,10 +42,6 @@ public class Partitioner {
         int valueColumnIndex = configuration.getInteger("modelardb.value_column");
         String locale = configuration.getString("modelardb.csv.locale");
 
-        // TODO: FIX ME
-        //HACK: Sampling interval is one argument as all time series used for evaluation used the same sampling interval
-        int samplingInterval = configuration.getSamplingInterval();
-
         //Derived data sources are normalized so all use tids to simply the processing in Storage
         String derivedKey = "modelardb.sources.derived";
         HashMap<String, Pair<String, ValueFunction>[]> derivedDataSources =
@@ -54,7 +52,8 @@ public class Partitioner {
         for (String source : sources) {
             cms += 1;
             TimeSeries ts;
-            if (source.contains(":")) {
+            // TODO: implement this again if we want to support other input sources
+            /*if (source.contains(":")) {
                 ts = new AsyncTimeSeriesSocket(source, cms, samplingInterval, separator,
                         timestampColumnIndex, dateFormat, timeZone, valueColumnIndex, locale);
             } else if (source.endsWith(".orc")) {
@@ -62,9 +61,10 @@ public class Partitioner {
             } else if (source.endsWith(".parquet")) {
                 ts = new TimeSeriesParquet(source, cms, samplingInterval, timestampColumnIndex, valueColumnIndex);
             } else {
-                ts = new TimeSeriesCSV(source, cms, samplingInterval, separator, header,
-                        timestampColumnIndex, dateFormat, timeZone, valueColumnIndex, locale);
-            }
+            }*/
+            ts = new TimeSeriesCSV(source, cms, separator, header,
+                    timestampColumnIndex, dateFormat, timeZone, valueColumnIndex, locale);
+
             tss.add(ts);
 
             //If any derived time series are defined for the source they must be mapped to its tid
@@ -241,10 +241,12 @@ public class Partitioner {
         }
 
         //The groups are sorted by the rate of data points produced so the most resource intensive groups are placed first
-        Arrays.sort(timeSeriesGroups, Comparator.comparingLong(tsg -> tsg.samplingInterval / tsg.size()));
+        // TODO consider if we can find a better way to load balance than using .size
+        Arrays.sort(timeSeriesGroups, Comparator.comparingLong(TimeSeriesGroup::size));
         for (TimeSeriesGroup tsg : timeSeriesGroups) {
             Pair<Long, ArrayList<TimeSeriesGroup>> min = sets.poll();
-            min._1 = min._1 + (60000 / (tsg.samplingInterval / tsg.size())); //Data Points per Minute
+            min._1 += tsg.size();
+            //min._1 = min._1 + (60000 / (tsg.samplingInterval / tsg.size())); //Data Points per Minute
             min._2.add(tsg);
             sets.add(min);
         }
