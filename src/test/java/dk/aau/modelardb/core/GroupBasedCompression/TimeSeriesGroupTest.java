@@ -46,7 +46,7 @@ class TimeSeriesGroupTest {
     }
 
     @Test
-    void getSlice() {
+    void getSliceOneHasGapInMiddle() {
         TimeSeriesGroup group;
         TimeSeriesCSV[] tsArray = new TimeSeriesCSV[2];
         tsArray[0] = createTimeSeriesN(1);
