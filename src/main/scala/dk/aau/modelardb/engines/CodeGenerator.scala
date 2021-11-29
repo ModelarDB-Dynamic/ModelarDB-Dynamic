@@ -134,7 +134,7 @@ object CodeGenerator {
         case "END_TIME" => "segment.endTime"
         case "MTID" => "segment.mtid"
         case "MODEL" => "segment.model"
-        case "GAPS" => "segment.offsets"
+        case "GAPS" => "segment.gaps" //TODO(EKN): ask søren if it should be GAPS or offsets here
         case _ => "tsmc(segment.gid)(%d)".format(column.getColumnId - 6)
       }
       "currentValues(%d)".format(column.getColumnId) + " = " + constructor.format(variableName)

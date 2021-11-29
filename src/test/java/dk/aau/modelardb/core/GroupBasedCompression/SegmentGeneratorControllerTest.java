@@ -157,7 +157,7 @@ class SegmentGeneratorControllerTest {
     }
 
     @Test
-    void ThreeTimeSeriesSplitIntoThreeGenerators() {
+    void ThreeTimeSeriesThatGetDifferentSIs() {
         List<Integer> timeSeriesNos = new ArrayList<>();
         timeSeriesNos.add(4);
         timeSeriesNos.add(5);
@@ -252,7 +252,7 @@ class SegmentGeneratorControllerTest {
     }
 
     @Test
-    void ThreeTimeSeriesOneSplitsThenJoinAgain() {
+    void ThreeTimeSeriesOneChangesToSI200ThenBackTo100() {
         List<Integer> timeSeriesNos = new ArrayList<>();
         timeSeriesNos.add(10);
         timeSeriesNos.add(11);

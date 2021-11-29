@@ -42,10 +42,6 @@ public class Partitioner {
         int valueColumnIndex = configuration.getInteger("modelardb.value_column");
         String locale = configuration.getString("modelardb.csv.locale");
 
-        // TODO: FIX ME
-        //HACK: Sampling interval is one argument as all time series used for evaluation used the same sampling interval
-        int samplingInterval = configuration.getSamplingInterval();
-
         //Derived data sources are normalized so all use tids to simply the processing in Storage
         String derivedKey = "modelardb.sources.derived";
         HashMap<String, Pair<String, ValueFunction>[]> derivedDataSources =
@@ -65,7 +61,6 @@ public class Partitioner {
             } else if (source.endsWith(".parquet")) {
                 ts = new TimeSeriesParquet(source, cms, samplingInterval, timestampColumnIndex, valueColumnIndex);
             } else {
-
             }*/
             ts = new TimeSeriesCSV(source, cms, separator, header,
                     timestampColumnIndex, dateFormat, timeZone, valueColumnIndex, locale);

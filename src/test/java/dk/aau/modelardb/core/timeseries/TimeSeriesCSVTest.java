@@ -110,7 +110,6 @@ class TimeSeriesCSVTest {
             var point = timeSeries.next();
             var expectedPoint = expectedDataPoints.get(i);
             if (point instanceof ValueDataPoint && expectedPoint instanceof ValueDataPoint) {
-                // TODO: check if this is necesssary
                 var valuePoint = (ValueDataPoint)point;
                 var expectedValuePoint = (ValueDataPoint)expectedPoint;
                 Assertions.assertEquals(expectedValuePoint, valuePoint);

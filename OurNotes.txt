@@ -10,7 +10,9 @@
   curl -d "select START_TIME, samplinginterval from Segment limit 10" localhost:9999
   curl -d "select START_TIME, AVG_S(#) from Segment group by TID, START_TIME limit 10" localhost:9999
   curl -d "select START_TIME, AVG_S(#) from Segment group by START_TIME order by start_time" localhost:9999 -o output_new.txt
-  
+  curl -d "select * from Segment order by start_time, tid asc limit 6" localhost:9999
+  curl -d "select * from datapoint order by timestamp, tid asc limit 6" localhost:9999
+  curl -d "select tid, start_time, end_time, mtid, gaps from Segment order by start_time, tid asc limit 9" localhost:9999
 
 # Until furhter notice don't test it on spark just use h2. 
 
