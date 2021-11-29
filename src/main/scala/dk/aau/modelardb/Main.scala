@@ -240,7 +240,7 @@ object Main {
       split = elem.split(' ')
       if (split.length == 2) {
         //Sets the scaling factor for time series from specific sources
-        correlation.addScalingFactorForSource(split(0).trim, split(1).trim.toInt)
+        correlation.addScalingFactorForSource(split(0).trim, split(1).trim.toFloat)
       } else if (split.length == 4) {
         //Sets the scaling factor for time series with a specific member
         correlation.addScalingFactorForMember(split(0).trim, split(1).trim.toInt, split(2).trim, split(3).trim.toFloat, dimensions)
