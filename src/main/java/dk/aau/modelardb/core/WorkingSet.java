@@ -87,14 +87,16 @@ public class WorkingSet implements Serializable {
     public void process(SegmentFunction consumeTemporarySegment, SegmentFunction consumeFinalizedSegment,
                         BooleanSupplier haveExecutionBeenTerminated) throws IOException {
         //DEBUG: initializes the timer stored in the logger
+        long startTime = System.currentTimeMillis();
         this.logger.getTimeSpan();
         this.consumeTemporarySegment = consumeTemporarySegment;
         this.consumeFinalizedSegment = consumeFinalizedSegment;
         this.haveExecutionBeenTerminated = haveExecutionBeenTerminated;
 
         processBounded();
-        processUnbounded();
-
+        // processUnbounded();
+        long endTime = System.currentTimeMillis();
+        System.out.println("Total Run Time: " + java.time.Duration.ofMillis(endTime - startTime).toString());
         //Ensures all resources are closed
         for (TimeSeriesGroup tsg : this.timeSeriesGroups) {
             tsg.close();
@@ -125,7 +127,7 @@ public class WorkingSet implements Serializable {
             SegmentGenerator sg = getNextSegmentGenerator();
             sg.consumeAllDataPoints();
             sg.close();
-            sg.logger.printGeneratorResult(sg.getTimeSeriesGroup());
+            //sg.logger.printGeneratorResult(sg.getTimeSeriesGroup());
             this.logger.add(sg.logger);
         }
     }
