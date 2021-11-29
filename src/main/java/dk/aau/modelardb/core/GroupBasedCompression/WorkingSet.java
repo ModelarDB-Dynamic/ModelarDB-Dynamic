@@ -85,6 +85,7 @@ public class WorkingSet implements Serializable {
     public void process(SegmentFunction consumeTemporarySegment, SegmentFunction consumeFinalizedSegment,
                         BooleanSupplier haveExecutionBeenTerminated) throws IOException {
         //DEBUG: initializes the timer stored in the logger
+        // TODO(EKN): consider logging time here if not done in shell script
         this.logger.getTimeSpan();
         this.consumeTemporarySegment = consumeTemporarySegment;
         this.consumeFinalizedSegment = consumeFinalizedSegment;
@@ -92,7 +93,7 @@ public class WorkingSet implements Serializable {
 
         processBounded();
         // processUnbounded();
-
+        // TODO(EKN): log end-time here
         //Ensures all resources are closed
         for (TimeSeriesGroup tsg : this.timeSeriesGroups) {
             tsg.close();
@@ -124,7 +125,7 @@ public class WorkingSet implements Serializable {
             SegmentGeneratorController sgc = getNextSegmentGeneratorController(segmentGeneratorControllerLogger);
             sgc.start();
             this.logger.add(segmentGeneratorControllerLogger);
-            this.logger.printGeneratorResult(sgc.getTimeSeriesGroup());
+            // this.logger.printGeneratorResult(sgc.getTimeSeriesGroup());
         }
     }
 
