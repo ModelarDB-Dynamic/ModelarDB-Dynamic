@@ -87,12 +87,12 @@ public class WorkingSet implements Serializable {
     public void process(SegmentFunction consumeTemporarySegment, SegmentFunction consumeFinalizedSegment,
                         BooleanSupplier haveExecutionBeenTerminated) throws IOException {
         //DEBUG: initializes the timer stored in the logger
-        long startTime = System.currentTimeMillis();
         this.logger.getTimeSpan();
         this.consumeTemporarySegment = consumeTemporarySegment;
         this.consumeFinalizedSegment = consumeFinalizedSegment;
         this.haveExecutionBeenTerminated = haveExecutionBeenTerminated;
 
+        long startTime = System.currentTimeMillis();
         processBounded();
         // processUnbounded();
         long endTime = System.currentTimeMillis();
