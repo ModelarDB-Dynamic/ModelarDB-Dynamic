@@ -144,9 +144,8 @@ class H2(configuration: Configuration, h2storage: H2Storage) {
     if (this.numberOfRunningIngestors.getCount == 0) {
       val logger = new Logger()
       this.workingSets.foreach(ws => logger.add(ws.logger))
-      logger.printWorkingSetResult()
-      if (this.numberOfRunningIngestors != null) {
-      }
+      // logger.printWorkingSetResult()
+      this.numberOfRunningIngestors = null
     }
     cacheLock.writeLock().unlock()
   }
