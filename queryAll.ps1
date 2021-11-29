@@ -4,7 +4,7 @@ $query = "select  DATEDIFF(ss, '1970-01-01 00:00:00', timestamp) as A, value fro
 
 
 $basePath = "C:\Users\Kenneth\Downloads\low_freq_generated\"
-$numberOfTids = 0
+$numberOfTids = 20
 
 $dataTranformerFunction = {if($_) {if($_.A){$_.A + " " + $_.VALUE}}}
 
