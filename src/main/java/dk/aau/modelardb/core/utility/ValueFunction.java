@@ -18,6 +18,6 @@ import java.io.Serializable;
 
 public class ValueFunction implements Serializable {
     public float transform(float value, float scalingFactor) {
-        return value / scalingFactor;
+        return value; //TODO(EKN): discuss with SØREN how scaling factor should be used.
     }
 }
