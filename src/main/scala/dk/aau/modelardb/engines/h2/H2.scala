@@ -148,6 +148,7 @@ class H2(configuration: Configuration, h2storage: H2Storage) {
       this.numberOfRunningIngestors = null
     }
     cacheLock.writeLock().unlock()
+    Static.info("DB write done")
   }
 
   private def updateTemporarySegment(cache: Array[SegmentGroup], inputSegmentGroup: SegmentGroup,
