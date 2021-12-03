@@ -151,9 +151,12 @@ class JDBCStorage(connectionStringAndTypes: String) extends Storage with H2Stora
   }
 
   override def close(): Unit = {
-    //Connection cannot be closed while a transaction is running
     this.connection.commit()
-    this.connection.close()
+    val statement = this.connection.prepareStatement("SHUTDOWN COMPACT")
+    statement.execute()
+    //Connection cannot be closed while a transaction is running
+//    this.connection.close()
+    println("shutdown compact completed")
   }
 
   //H2Storage
