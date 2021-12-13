@@ -46,6 +46,9 @@ class H2(configuration: Configuration, h2storage: H2Storage) {
   /** Public Methods * */
   def start(): Unit = {
     //Initialize
+
+    val temp = configuration.getDisableConfigPoints;
+
     val connection = DriverManager.getConnection(H2.h2ConnectionString)
     val stmt = connection.createStatement()
     stmt.execute(H2.getCreateDataPointViewSQL(configuration.getDimensions))

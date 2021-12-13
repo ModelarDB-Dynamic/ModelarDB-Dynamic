@@ -117,7 +117,7 @@ object Main {
              "modelardb.error_bound" | "modelardb.length_bound" | "modelardb.maximum_latency" |
              "modelardb.sampling_interval" | "modelardb.batch_size" | "modelardb.dynamic_split_fraction" |
              "modelardb.csv.separator" | "modelardb.csv.header" | "modelardb.csv.date_format" | "modelardb.csv.locale" |
-             "modelardb.spark.streaming" =>
+             "modelardb.spark.streaming" | "modelardb.disable_config_points" =>
           configuration.add(lineSplit(0), lineSplit(1).stripPrefix("'").stripSuffix("'"))
         case _ =>
           if (lineSplit(0).charAt(0) != '#') {

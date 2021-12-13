@@ -183,6 +183,9 @@ public class Configuration {
         return getString("modelardb.storage");
     }
 
+    public boolean getDisableConfigPoints() { return getBoolean("modelardb.disable_config_points"); }
+
+
     public TimeZone getTimeZone() {
         if (values.containsKey("modelardb.time_zone")) {
             return TimeZone.getTimeZone((String) values.get("modelardb.time_zone")[0]);

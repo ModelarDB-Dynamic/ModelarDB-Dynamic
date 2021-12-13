@@ -13,6 +13,7 @@
   curl -d "select * from Segment order by start_time, tid asc limit 6" localhost:9999
   curl -d "select * from datapoint order by timestamp, tid asc limit 6" localhost:9999
   curl -d "select tid, start_time, end_time, mtid, gaps from Segment order by start_time, tid asc limit 9" localhost:9999
+  curl -d "select count(*) from segment where tid=1" localhost:9999
 
 # Until furhter notice don't test it on spark just use h2. 
 
