@@ -120,7 +120,9 @@ public class SegmentGenerator {
 
     public void consumeSlice(DataSlice slice) {
         // This is necessary in cases where for example one of the time series ends early
-        slice.addGapsForTidsWithMissingPoints(new HashSet<>(this.tids));
+        if(slice.getDataPoints().length != this.tids.size()) {
+            slice.addGapsForTidsWithMissingPoints(new HashSet<>(this.tids));
+        }
 
         if (this.splitSegmentGenerators.isEmpty() || this.splitSegmentGenerators.contains(this)) {
             // Consume

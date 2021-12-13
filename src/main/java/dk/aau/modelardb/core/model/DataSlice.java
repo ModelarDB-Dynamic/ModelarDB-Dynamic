@@ -13,9 +13,6 @@ public class DataSlice {
         this.valueDataPoints = valueDataPoints;
         this.samplingInterval = samplingInterval;
         this.timeStamp = valueDataPoints.get(0).timestamp;
-
-        checkAllSamplingIntervalsTheSame(this.valueDataPoints, this.samplingInterval);
-        checkAllTimestampsAreTheSame(this.valueDataPoints, this.timeStamp);
     }
 
     private DataSlice(int samplingInterval) {
@@ -35,20 +32,6 @@ public class DataSlice {
     public ValueDataPoint[] getDataPoints(){
         Collections.sort(this.valueDataPoints);
         return this.valueDataPoints.toArray(new ValueDataPoint[0]);
-    }
-
-    private static void checkAllSamplingIntervalsTheSame(List<ValueDataPoint> valueDataPoints, int samplingInterval) {
-        valueDataPoints.forEach( dataPoint -> {
-            if(dataPoint.samplingInterval != samplingInterval)
-                throw new RuntimeException("Sampling interval for all data points must be the same for data slice");
-        });
-    }
-
-    private static void checkAllTimestampsAreTheSame(List<ValueDataPoint> valueDataPoints, long timeStamp) {
-        valueDataPoints.forEach( dataPoint -> {
-            if(dataPoint.timestamp != timeStamp)
-                throw new RuntimeException("Time stamp for all data points must be the same for data slice");
-        });
     }
 
     public Map<Set<Integer>, DataSlice> getSubDataSlices(Set<Set<Integer>> tidss) {
